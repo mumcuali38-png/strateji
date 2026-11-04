@@ -1,0 +1,46 @@
+name: deploy
+# Testler + GitHub Pages yayını (Settings → Pages → Source: GitHub Actions)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci --no-audit --no-fund && npm run typecheck && npm test
+        working-directory: scanner
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Siteyi hazırla
+        run: |
+          mkdir -p _site
+          cp -r index.html app.js styles.css sw.js manifest.json app icons config _site/
+          BUILD="$(date -u +%Y%m%d%H%M)-${GITHUB_SHA::7}"
+          sed -i "s/__BUILD__/$BUILD/g" _site/sw.js _site/app/config.js
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: d
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,70 @@
+name: scan
+# 5 dakikada bir tarama. Saatler UTC: 07:00–16:55 UTC = 10:00–19:55 TR (pencere kontrolü kodda).
+on:
+  schedule:
+    - cron: '*/5 7-16 * * *'
+    - cron: '17 6 1 * *' # aylık keepalive (60 gün hareketsizlikte durmasın)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Tarama penceresi dışında da çalıştır'
+        type: boolean
+        default: true
+      push_test:
+        description: 'Test bildirimi gönder'
+        type: boolean
+        default: false
+      backtest:
+        description: 'Son 10 iş günü geriye dönük kuru çalıştırma (backtest.md)'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+jobs:
+  keepalive:
+    if: github.event.schedule == '17 6 1 * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: İş akışlarını etkin tut
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for wf in scan.yml news.yml deploy.yml; do gh api -X PUT "repos/${{ github.repository }}/actions/workflows/$wf/enable" || true; done
+  scan:
+    if: github.event.schedule != '17 6 1 * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DATA_DIR: ${{ github.workspace }}/data-out
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: scanner
+      - name: data dalını al
+        run: bash scripts/data-branch.sh pull
+      - name: Tara
+        working-directory: scanner
+        env:
+          TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+          PUSH_TEST: ${{ inputs.push_test && '1' || '0' }}
+        run: npm run scan
+      - name: Geriye dönük kuru çalıştırma
+        if: inputs.backtest
+        working-directory: scanner
+        run: npm run backtest -- 10
+      - name: data dalına yaz
+        run: bash scripts/data-branch.sh push "tarama"

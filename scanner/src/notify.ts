@@ -1,0 +1,35 @@
+import type { Config } from './config.ts';
+import type { NewsEvent, Setup } from './types.ts';
+import { MIN } from './time.ts';
+import { cancelMsg, newsMsg, readyMsg, tamMsg, type Msg } from './push.ts';
+
+/**
+ * Durum değişimlerinden bildirim listesi. Tekrar yok: anahtar strateji+sembol+yön+bölge_id+durum.
+ * `notified` yerinde güncellenir (data dalında saklanır, 3 günde temizlenir).
+ */
+export function computeMessages(conf: Config, all: Setup[], prev: { strategies?: Record<string, Record<string, Setup[]>> } | null, notified: Record<string, number>, news: NewsEvent[], now: number): Msg[] {
+  const P = conf.params;
+  for (const [k, t] of Object.entries(notified)) if (now - t > 3 * 86400_000) delete notified[k];
+  const msgs: Msg[] = [];
+  for (const s of all) {
+    if (s.status === 'TAM' && !(s.key in notified)) { msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
+    else if (s.status === 'EKSIK' && s.remaining === 1 && !(s.key in notified)) { msgs.push(readyMsg(s)); notified[s.key] = now; }
+  }
+  const byId = new Map(all.map((s) => [s.id, s]));
+  for (const list of Object.values(prev?.strategies ?? {})) for (const ps of Object.values(list).flat()) {
+    if (ps.status !== 'TAM') continue;
+    const ns = byId.get(ps.id);
+    if (ns?.status === 'TAM') continue;
+    const why = ns?.conditions.find((c) => c.status === 'fail')?.detail ?? 'setup listeden düştü';
+    if (/stop|tükendi|silindi|delindi|iptal/i.test(why) && !(`${ps.id}+IPTAL` in notified)) { msgs.push(cancelMsg(ps, why)); notified[`${ps.id}+IPTAL`] = now; }
+  }
+  for (const e of news) {
+    if (e.impact !== 'High' || !P.news.currencies.includes(e.currency)) continue;
+    const dt = e.t - now;
+    if (dt > 0 && dt <= P.news.beforeMin * MIN && !(`news+${e.id}` in notified)) {
+      const affected = Object.keys(conf.symbols).filter((sym) => (e.symbols ? e.symbols.includes(sym) : e.currency === 'USD' || conf.symbols[sym].currencies.includes(e.currency)));
+      msgs.push(newsMsg(e, now, affected)); notified[`news+${e.id}`] = now;
+    }
+  }
+  return msgs;
+}

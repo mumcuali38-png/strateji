@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Strateji Radar</title>
+  <meta name="description" content="5 trading stratejisini izleyen, sinyal ve durum gösteren PWA. İşlem açmaz; karar her zaman kullanıcınındır.">
+  <meta name="theme-color" content="#0E1116">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header id="topbar" class="topbar" role="banner"></header>
+  <div id="banners"></div>
+  <div class="layout">
+    <nav id="nav" class="nav" aria-label="Ana menü"></nav>
+    <main id="main" class="main" tabindex="-1">
+      <div class="boot">Strateji Radar yükleniyor…</div>
+    </main>
+  </div>
+  <div id="ptr" class="ptr" aria-hidden="true">↓ Yenilemek için çek</div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <noscript>Bu uygulama için JavaScript gerekir.</noscript>
+</body>
+</html>
