@@ -1,5 +1,6 @@
 name: scan
-# 5 dakikada bir tarama. Saatler UTC: 07:00–16:55 UTC = 10:00–19:55 TR (pencere kontrolü kodda).
+# Tarama penceresi 10:00–20:00 TR (07:00–16:55 UTC). GitHub zamanlanmış görevleri geciktirebildiği için
+# tetiklenen iş pencere boyunca kendi içinde 5 dk'da bir tarar (scripts/scan-loop.sh); tetikler döngüyü devam ettirir.
 on:
   schedule:
     - cron: '*/5 7-16 * * *'
@@ -37,7 +38,7 @@ jobs:
   scan:
     if: github.event.schedule != '17 6 1 * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 350
     env:
       GH_TOKEN: ${{ github.token }}
       DATA_DIR: ${{ github.workspace }}/data-out
@@ -52,19 +53,21 @@ jobs:
         working-directory: scanner
       - name: data dalını al
         run: bash scripts/data-branch.sh pull
-      - name: Tara
-        working-directory: scanner
+      - name: Tarama döngüsü (5 dk'da bir, pencere kapanana kadar)
         env:
           TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
+          FMP_KEY: ${{ secrets.FMP_KEY }}
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
-          FORCE: ${{ inputs.force && '1' || '0' }}
+          FORCE_FIRST: ${{ inputs.force && '1' || '0' }}
           PUSH_TEST: ${{ inputs.push_test && '1' || '0' }}
-        run: npm run scan
+          LOOP_MAX_MIN: '330'
+        run: bash scripts/scan-loop.sh
       - name: Geriye dönük kuru çalıştırma
         if: inputs.backtest
         working-directory: scanner
         run: npm run backtest -- 10
       - name: data dalına yaz
-        run: bash scripts/data-branch.sh push "tarama"
+        if: inputs.backtest
+        run: bash scripts/data-branch.sh push "backtest"
