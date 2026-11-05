@@ -46,7 +46,7 @@ export function tamMsg(conf: Config, s: Setup, prefs?: Prefs): Msg {
   return {
     kind: 'tam', strategy: s.strategy, symbol: s.symbol, setup: s,
     title: `🟢 TAM · ${SHORT[s.symbol]} ${s.strategy} ${dir}`,
-    body: `${SHORT[s.symbol]} ${s.strategy} ${dir} · Giriş ${f(m?.entry)} · SL ${f(m?.stop)} · TP ${f(m?.tp1)} · RR ${m ? m.rr.toFixed(1) : '—'}${lot !== null ? ` · ${lot.toFixed(2)} lot` : ''}${m?.tag ? ` · ${m.tag}` : ''}`,
+    body: `${SHORT[s.symbol]} ${s.strategy} ${dir} · Giriş ${f(m?.entry)} · SL ${f(m?.stop)} · TP ${f(m?.tp1)} · RR ${m ? m.rr.toFixed(1) + (m.rr2 !== undefined ? ` / TP2 ${m.rr2.toFixed(1)}` : '') : '—'}${lot !== null ? ` · ${lot.toFixed(2)} lot` : ''}${m?.tag ? ` · ${m.tag}` : ''}`,
     url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key,
   };
 }

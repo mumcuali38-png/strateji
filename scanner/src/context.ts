@@ -244,7 +244,29 @@ export function method(ctx: Ctx, id: string, label: string, type: 'market' | 'li
   return m;
 }
 
+/**
+ * Ortak bayat sinyal kontrolü (tüm stratejiler): sinyal oluştuktan sonra
+ * stop veya TP1 görüldüyse, sinyal maxSignalAgeHours'tan eskiyse ya da fiyat girişten
+ * maxEntryDistR'den fazla uzaklaştıysa setup biter — geçmiş sinyal kovalanmaz.
+ */
+export function staleGuard(ctx: Ctx, s: { signalAt?: number; dir: Dir | 0; methods: EntryMethod[]; defaultMethod?: string; conditions: Condition[] }): void {
+  if (!s.signalAt || !s.dir || s.conditions.some((c) => c.status === 'fail')) return;
+  const g = ctx.p.general;
+  if (ctx.now - s.signalAt > g.maxSignalAgeHours * HOUR) { s.conditions.push({ id: 'stale', label: 'Sinyal güncel mi', status: 'fail', detail: `Sinyal ${fmtTR(s.signalAt)} TR'de oluştu (${durationText(ctx.now - s.signalAt)} önce) — eski` }); return; }
+  const m = s.methods.find((x) => x.id === s.defaultMethod) ?? s.methods[0];
+  if (!m) return;
+  const dir = s.dir;
+  const after = [...ctx.closed('5m'), ...ctx.closed('1m')].filter((c) => c.t >= s.signalAt!);
+  const risk = Math.abs(m.entry - m.stop);
+  const fail = (detail: string): void => { s.conditions.push({ id: 'stale', label: 'Sinyal güncel mi', status: 'fail', detail }); };
+  if (after.some((c) => (dir === 1 ? c.l <= m.stop : c.h >= m.stop))) return fail(`Sinyalden (${fmtTR(s.signalAt)} TR) sonra stop ${ctx.fmt(m.stop)} görüldü — senaryo bitti`);
+  if (after.some((c) => (dir === 1 ? c.h >= m.tp1 : c.l <= m.tp1))) return fail(`Sinyalden (${fmtTR(s.signalAt)} TR) sonra TP1 ${ctx.fmt(m.tp1)} görüldü — fırsat geçti, kovalanmaz`);
+  if (ctx.now - s.signalAt > g.maxSignalAgeHours * HOUR) return fail(`Sinyal ${fmtTR(s.signalAt)} TR'de oluştu (${durationText(ctx.now - s.signalAt)} önce) — eski`);
+  if (risk > 0 && Math.abs(ctx.price - m.entry) / risk > g.maxEntryDistR) return fail(`Fiyat ${ctx.fmt(ctx.price)} girişten ${(Math.abs(ctx.price - m.entry) / risk).toFixed(1)}R uzak — kovalanmaz`);
+}
+
 export function finalize(ctx: Ctx, s: Omit<Setup, 'status' | 'remaining' | 'evaluatedAt' | 'key' | 'symbol'> & { symbol?: string }): Setup {
+  staleGuard(ctx, s);
   const { status, remaining } = statusOf(s.conditions);
   const missing = s.conditions.filter((c) => c.status === 'wait').map((c) => `${c.label}: ${c.detail}`).join(' · ');
   const setup: Setup = { ...s, symbol: ctx.sym, status, remaining, evaluatedAt: ctx.now, key: '' } as Setup;

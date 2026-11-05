@@ -213,10 +213,17 @@ function d2(ctx: Ctx, tf: TF): Setup[] {
       const retested = conf >= 0 && after.slice(conf + 1).some((x) => (d === 1 ? x.l <= flip : x.h >= flip));
       conds.push(conf >= 0 ? { id: 'retest', label: 'Flip retest', status: retested ? 'ok' : 'wait', detail: retested ? `Flip ${ctx.fmt(flip)} test edildi` : `Limit ${ctx.fmt(flip)} — retest bekleniyor`, level: flip } : { id: 'retest', label: 'Flip retest', status: 'wait', detail: 'Önce kırılım teyidi' });
       conds.push({ id: 'rr', label: 'RR ≥ 2', status: rrOk ? 'ok' : conf >= 0 ? 'fail' : 'wait', detail: `Projeksiyon ${ctx.fmt(proj)} · RR ${methods[0].rr.toFixed(2)}`, level: proj });
+      if (conf >= 0) {
+        const aft = after.slice(conf + 1);
+        const m = methods[0];
+        if (aft.some((x) => (d === 1 ? x.l <= m.stop : x.h >= m.stop))) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: 'Stop delindi' });
+        else if (aft.some((x) => (d === 1 ? x.h >= m.tp1 : x.l <= m.tp1))) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: 'Projeksiyon hedefi görüldü — senaryo tamamlandı' });
+        else if (aft.length > p.breakoutValidityBars) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: `Kırılım teyidi ${fmtTR(after[conf].t)} TR'de oluştu, ${p.breakoutValidityBars} ${TF_LABEL[tf]} mumdan eski` });
+      }
     } else { conds.push({ id: 'retest', label: 'Flip retest', status: 'wait', detail: '—' }); conds.push({ id: 'rr', label: 'RR ≥ 2', status: 'wait', detail: '—' }); }
     conds.push(ctx.newsCond());
     const ov = [...ovBase]; pushTargetOverlays(ov, methods[0]);
-    out.push(finalize(ctx, { id: `${baseId}-brk`, strategy: 'D', sub: `D2 · ${TF_LABEL[tf]} range kırılımı`, dir: d, conditions: conds, methods, defaultMethod: methods[0]?.id, invalidation: 'Flip seviyesi kapanışla geri alınırsa', overlays: ov, chartTf: tf, tfs: [ltf, tf], zoneId: bi >= 0 ? `${tf}-brk${after[bi].t}` : `${tf}-brk-wait${c[r.s].t}`, extra: ctx.extra(d) }));
+    out.push(finalize(ctx, { id: `${baseId}-brk`, strategy: 'D', sub: `D2 · ${TF_LABEL[tf]} range kırılımı`, dir: d, conditions: conds, methods, defaultMethod: methods[0]?.id, signalAt: conf >= 0 ? after[conf].t : undefined, invalidation: 'Flip seviyesi kapanışla geri alınırsa', overlays: ov, chartTf: tf, tfs: [ltf, tf], zoneId: bi >= 0 ? `${tf}-brk${after[bi].t}` : `${tf}-brk-wait${c[r.s].t}`, extra: ctx.extra(d) }));
   }
 
   // Dönüş modeli (geniş range)
@@ -252,6 +259,8 @@ function d2(ctx: Ctx, tf: TF): Setup[] {
           const aft = lan.c.filter((x) => x.t > br.t);
           if (aft.some((x) => (d === 1 ? x.l <= m.stop : x.h >= m.stop))) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: 'Stop delindi' });
           else if (aft.some((x) => (d === 1 ? x.h >= m.tp2! : x.l <= m.tp2!))) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: 'Karşı uca ulaşıldı — senaryo tamamlandı' });
+          else if (aft.some((x) => (d === 1 ? x.h >= m.tp1 : x.l <= m.tp1))) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: `TP1 (EQ ${ctx.fmt(m.tp1)}) görüldü — giriş fırsatı geçti, kovalanmaz` });
+          else if (aft.length > p.signalValidityBars) conds.push({ id: 'valid', label: 'Geçerlilik', status: 'fail', detail: `Onay ${fmtTR(br.t)} TR'de oluştu, ${p.signalValidityBars} ${TF_LABEL[ltf]} mumdan eski` });
         }
       } else conds.push({ id: 'rr', label: 'RR ≥ 2 (TP2)', status: 'wait', detail: '—' });
     } else conds.push({ id: 'rr', label: 'RR ≥ 2 (TP2)', status: 'wait', detail: 'TP1 EQ, TP2 karşı uç' });

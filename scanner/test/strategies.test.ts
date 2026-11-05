@@ -92,3 +92,23 @@ test('RB bölgesi: bearish = en yüksek gövde ile iğne tepesi, en fazla 3 mum'
   assert.equal(b.bottom, 96);
   assert.equal(b.top, 99.5);
 });
+
+test('Ortak bayat sinyal kontrolü: eski sinyal, görülen TP1 veya uzak fiyat TAM olamaz', async () => {
+  const { finalize } = await import('../src/context.ts');
+  const m5 = stairs(XEND);
+  const sig = XEND - 7 * HOUR;
+  const base = { strategy: 'D' as const, sub: 'test', dir: 1 as const, overlays: [], chartTf: '5m' as const, tfs: ['5m' as const], zoneId: 'z', id: 't' };
+  const ok = { id: 'x', label: 'x', status: 'ok' as const, detail: '' };
+  const price = m5.at(-1)!.c;
+  const meth = (entry: number, stop: number, tp1: number) => [{ id: 'm', label: 'm', type: 'limit' as const, entry, stop, stopStructural: stop, tp1, rr: 2 }];
+  // 7 saatlik sinyal → eski
+  let ctx = new Ctx('XAUUSD', conf(), XEND, { m5, m1: [], d1: [] }, []);
+  assert.equal(finalize(ctx, { ...base, conditions: [ok], methods: meth(price, price - 5, price + 10), signalAt: sig }).status, 'YOK');
+  // yeni sinyal ama fiyat girişten 10R uzak
+  const s2 = finalize(ctx, { ...base, conditions: [ok], methods: meth(price - 10, price - 11, price + 50), signalAt: XEND - 30 * MIN });
+  assert.equal(s2.status, 'YOK');
+  assert.match(s2.conditions.at(-1)!.detail, /uzak/);
+  // yeni, yakın, hedef görülmemiş → TAM
+  ctx = new Ctx('XAUUSD', conf(), XEND, { m5, m1: [], d1: [] }, []);
+  assert.equal(finalize(ctx, { ...base, conditions: [ok], methods: meth(price, price - 5, price + 50), signalAt: XEND - 10 * MIN }).status, 'TAM');
+});
