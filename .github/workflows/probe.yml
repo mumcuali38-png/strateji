@@ -7,24 +7,32 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: eToro uç nokta ayrıntıları
+      - name: eToro OpenAPI
         run: |
-          curl -sL -m 25 https://api-portal.etoro.com/llms.txt -o llms.txt
-          grep -iE "rankings|user-stats|users-info|pi-data|instrument|market-data/search|terms|gain" llms.txt | sed -E 's/\): .*/)/' | head -60
-          for u in $(grep -ioE "https://api-portal.etoro.com/api-reference/(rankings|user-stats|users-info|pi-data)/[a-z0-9-]+\.md" llms.txt | sort -u) $(grep -ioE "https://api-portal.etoro.com/[a-z/-]*(instrument|terms)[a-z/-]*\.md" llms.txt | sort -u); do
-            echo "=================== $u"
-            curl -sL -m 25 "$u" -o p.md
-            python3 - <<'EOF'
-          import re
-          s = open('p.md', encoding='utf-8').read()
-          i = s.find('paths:')
-          body = s[i:] if i >= 0 else s
-          out = []
-          for line in body.splitlines():
-              t = line.strip()
-              if re.match(r'^(/api|get:|post:|- name:|name:|in:|required:|enum:|[a-zA-Z0-9_]+:$|- [A-Za-z0-9]+$)', t) or t.startswith('/api'):
-                  out.append(line[:110])
-          print('\n'.join(out[:140]))
-          if i < 0: print(s[:2500])
+          curl -sL -m 40 -A "Mozilla/5.0" https://api-portal.etoro.com/api-reference/openapi.json -o o.json -w "HTTP %{http_code} %{size_download}B\n"
+          python3 - <<'EOF'
+          import json
+          o = json.load(open('o.json'))
+          def props(sch, depth=0, pre=''):
+              out = []
+              if not isinstance(sch, dict) or depth > 4: return out
+              if '$ref' in sch:
+                  ref = sch['$ref'].split('/')[-1]; sch = o.get('components', {}).get('schemas', {}).get(ref, {})
+              if sch.get('type') == 'array': return props(sch.get('items', {}), depth, pre + '[]')
+              for k, v in (sch.get('properties') or {}).items():
+                  vv = v
+                  if '$ref' in v: vv = o['components']['schemas'].get(v['$ref'].split('/')[-1], {})
+                  t = vv.get('type', '')
+                  out.append(f"{pre}{k}:{t}")
+                  if t in ('object', 'array') or 'properties' in vv: out += props(vv, depth + 1, pre + k + '.')
+              return out
+          for path, ops in o['paths'].items():
+              for m, op in ops.items():
+                  tags = op.get('tags', [])
+                  if not set(tags) & {'Rankings', 'User Stats', 'Users Info', 'PI Data', 'Market Data', 'PortfolioSearch'}: continue
+                  if m != 'get': continue
+                  print('====', m.upper(), path, tags, '|', op.get('summary'))
+                  print('  params:', [(p.get('name'), p.get('in'), p.get('required', False), (p.get('schema') or {}).get('enum')) for p in op.get('parameters', []) if p.get('name') != 'x-request-id'])
+                  sch = op.get('responses', {}).get('200', {}).get('content', {}).get('application/json', {}).get('schema', {})
+                  print('  resp:', ', '.join(props(sch)[:70]))
           EOF
-          done
