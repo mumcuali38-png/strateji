@@ -46,3 +46,14 @@ test('Sert sınır: 790 kullanıldıysa hiç istek yok', () => {
   credits.used = 790;
   assert.equal(planFetch(cfg, t, credits, () => t - 5 * MIN).length, 0);
 });
+
+test('Planda olmayan sembol (XAG) istenmez; pencere öncesi elle taramada ETH atlanmaz', () => {
+  const cfg = conf();
+  const t = Date.UTC(2026, 10, 5, 5, 46); // 08:46 TR, pencere öncesi
+  const credits = freshCredits(null, t, cfg.params);
+  credits.unavailable = { XAGUSD: '2026-11-05' };
+  const plan = planFetch(cfg, t, credits, () => undefined);
+  const syms = plan.map((p) => p.sym);
+  assert.ok(!syms.includes('XAGUSD'));
+  assert.ok(syms.includes('ETHUSD'), syms.join(','));
+});

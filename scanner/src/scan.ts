@@ -49,6 +49,11 @@ if (td && !credits.exhausted) {
   for (const p of plan) {
     const cfg = conf.symbols[p.sym];
     const r = await td.series(p.sym, cfg.td, p.interval, p.size);
+    if (r.error && /available starting with|upgrad|plan/i.test(r.error)) {
+      credits.unavailable = { ...(credits.unavailable ?? {}), [p.sym]: utcDateStr(now) };
+      warnings.push(`${cfg.label} Twelve Data ücretsiz planında yok — 7 gün boyunca istenmeyecek (kredi korunur)`);
+      continue;
+    }
     if (r.error) { errors.push(`${p.sym} ${p.interval}: ${r.error}`); if (r.error === 'kredi bitti') break; continue; }
     fetched.push(`${p.sym}/${p.interval}`);
     if (p.interval === '1day') { data[p.sym].d1 = mergeCandles(data[p.sym].d1, r.candles, 400); continue; }
@@ -71,7 +76,8 @@ const news = readJSON<NewsFile | null>('news.json', null);
 let hist = readJSON<HistEvent[]>('history.json', []);
 const prior = hist.filter((h) => h.kind === 'TAM').map((h) => ({ strategy: h.strategy, symbol: h.symbol, id: h.id, t: h.signalAt ?? h.t }));
 const { results, ctxs, errors: engErr } = runEngine(conf, now, data, news?.events ?? [], prior);
-errors.push(...engErr);
+errors.push(...engErr.filter((e) => !Object.keys(credits.unavailable ?? {}).some((u) => e.startsWith(`${u}:`))));
+for (const u of Object.keys(credits.unavailable ?? {})) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
 const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());
 
 // --- Bildirimler ---

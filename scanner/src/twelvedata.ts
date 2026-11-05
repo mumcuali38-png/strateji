@@ -12,6 +12,8 @@ export interface Credits {
   lastHeaders?: { used?: string | null; left?: string | null; at: number };
   log: { t: number; sym: string; interval: string; size: number; ok: boolean; err?: string }[];
   days: { date: string; used: number }[];
+  /** Planda olmayan semboller (sembol → tespit tarihi). 7 gün boyunca istenmez, kredi yakılmaz. */
+  unavailable?: Record<string, string>;
 }
 
 export function freshCredits(prev: Credits | null, now: number, p: Params): Credits {
@@ -19,7 +21,8 @@ export function freshCredits(prev: Credits | null, now: number, p: Params): Cred
   if (prev && prev.date === date) return { ...prev, hardStop: p.scan.creditHardStop };
   const days = [...(prev?.days ?? [])];
   if (prev) days.push({ date: prev.date, used: prev.used });
-  return { date, used: 0, hardStop: p.scan.creditHardStop, bootstrapDate: prev?.bootstrapDate, log: [], days: days.slice(-14) };
+  const unavailable = Object.fromEntries(Object.entries(prev?.unavailable ?? {}).filter(([, d]) => now - Date.parse(d) < 7 * 86400_000));
+  return { date, used: 0, hardStop: p.scan.creditHardStop, bootstrapDate: prev?.bootstrapDate, log: [], days: days.slice(-14), unavailable };
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
