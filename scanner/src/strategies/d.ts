@@ -223,7 +223,7 @@ function d2(ctx: Ctx, tf: TF): Setup[] {
     } else { conds.push({ id: 'retest', label: 'Flip retest', status: 'wait', detail: '—' }); conds.push({ id: 'rr', label: 'RR ≥ 2', status: 'wait', detail: '—' }); }
     conds.push(ctx.newsCond());
     const ov = [...ovBase]; pushTargetOverlays(ov, methods[0]);
-    out.push(finalize(ctx, { id: `${baseId}-brk`, strategy: 'D', sub: `D2 · ${TF_LABEL[tf]} range kırılımı`, dir: d, conditions: conds, methods, defaultMethod: methods[0]?.id, invalidation: 'Flip seviyesi kapanışla geri alınırsa', overlays: ov, chartTf: tf, tfs: [ltf, tf], zoneId: bi >= 0 ? `${tf}-brk${after[bi].t}` : `${tf}-brk-wait${c[r.s].t}`, extra: ctx.extra(d) }));
+    out.push(finalize(ctx, { id: `${baseId}-brk`, strategy: 'D', sub: `D2 · ${TF_LABEL[tf]} range kırılımı`, dir: d, conditions: conds, methods, defaultMethod: methods[0]?.id, signalAt: conf >= 0 ? after[conf].t : undefined, invalidation: 'Flip seviyesi kapanışla geri alınırsa', overlays: ov, chartTf: tf, tfs: [ltf, tf], zoneId: bi >= 0 ? `${tf}-brk${after[bi].t}` : `${tf}-brk-wait${c[r.s].t}`, extra: ctx.extra(d) }));
   }
 
   // Dönüş modeli (geniş range)

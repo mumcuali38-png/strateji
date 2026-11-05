@@ -109,6 +109,13 @@ export function evalE(ctx: Ctx): Setup[] {
           else if (ret !== undefined && left && touch) { used = true; break; }
         }
       }
+      // Dönüş beklerken: hedef önceden görüldüyse ya da dönüş çok geciktiyse RB biter (kovalanmaz)
+      if (brk && !ret && !used && exhausted < 0) {
+        const tgPre = ctx.targets(dir, bodyLvl, ['1h', '4h'])[0];
+        const post = ctx.closed(brk.tf).filter((x) => x.t > brk!.t);
+        if (tgPre && ctx.closed('5m').some((x) => x.t > brk!.t && (dir === 1 ? x.h >= tgPre.price : x.l <= tgPre.price))) used = true, conds.push({ id: 'stale', label: 'Sinyal güncel mi', status: 'fail', detail: `Dönüş olmadan hedef ${ctx.fmt(tgPre.price)} görüldü — kovalanmaz` });
+        else if (post.length > p.returnMaxBars) conds.push({ id: 'stale', label: 'Sinyal güncel mi', status: 'fail', detail: `Kırılımdan (${fmtTR(brk.t)} TR) sonra ${p.returnMaxBars} ${TF_LABEL[brk.tf]} mum içinde dönüş olmadı` });
+      }
       conds.push(!brk ? { id: 'return', label: 'Gövde seviyesine dönüş', status: 'wait', detail: 'Önce kırılım' }
         : used ? { id: 'return', label: 'Gövde seviyesine dönüş', status: 'fail', detail: 'RB daha önce test edilip tepki verdi (kullanılmış)' }
           : ret ? { id: 'return', label: 'Gövde seviyesine dönüş', status: 'ok', detail: `${fmtTR(ret)} TR'de gövde seviyesi ${ctx.fmt(bodyLvl)} görüldü`, level: bodyLvl }
@@ -129,7 +136,8 @@ export function evalE(ctx: Ctx): Setup[] {
       conds.push(exhausted >= 0 ? { id: 'valid', label: 'Bölge geçerli', status: 'fail', detail: `İğne ucunun ötesinde gövde kapanışı (${fmtTR(c[exhausted].t)} TR) — bölge tükendi` } : { id: 'valid', label: 'Bölge geçerli', status: 'ok', detail: 'Taze' });
       if (ret && methods[0]) {
         const post = ctx.closed('5m').filter((x) => x.t >= ret!);
-        if (post.some((x) => (dir === 1 ? x.h >= methods[0].tp1 : x.l <= methods[0].tp1))) conds.push({ id: 'done', label: 'Senaryo', status: 'fail', detail: 'Hedef görüldü — tamamlandı' });
+        if (post.some((x) => (dir === 1 ? x.l <= methods[0].stop : x.h >= methods[0].stop))) conds.push({ id: 'done', label: 'Senaryo', status: 'fail', detail: 'Stop görüldü — senaryo bitti' });
+        else if (post.some((x) => (dir === 1 ? x.h >= methods[0].tp1 : x.l <= methods[0].tp1))) conds.push({ id: 'done', label: 'Senaryo', status: 'fail', detail: 'Hedef görüldü — tamamlandı' });
         else if (ctx.now - ret > 6 * HOUR) conds.push({ id: 'done', label: 'Senaryo', status: 'fail', detail: 'Giriş 6 saatten eski' });
       }
       if (ctx.now - c[i].t > 5 * DAY) continue;

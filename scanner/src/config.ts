@@ -32,7 +32,7 @@ export interface Params {
     d1: { momentumBodyPct: number; rejectWickBody: number; retestTolAtr1m: number; maxPerDay: number };
     d2: { tfs: TF[]; minBars: number; maxBars: number; minTests: number; narrowAtrMult: number; edgeZoneAtr: number; confirmMaxBars: number; signalValidityBars: number; breakoutValidityBars: number };
   };
-  E: { tfs: TF[]; maxCandles: number; limitInsidePct: number; fib: number[]; lookbackBars: number };
+  E: { tfs: TF[]; maxCandles: number; limitInsidePct: number; fib: number[]; lookbackBars: number; returnMaxBars: number };
   extra: { rsiPeriod: number; rsiHigh: number; rsiLow: number; emaLong: number; macd: number[]; bb: number[]; kc: number[] };
   scan: {
     windowTR: [string, string]; oneMinuteTR: [string, string]; qqqTR: [string, string]; weekdays: number[];
@@ -41,6 +41,7 @@ export interface Params {
     keep5m: number; keep1m: number; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;
   };
   history: { days: number; evalMaxBars5m: number };
+  general: { maxSignalAgeHours: number; maxEntryDistR: number };
   us100PerQqq: number;
 }
 

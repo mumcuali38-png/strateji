@@ -21,7 +21,7 @@
     "d1": { "momentumBodyPct": 0.5, "rejectWickBody": 1.0, "retestTolAtr1m": 0.5, "maxPerDay": 1 },
     "d2": { "tfs": ["1h", "4h"], "minBars": 12, "maxBars": 60, "minTests": 2, "narrowAtrMult": 1.5, "edgeZoneAtr": 0.25, "confirmMaxBars": 12, "signalValidityBars": 24, "breakoutValidityBars": 6 }
   },
-  "E": { "tfs": ["4h", "1h"], "maxCandles": 3, "limitInsidePct": 0.15, "fib": [0.786, 0.886], "lookbackBars": 60 },
+  "E": { "tfs": ["4h", "1h"], "maxCandles": 3, "limitInsidePct": 0.15, "fib": [0.786, 0.886], "lookbackBars": 60, "returnMaxBars": 24 },
   "extra": { "rsiPeriod": 12, "rsiHigh": 70, "rsiLow": 30, "emaLong": 200, "macd": [12, 26, 9], "bb": [20, 2], "kc": [20, 1.5] },
   "scan": {
     "windowTR": ["10:00", "20:00"],
@@ -45,6 +45,7 @@
     "staleWarnMin": 15,
     "staleErrorMin": 30
   },
+  "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
   "history": { "days": 30, "evalMaxBars5m": 288 },
   "us100PerQqq": 41.0
 }
