@@ -38,7 +38,7 @@ export interface Params {
     windowTR: [string, string]; oneMinuteTR: [string, string]; qqqTR: [string, string]; weekdays: number[];
     cryptoWeekend: boolean; intervalMin: number; creditDailyLimit: number; creditHardStop: number; perMinute: number;
     incrementalOutput: number; maxIncrementalOutput: number; bootstrap5m: number; bootstrap1d: number; bootstrap1dSymbols: string[];
-    keep5m: number; keep1m: number; preWindowTR: [string, string]; preWindowSymbols: string[]; bootstrap1h: number; bootstrap1hSymbols: string[]; fxPairs: string[]; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;
+    keep5m: number; keep1m: number; preWindowTR: [string, string]; preWindowSymbols: string[]; bootstrap1h: number; bootstrap1hSymbols: string[]; fxPairs: string[]; directionDaily?: string[]; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;
   };
   history: { days: number; evalMaxBars5m: number };
   general: { maxSignalAgeHours: number; maxEntryDistR: number };

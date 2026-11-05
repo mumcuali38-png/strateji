@@ -197,3 +197,20 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Girmediklerim:** tarama sonucu "sanal sonuç" olarak yazılır, "Kaçan R" toplamı ve sebebe göre dağılım gösterilir.
 - **Bildirim merkezi** 7 günden 30 güne çıktı.
 - **Hata düzeltmesi:** gece/hafta sonu F taraması geçmişteki XAU/EUR/GBP/US100 sinyallerini BTC mumlarıyla değerlendiriyordu (yanlış TP/SL). Artık sadece F olayları değerlendirilir. Takibi olmayan eski olaylar mumlar yetiyorsa bir kez yeniden değerlendirilir.
+
+## Ek Özellikler v1 — Aşama 4 (Piyasa Yönü)
+
+- **Kaynak erişimi** GitHub Actions sunucusundan ölçüldü (05.11.2026):
+  - Binance vadeli 451 ve Bybit 403 veriyor (ABD konumu engelli). Türev verisi **OKX**'ten alınır: funding, büyük trader L/S (pozisyon), tüm hesaplar L/S, açık pozisyon 24 sa.
+  - Binance spot, alternative.me, DefiLlama ve CFTC çalışıyor.
+  - Farside tabloyu her istekte döndürmüyor: alınamazsa ETF parçası "veri yok" olur, ağırlık stablecoin'e kayar.
+- **Kredi:** forex skorları saatlik ek kredi harcamaz. Kayıtlı mumlar kullanılır: günlük 1day×300 (önceden 60, aynı kredi), 1h×1200 (EUR, GBP, US100 eklendi, +3/gün), güncel saat ise 5m akışından. UUP ve IEF günlük 1day×300 (+2/gün). Toplam ≈ +5 kredi/gün. Kredi %90'ı geçerse Piyasa Yönü 4 saatte bir çalışır.
+- **Kripto:** Binance spot 1h×1000, 4h×300 ve 1d×300 (BTCUSDT, ETHUSDT), ücretsiz.
+- **Ne zaman çalışır:** saatte bir; pencere içinde ana taramada, dışında F taramasında (15 dk'da bir kontrol). Pencere dışında forex son kayıtlı mumlarla hesaplanır.
+- **COT:** CFTC Legacy (sadece vadeli) non-commercial net. Kodlar: EUR 099741, GBP 096742, XAU 088691, XAG 084691, Nasdaq-100 E-mini 209742. Günde bir kez güncellenir.
+- **Myfxbook (perakende %)** isteğe bağlı: `MYFXBOOK_EMAIL` ve `MYFXBOOK_PASSWORD` secret'ları eklenirse kullanılır. Yoksa pozisyonlanma sadece COT'tan hesaplanır.
+- **US100:** haber sürprizi uygulanmaz (şartname yalnız EUR, GBP, XAU, XAG için tanımlıyor); ağırlığı diğer bileşenlere dağıtılır. XAG kartı "VERİ YOK" gösterir ve Forex Genel'e katılmaz.
+- **Yapı (pivot N=3):** eşit tepe/dip pivotu bozmaz (eşitlik pivot sayılır).
+- **Bileşen dökümünde** çubuk s değerini (−1…+1), sağdaki "p" ise skora katkıyı (puan) gösterir.
+- **Etiket değişimi bildirimi:** sessiz, günde en fazla 3. Ayarlar → Bildirim'den kapatılabilir.
+- **Kayıt:** skorlar saatlik olarak `direction-history.json`'a yazılır (30 gün); 24 sa değişim ve 7 günlük çizgi buradan gelir.

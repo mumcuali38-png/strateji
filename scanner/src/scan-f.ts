@@ -6,6 +6,7 @@ import { loadConfig } from './config.ts';
 import { readJSON, writeJSON } from './store.ts';
 import { runF } from './f/run.ts';
 import { computeMessages } from './notify.ts';
+import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
 import { openSignalIds, trackMessages } from './track.ts';
 import { sendAll } from './push.ts';
 import { updateHistory, type HistEvent } from './history.ts';
@@ -42,6 +43,14 @@ const hist = updateHistory(hist0, f.setups, now, conf.params.history.days, (_sym
 msgs.push(...trackMessages(conf, hist.filter((x) => x.strategy === 'F'), notified, news?.events ?? [], now));
 const pr = await sendAll(conf, msgs, now);
 pr.log.forEach((l) => console.log(l));
+// Piyasa Yönü (pencere dışı: kripto canlı, forex kayıtlı mumlarla)
+if (shouldRun(readJSON<DirFile | null>('direction.json', null), now, 0)) {
+  try {
+    const d = await runDirection(conf, now, { setups: all, news: news?.events ?? [] });
+    const dm = capDirection(d.msgs, notified, now);
+    if (dm.length) (await sendAll(conf, dm, now)).log.forEach((l) => console.log(l));
+  } catch (e) { console.log(`Piyasa Yönü hesaplanamadı: ${(e as Error).message}`); }
+}
 writeJSON('state.json', state);
 writeJSON('history.json', hist);
 writeJSON('notified.json', notified);

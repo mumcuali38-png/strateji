@@ -18,6 +18,7 @@ import { aggregateUTC } from './f/data.ts';
 import { scenario, to15 } from './f/synthetic.ts';
 import { gDay, gHistory } from './g/synthetic.ts';
 import { evalG } from './g/judas.ts';
+import { computeDirection } from './direction/run.ts';
 import { annotateDeadlines } from './deadline.ts';
 import { Ctx } from './context.ts';
 
@@ -61,5 +62,16 @@ for (const [sym, ctx] of Object.entries(ctxs)) writeJSON(`charts/${sym}.json`, b
 const all = Object.values(results).flatMap((b) => Object.values(b).flat());
 const h = updateHistory([], all, now - 3 * HOUR, 30, (s) => data[s].m5, 288);
 writeJSON('history.json', h.hist);
+// Piyasa Yönü (demo: çevrimdışı örnek dış veriler; mumlar sentetik)
+{
+  const { aggregateUTC } = await import('./f/data.ts');
+  const kl = (sym: string) => { const m5 = data[sym]?.m5 ?? []; const h1 = aggregateUTC(m5, HOUR); return { h1, h4: aggregateUTC(h1, 4 * HOUR), d1: aggregateUTC(h1, 24 * HOUR) }; };
+  const ext = { cot: null, myfx: null, fng: 62, stable: 0.4, etfBTC: 850, etfETH: -120, derivBTC: { funding: 0.012, topLS: 1.2, globalLS: 2.5, oiNow: 105, oi24: 100 }, derivETH: { funding: 0.045, topLS: 0.9, globalLS: 3.0, oiNow: 98, oi24: 100 }, kl: { BTCUSDT: kl('BTCUSD'), ETHUSDT: kl('ETHUSD') } };
+  const hist = Array.from({ length: 7 * 24 }, (_, i) => ({ t: now - (7 * 24 - i) * HOUR, s: { EURUSD: 50 + Math.round(15 * Math.sin(i / 12)), GBPUSD: 45 + Math.round(10 * Math.sin(i / 9)), XAUUSD: 60 + Math.round(12 * Math.sin(i / 15)), US100: 55, BTCUSD: 58 + Math.round(10 * Math.sin(i / 20)), ETHUSD: 42 + Math.round(8 * Math.sin(i / 11)), FX: 52, CR: 54 } }));
+  const df = computeDirection(conf, now, all, news.events, ext, (sym) => { const m5 = data[sym]?.m5 ?? []; const h1 = aggregate(m5, '1h'); return { d1: data[sym]?.d1 ?? [], h4: aggregate(h1, '4h'), h1 }; }, hist);
+  df.sources = { demo: 'örnek veri' };
+  writeJSON('direction.json', df);
+  writeJSON('direction-history.json', hist);
+}
 console.log(`Demo yazıldı · TAM ${state.summary.tam} · Hazırlan ${state.summary.ready} · hatalar: ${errors.join(' | ') || 'yok'}`);
 for (const [s, bySym] of Object.entries(results)) for (const [sym, list] of Object.entries(bySym)) console.log(`  ${s} ${sym}: ${list.map((x) => `${x.status}${x.status === 'EKSIK' ? '(' + x.remaining + ')' : ''}`).join(' ')}`);

@@ -7,13 +7,13 @@ export interface Prefs {
   strategies?: Partial<Record<StrategyId, boolean>>;
   symbols?: Record<string, boolean>;
   matrix?: Record<string, boolean>;
-  ready?: boolean; news?: boolean; cancel?: boolean;
+  ready?: boolean; news?: boolean; cancel?: boolean; direction?: boolean;
   quiet?: { from: string; to: string } | null;
   balance?: number; riskPct?: number; contracts?: Record<string, number>; currency?: string;
   instr?: Record<string, { valuePerUnit?: number; lotStep?: number; minLot?: number }>;
 }
 export interface Sub { endpoint: string; keys: { p256dh: string; auth: string }; prefs?: Prefs; label?: string }
-export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test' | 'info' | 'trade'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup; /** İşlem bildirimleri: sinyal kimliği (uygulama açık işlemle eşler) */ signal?: string }
+export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test' | 'info' | 'trade' | 'direction'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup; /** İşlem bildirimleri: sinyal kimliği (uygulama açık işlemle eşler) */ signal?: string }
 
 export const SHORT: Record<string, string> = { XAUUSD: 'XAU', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
 
@@ -100,6 +100,7 @@ function allowed(m: Msg, prefs: Prefs | undefined, now: number): boolean {
   if (m.kind === 'ready' && prefs.ready === false) return false;
   if (m.kind === 'news' && prefs.news === false) return false;
   if (m.kind === 'cancel' && prefs.cancel === false) return false;
+  if (m.kind === 'direction' && prefs.direction === false) return false;
   if (m.strategy && prefs.strategies?.[m.strategy] === false) return false;
   if (m.symbol && prefs.symbols?.[m.symbol] === false) return false;
   if (m.strategy && m.symbol && prefs.matrix?.[`${m.strategy}:${m.symbol}`] === false) return false;
@@ -107,6 +108,7 @@ function allowed(m: Msg, prefs: Prefs | undefined, now: number): boolean {
 }
 /** Sessiz saatler (EK §1.1): bildirim gider ama sesiz; TAM ve ÇIKIŞ/iptal sessiz saati deler */
 export function isSilent(m: Msg, prefs: Prefs | undefined, now: number): boolean {
+  if (m.kind === 'direction') return true; // Piyasa Yönü: düşük öncelik, her zaman sessiz
   const q = prefs?.quiet ?? { from: '00:00', to: '07:00' };
   if (!q?.from || !q?.to) return false;
   const t = trMinutes(now), a = parseHM(q.from), b = parseHM(q.to);

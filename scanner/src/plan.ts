@@ -38,6 +38,7 @@ export function planFetch(conf: Config, now: number, credits: Credits, lastBar: 
     for (const sym of S.bootstrap1dSymbols.filter((s) => symbolsToday.includes(s))) plan.push({ sym, interval: '1day', size: S.bootstrap1d, bootstrap: true });
     for (const sym of S.bootstrap1hSymbols.filter((s) => symbolsToday.includes(s))) plan.push({ sym, interval: '1h', size: S.bootstrap1h, bootstrap: true });
     if (weekday) for (const fx of S.fxPairs ?? []) plan.push({ sym: `FX:${fx}`, interval: '1day', size: 2, bootstrap: true }); // hesap para birimi kuru (günde 1 kredi)
+    if (weekday) for (const d of S.directionDaily ?? []) plan.push({ sym: `DIR:${d}`, interval: '1day', size: S.bootstrap1d, bootstrap: true }); // Piyasa Yönü makro (UUP, IEF) — günde 1'er kredi
     budget -= plan.length;
   }
   for (const sym of symbolsToday) {

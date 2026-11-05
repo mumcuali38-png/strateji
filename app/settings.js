@@ -17,7 +17,7 @@ export async function genVapid() {
 export function prefsOf(App) {
   const s = App.settings;
   return {
-    strategies: s.notify.strategies, matrix: s.notify.matrix, ready: s.notify.ready, news: s.notify.news, cancel: s.notify.cancel,
+    strategies: s.notify.strategies, matrix: s.notify.matrix, ready: s.notify.ready, news: s.notify.news, cancel: s.notify.cancel, direction: s.notify.direction !== false,
     quiet: s.notify.quiet?.from && s.notify.quiet?.to ? s.notify.quiet : null,
     // Bakiye USD'ye çevrilmiş gider (sunucu lotu USD hesaplar); enstrüman doğrulanmadıysa bildirimde lot yazılmaz
     balance: s.instrConfirmed && Number(s.balance) ? +(Number(s.balance) * (fxToUsd(s, App.data.state) ?? 0)).toFixed(2) : undefined, riskPct: Number(s.riskPct), currency: s.currency,
@@ -84,7 +84,7 @@ export function renderSettings(App, el) {
     </ol>
     <div class="btns"><button class="btn primary" data-sub>🔔 İzin ver + abonelik kodunu kopyala</button><button class="btn" data-test>Test bildirimi gönder</button><a class="btn" href="${ACTIONS_URL}" target="_blank" rel="noopener">Sunucu testi (Actions)</a></div>
     <textarea class="code hidden" id="subcode" readonly></textarea>
-    <div style="margin-top:10px">${sw('notify.ready', '🟡 "Hazırlan" (1 şart kaldı) bildirimleri', s.notify.ready)}${sw('notify.news', '⚠️ Haber riski bildirimleri', s.notify.news)}${sw('notify.cancel', '⛔ İptal bildirimleri', s.notify.cancel)}</div>
+    <div style="margin-top:10px">${sw('notify.ready', '🟡 "Hazırlan" (1 şart kaldı) bildirimleri', s.notify.ready)}${sw('notify.news', '⚠️ Haber riski bildirimleri', s.notify.news)}${sw('notify.cancel', '⛔ İptal bildirimleri', s.notify.cancel)}${sw('notify.direction', '🧭 Piyasa Yönü etiket değişimi (sessiz, günde en fazla 3)', s.notify.direction !== false)}</div>
     <div class="form">${field('notify.quiet.from', 'Sessiz saat başlangıç (TR)', s.notify.quiet?.from, 'time')}${field('notify.quiet.to', 'Sessiz saat bitiş (TR)', s.notify.quiet?.to, 'time')}</div>
     <div class="muted small">Sessiz saatlerde bildirimler sessiz gelir; sadece 🔵 TAM ve ⛔ ÇIKIŞ sesli.</div>
     <h3 style="margin-top:12px">Strateji × sembol</h3>
