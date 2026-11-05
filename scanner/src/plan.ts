@@ -15,13 +15,14 @@ export interface PlanItem { sym: string; interval: '1min' | '5min' | '1day'; siz
 export function planFetch(conf: Config, now: number, credits: Credits, lastBar: (sym: string, iv: '1min' | '5min') => number | undefined, warnings: string[] = []): PlanItem[] {
   const S = conf.params.scan;
   const weekday = S.weekdays.includes(trDow(now));
-  const symbolsToday = S.priority.filter((sym) => conf.symbols[sym] && (weekday || (S.cryptoWeekend && conf.symbols[sym].crypto)));
+  const symbolsToday = S.priority.filter((sym) => conf.symbols[sym] && !credits.unavailable?.[sym] && (weekday || (S.cryptoWeekend && conf.symbols[sym].crypto)));
   const windowEnd = trDayStart(now) + parseHM(S.windowTR[1]) * MIN;
   const step = S.intervalMin * MIN;
+  const windowStart = trDayStart(now) + parseHM(S.windowTR[0]) * MIN;
   const qqqStart = trDayStart(now) + parseHM(S.qqqTR[0]) * MIN, qqqEnd = trDayStart(now) + parseHM(S.qqqTR[1]) * MIN;
   const futureScans = (sym: string) => {
     const end = sym === 'US100' ? Math.min(windowEnd, qqqEnd) : windowEnd;
-    const start = sym === 'US100' ? Math.max(now, qqqStart - step) : now;
+    const start = sym === 'US100' ? Math.max(now, qqqStart - step) : Math.max(now, windowStart - step);
     return Math.max(0, Math.floor((end - start) / step) - 1);
   };
   const oneMin = inTrRange(now, S.oneMinuteTR[0], S.oneMinuteTR[1]);

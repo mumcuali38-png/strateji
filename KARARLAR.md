@@ -87,3 +87,7 @@
 | 2026-11-04 18:15 | D | XAUUSD | LONG | D1 · ORB | 3970.36 | 3969.56 | 3973.38 | 3.80 | açık |
 
 Rastgele veride A/B/C/E (temiz trend ve yapı gerektirir) setup üretmedi; bu kurulumlar elle hazırlanmış mum dizileriyle birim testlerinde doğrulandı (`scanner/test/strategies.test.ts`).
+
+## Gerçek veriyle ilk tarama sonrası (05.11.2026)
+- **XAG/USD Twelve Data ücretsiz planında yok** ("Grow plan" hatası). Plan hatası alınan sembol `credits.json → unavailable` listesine yazılır, **7 gün boyunca istenmez** (kredi yakılmaz), arayüzde uyarı gösterilir. Plan yükseltilirse 7 gün sonra kendiliğinden yeniden denenir.
+- Kredi bütçesi, kalan taramaları artık **pencere başlangıcından** (10:00 TR) sayar; pencere öncesi elle çalıştırmada semboller gereksiz yere atlanmaz.
