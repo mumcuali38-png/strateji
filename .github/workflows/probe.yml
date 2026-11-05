@@ -7,27 +7,25 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Kaynak erişimi
+      - name: Kaynak erişimi 2
         run: |
           for u in \
-            "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT" \
-            "https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=2" \
-            "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol=BTCUSDT&period=1h&limit=1" \
-            "https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT" \
-            "https://api.bybit.com/v5/market/open-interest?category=linear&symbol=BTCUSDT&intervalTime=1h&limit=2" \
-            "https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=BTCUSDT&period=1h&limit=1" \
-            "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP" \
-            "https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=1H" \
-            "https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume?ccy=BTC&period=1H" \
-            "https://api.alternative.me/fng/?limit=1" \
-            "https://stablecoins.llama.fi/stablecoincharts/all" \
-            "https://farside.co.uk/btc/" \
-            "https://farside.co.uk/eth/" \
-            "https://publicreporting.cftc.gov/resource/6dca-aqww.json?\$limit=2&cftc_contract_market_code=099741&\$order=report_date_as_yyyy_mm_dd%20DESC" \
-            "https://www.myfxbook.com/api/login.json" \
-            "https://data-api.binance.vision/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=2" ; do
-            echo "== $u"
-            curl -s -m 20 -A "Mozilla/5.0 (strateji-radar)" -o out.txt -w "HTTP %{http_code} %{size_download}B\n" "$u" || echo "curl hata"
-            head -c 600 out.txt | tr '\n' ' '; echo
-            if echo "$u" | grep -q farside; then grep -o '<th[^>]*>[^<]*</th>' out.txt | head -20 | tr '\n' ' '; echo; grep -c '<tr' out.txt; fi
+            "https://www.okx.com/api/v5/rubik/stat/contracts/long-short-position-ratio-contract-top-trader?instId=BTC-USDT-SWAP&period=1H&limit=2" \
+            "https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio-contract?instId=ETH-USDT-SWAP&period=1H&limit=2" \
+            "https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-history?instId=ETH-USDT-SWAP&period=1H&limit=2" ; do
+            echo "== $u"; curl -s -m 20 -A "Mozilla/5.0" -w "\nHTTP %{http_code}\n" "$u" | head -c 700; echo
           done
+          curl -s -m 20 -A "Mozilla/5.0" -o b.html https://farside.co.uk/btc/
+          python3 - <<'EOF'
+          import re
+          s = open('b.html', encoding='utf-8', errors='ignore').read()
+          i = s.find('<table')
+          print('tables', s.count('<table'), 'first at', i)
+          for m in re.finditer(r'<table', s):
+              print('---- table at', m.start()); print(re.sub(r'\s+', ' ', s[m.start():m.start()+1500])); print()
+          rows = re.findall(r'<tr[^>]*>(.*?)</tr>', s, re.S)
+          print('rows', len(rows))
+          for r in rows[-8:]:
+              cells = [re.sub(r'<[^>]+>', '', c).strip() for c in re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', r, re.S)]
+              print(cells)
+          EOF
