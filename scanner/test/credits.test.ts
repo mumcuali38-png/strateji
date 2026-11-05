@@ -1,0 +1,48 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { planFetch } from '../src/plan.ts';
+import { freshCredits } from '../src/twelvedata.ts';
+import { MIN, DAY } from '../src/time.ts';
+import { conf } from './helpers.ts';
+
+test('Kredi simülasyonu: tam bir iş günü < 790 (ve tahmini ~773)', () => {
+  const cfg = conf();
+  const day = Date.UTC(2026, 10, 4); // Çarşamba
+  let credits = freshCredits(null, day + 7 * 3600_000, cfg.params);
+  const last: Record<string, number> = {};
+  let total = 0;
+  for (let t = day + 7 * 3600_000; t < day + 17 * 3600_000; t += 5 * MIN) {
+    const plan = planFetch(cfg, t, credits, (sym, iv) => last[`${sym}${iv}`]);
+    for (const p of plan) { last[`${p.sym}${p.interval === '1day' ? '' : p.interval}`] = t; }
+    credits.used += plan.length;
+    total += plan.length;
+    if (plan.some((p) => p.bootstrap)) credits.bootstrapDate = new Date(t).toISOString().slice(0, 10);
+  }
+  assert.ok(total < 790, `günlük istek ${total} ≥ 790`);
+  assert.ok(total >= 700, `beklenenden az istek (${total}) — tarama eksik olabilir`);
+  console.log(`  simülasyon: ${total} kredi/gün`);
+  // Ertesi gün UTC 00:00'da sıfırlanır
+  credits = freshCredits(credits, day + DAY + 60_000, cfg.params);
+  assert.equal(credits.used, 0);
+});
+
+test('Kredi azaldığında öncelik: XAU korunur, ETH önce atlanır', () => {
+  const cfg = conf();
+  const t = Date.UTC(2026, 10, 4, 12, 0);
+  const credits = freshCredits(null, t, cfg.params);
+  credits.bootstrapDate = '2026-11-04';
+  credits.used = 700;
+  const plan = planFetch(cfg, t, credits, () => t - 5 * MIN);
+  const syms = plan.map((p) => p.sym);
+  assert.ok(syms.includes('XAUUSD'));
+  assert.ok(!syms.includes('ETHUSD'));
+});
+
+test('Sert sınır: 790 kullanıldıysa hiç istek yok', () => {
+  const cfg = conf();
+  const t = Date.UTC(2026, 10, 4, 12, 0);
+  const credits = freshCredits(null, t, cfg.params);
+  credits.bootstrapDate = '2026-11-04';
+  credits.used = 790;
+  assert.equal(planFetch(cfg, t, credits, () => t - 5 * MIN).length, 0);
+});

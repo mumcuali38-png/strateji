@@ -1,0 +1,9 @@
+{
+  "XAUUSD": { "td": "XAU/USD", "label": "XAU/USD", "name": "Altın", "decimals": 2, "contract": 100, "buffer": 0.30, "bufferType": "abs", "spread": 0.20, "currencies": ["USD"], "strategies": ["A", "B", "D", "E"], "crypto": false },
+  "XAGUSD": { "td": "XAG/USD", "label": "XAG/USD", "name": "Gümüş", "decimals": 3, "contract": 5000, "buffer": 0.02, "bufferType": "abs", "spread": 0.02, "currencies": ["USD"], "strategies": ["D"], "crypto": false },
+  "EURUSD": { "td": "EUR/USD", "label": "EUR/USD", "name": "Euro / Dolar", "decimals": 5, "contract": 100000, "buffer": 0.00015, "bufferType": "abs", "spread": 0.00008, "currencies": ["USD", "EUR"], "strategies": ["E"], "crypto": false },
+  "GBPUSD": { "td": "GBP/USD", "label": "GBP/USD", "name": "Sterlin / Dolar", "decimals": 5, "contract": 100000, "buffer": 0.00015, "bufferType": "abs", "spread": 0.00012, "currencies": ["USD", "GBP"], "strategies": ["D", "E"], "crypto": false },
+  "BTCUSD": { "td": "BTC/USD", "label": "BTC/USD", "name": "Bitcoin", "decimals": 1, "contract": 1, "buffer": 0.05, "bufferType": "pct", "spread": 0.02, "spreadType": "pct", "currencies": ["USD"], "strategies": ["D"], "crypto": true },
+  "ETHUSD": { "td": "ETH/USD", "label": "ETH/USD", "name": "Ethereum", "decimals": 2, "contract": 1, "buffer": 0.05, "bufferType": "pct", "spread": 0.03, "spreadType": "pct", "currencies": ["USD"], "strategies": ["D"], "crypto": true },
+  "US100": { "td": "QQQ", "label": "US100 (QQQ)", "name": "Nasdaq 100 — veri QQQ", "decimals": 2, "contract": 1, "buffer": 3, "bufferType": "us100pts", "spread": 1, "spreadType": "us100pts", "currencies": ["USD"], "strategies": ["C", "D"], "crypto": false, "proxy": true }
+}

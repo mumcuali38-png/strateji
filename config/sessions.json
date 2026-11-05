@@ -1,0 +1,11 @@
+{
+  "_not": "Tüm saatler sabit UTC-5 (New York, yaz saati uygulanmaz). TR = NY + 8 saat.",
+  "killzones": [
+    { "id": "LO", "name": "London Open", "start": "02:00", "end": "05:00" },
+    { "id": "NYO", "name": "NY Open", "start": "07:00", "end": "10:00" },
+    { "id": "LC", "name": "London Close", "start": "10:00", "end": "12:00" }
+  ],
+  "strategyKillzones": { "A": ["LO", "NYO", "LC"], "B": ["LO", "NYO", "LC"], "E": ["LO", "NYO"] },
+  "C": { "start": "10:00", "end": "11:00" },
+  "D1": { "rangeStart": "09:30", "rangeEnd": "09:35", "entryEnd": "11:00" }
+}
