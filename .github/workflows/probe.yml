@@ -1,0 +1,18 @@
+name: probe (geçici)
+on:
+  push:
+    branches: [ccr-52842625-mn31wy]
+    paths: ['.github/workflows/probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: eToro dokümanı ve uç noktalar
+        run: |
+          get() { echo "=================== $1"; curl -sL -m 25 -A "Mozilla/5.0" -w "\nHTTP %{http_code}\n" "$1" | head -c ${2:-4000}; echo; }
+          get https://api-portal.etoro.com/llms.txt 12000
+          get https://api-portal.etoro.com/api-reference/users-info/get-user-live-portfolio.md 6000
+          get https://api-portal.etoro.com/authentication.md 4000
+          get https://api-portal.etoro.com/getting-started.md 4000
+          get "https://public-api.etoro.com/api/v1/user-info/people/search?period=OneYearAgo&page=1&pageSize=5" 800
+          get "https://www.etoro.com/sapi/rankings/rankings/?blocked=false&bonusonly=false&copyblock=false&istestaccount=false&optin=true&page=1&pagesize=5&period=OneYearAgo&sort=-gain" 800
