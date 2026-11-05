@@ -65,5 +65,6 @@
   },
   "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
   "history": { "days": 30, "evalMaxBars5m": 288 },
+  "traders": { "minMonths": 12, "maxDDPct": 20, "minTrades": 100, "last3mPositive": true, "maxRisk": 6, "minPairTrades90d": 10, "perPair": 10 },
   "us100PerQqq": 41.0
 }

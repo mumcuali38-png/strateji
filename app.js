@@ -10,6 +10,7 @@ import { renderNews, renderJournal, renderHistory, notifHistory } from './app/vi
 import { renderSettings, onboarding } from './app/settings.js';
 import { renderLive, syncTrades } from './app/live.js';
 import { renderDirection } from './app/direction.js';
+import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
 
 const App = {
@@ -101,7 +102,7 @@ function nav(route) {
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
-  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
+  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
   el.querySelector('[data-more]').onclick = (e) => { e.preventDefault(); el.classList.toggle('open'); };
   el.querySelectorAll('a:not([data-more])').forEach((a) => a.addEventListener('click', () => el.classList.remove('open')));
 }
@@ -125,6 +126,7 @@ async function render() {
     else if (route.top === 'haber') renderNews(App, el, route.sub);
     else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'yon') renderDirection(App, el, route.sub);
+    else if (route.top === 'trader') renderTraders(App, el, route.sub || 'XAUUSD');
     else if (route.top === 'gunluk') await renderJournal(App, el, route.sub);
     else if (route.top === 'gecmis') renderHistory(App, el);
     else if (route.top === 'ayarlar') renderSettings(App, el);
@@ -164,7 +166,7 @@ async function reload(manual = false, api = false) {
   const prevGen = data.state?.generatedAt;
   // state.json 15 sn'de bir; haber ve geçmiş dakikada bir (gereksiz istek yok)
   const full = manual || Date.now() - lastFull > 55000;
-  const ok = await refresh(full ? ['state', 'news', 'history', 'direction'] : ['state'], api || manual);
+  const ok = await refresh(full ? ['state', 'news', 'history', 'direction', 'traders'] : ['state'], api || manual);
   if (full && ok) lastFull = Date.now();
   if (full) await syncTrades(App);
   await computeLimits();

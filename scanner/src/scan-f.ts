@@ -7,6 +7,7 @@ import { readJSON, writeJSON } from './store.ts';
 import { runF } from './f/run.ts';
 import { computeMessages } from './notify.ts';
 import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
+import { runTraders, shouldRunTraders, type TradersFile } from './traders.ts';
 import { openSignalIds, trackMessages } from './track.ts';
 import { sendAll } from './push.ts';
 import { updateHistory, type HistEvent } from './history.ts';
@@ -50,6 +51,9 @@ if (shouldRun(readJSON<DirFile | null>('direction.json', null), now, 0)) {
     const dm = capDirection(d.msgs, notified, now);
     if (dm.length) (await sendAll(conf, dm, now)).log.forEach((l) => console.log(l));
   } catch (e) { console.log(`Piyasa Yönü hesaplanamadı: ${(e as Error).message}`); }
+}
+if (shouldRunTraders(readJSON<TradersFile | null>('traders.json', null), now)) {
+  try { const t = await runTraders(conf, now, all, notified); if (t.msgs.length) await sendAll(conf, t.msgs, now); } catch (e) { console.log(`Trader verisi alınamadı: ${(e as Error).message}`); }
 }
 writeJSON('state.json', state);
 writeJSON('history.json', hist);

@@ -73,5 +73,14 @@ writeJSON('history.json', h.hist);
   writeJSON('direction.json', df);
   writeJSON('direction-history.json', hist);
 }
+// Başarılı Trader'lar (demo: örnek isimler)
+{
+  const tp = (u: string, dir: 1 | -1, g: number, dd: number) => ({ username: u, dir, openedAt: new Date(now - 5 * HOUR).toISOString(), openRate: 4030.5, gain12m: g, maxDD: -dd, riskScore: 5, trades: 300, fetchedAt: now });
+  const xau = [tp('ornek_trader1', 1, 34.2, 12.1), tp('ornek_trader2', 1, 22.8, 9.4), tp('ornek_trader3', 1, 41.0, 17.5), tp('ornek_trader4', 1, 18.3, 8.0), tp('ornek_trader5', 1, 27.9, 14.2), tp('ornek_trader6', -1, 15.1, 11.0), tp('ornek_trader7', -1, 30.4, 19.0)];
+  const empty = { traders: [], long: 0, short: 0, candidates: 0 };
+  writeJSON('traders.json', { updatedAt: now, status: 'ok', source: 'DEMO', filters: { minMonths: 12, maxDDPct: 20, minTrades: 100, last3mPositive: true, maxRisk: 6, minPairTrades90d: 10, perPair: 10 },
+    pairs: { XAUUSD: { traders: xau, long: 5, short: 2, candidates: 40 }, EURUSD: empty, GBPUSD: empty, XAGUSD: empty, US100: empty, BTCUSD: empty, ETHUSD: empty },
+    crowd: { XAUUSD: 74, EURUSD: 61 }, cot: { XAUUSD: { net: 182340, change4w: -12400, z: -0.8 } } });
+}
 console.log(`Demo yazıldı · TAM ${state.summary.tam} · Hazırlan ${state.summary.ready} · hatalar: ${errors.join(' | ') || 'yok'}`);
 for (const [s, bySym] of Object.entries(results)) for (const [sym, list] of Object.entries(bySym)) console.log(`  ${s} ${sym}: ${list.map((x) => `${x.status}${x.status === 'EKSIK' ? '(' + x.remaining + ')' : ''}`).join(' ')}`);

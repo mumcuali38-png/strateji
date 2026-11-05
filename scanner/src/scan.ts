@@ -7,6 +7,7 @@ import { buildChart, buildState } from './state.ts';
 import { sendAll } from './push.ts';
 import { computeMessages } from './notify.ts';
 import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
+import { runTraders, shouldRunTraders, type TradersFile } from './traders.ts';
 import { openSignalIds, trackMessages } from './track.ts';
 import { planFetch } from './plan.ts';
 import { runF } from './f/run.ts';
@@ -130,6 +131,15 @@ if (shouldRun(readJSON<DirFile | null>('direction.json', null), now, credits.use
     if (dm.length) (await sendAll(conf, dm, now)).log.forEach((l) => console.log(l));
     console.log(`Piyasa Yönü · Forex ${d.file.forex.general.score ?? '—'} · Kripto ${d.file.crypto.general.score ?? '—'}`);
   } catch (e) { warnings.push(`Piyasa Yönü hesaplanamadı: ${(e as Error).message}`); }
+}
+
+// --- Başarılı Trader'lar (15 dk'da bir; eToro anahtarı yoksa Myfxbook + COT) ---
+if (shouldRunTraders(readJSON<TradersFile | null>('traders.json', null), now)) {
+  try {
+    const t = await runTraders(conf, now, all, notified);
+    if (t.msgs.length) (await sendAll(conf, t.msgs, now)).log.forEach((l) => console.log(l));
+    console.log(`Trader'lar · ${t.file.status} · ${t.file.source}`);
+  } catch (e) { warnings.push(`Trader verisi alınamadı: ${(e as Error).message}`); }
 }
 
 // --- Yaz ---
