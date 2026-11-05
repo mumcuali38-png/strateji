@@ -96,7 +96,7 @@ export function renderSettings(App, el) {
       ${field('p.B.liqMinAtr', 'B: likidite min (×ATR)', draft.B?.liqMinAtr)}${field('p.B.liqMaxAtr', 'B: likidite maks (×ATR)', draft.B?.liqMaxAtr)}${field('p.B.confirmMaxBars', 'B: onay maks. mum', draft.B?.confirmMaxBars)}
       ${field('p.news.beforeMin', 'Haber penceresi önce (dk)', draft.news?.beforeMin)}${field('p.news.afterMin', 'Haber penceresi sonra (dk)', draft.news?.afterMin)}${field('p.risk.minRR', 'Minimum RR', draft.risk?.minRR)}
     </div>
-    <label class="switch"><span>Kripto için hafta sonu tarama (BTC/ETH) — <b>kredi uyarısı:</b> hafta sonu ~240 kredi/gün</span><input type="checkbox" data-path="p.scan.cryptoWeekend" ${draft.scan?.cryptoWeekend ? 'checked' : ''}></label>
+    <label class="switch"><span>Kripto için hafta sonu tarama (BTC/ETH) — <b>kredi uyarısı:</b> hafta sonu ~240 kredi/gün (800'lük günlük limitin içinde; hafta içi bütçesini etkilemez)</span><input type="checkbox" data-path="p.scan.cryptoWeekend" ${draft.scan?.cryptoWeekend ? 'checked' : ''}></label>
     <div class="btns"><button class="btn primary" data-params>params.json önerisini kopyala</button><button class="btn" data-params-reset>Varsayılana dön</button></div></div>
 
   <div class="card"><h2>Görünüm</h2><div class="form">
