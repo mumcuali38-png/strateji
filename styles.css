@@ -207,6 +207,9 @@ a { color: var(--info); }
 .comp .note { grid-column: 1 / -1; }
 .cbar { position: relative; height: 10px; background: var(--bg); border-radius: 5px; border: 1px solid var(--border); }
 .cbar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.lsbar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border); }
+.lsbar .l { background: var(--long); } .lsbar .s { background: var(--short); }
+.warnbox { border-left: 5px solid var(--eksik); }
 .cbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; } .cbar i.pos { background: var(--long); } .cbar i.neg { background: var(--short); }
 .warnline { color: var(--eksik); font-size: .85rem; margin-top: 4px; }
 .extra { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .9rem; }

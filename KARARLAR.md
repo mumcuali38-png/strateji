@@ -214,3 +214,17 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Bileşen dökümünde** çubuk s değerini (−1…+1), sağdaki "p" ise skora katkıyı (puan) gösterir.
 - **Etiket değişimi bildirimi:** sessiz, günde en fazla 3. Ayarlar → Bildirim'den kapatılabilir.
 - **Kayıt:** skorlar saatlik olarak `direction-history.json`'a yazılır (30 gün); 24 sa değişim ve 7 günlük çizgi buradan gelir.
+
+## Ek Özellikler v1 — Aşama 5 (Başarılı Trader'lar)
+
+- **Kaynak doğrulaması** (05.11.2026, GitHub Actions'tan):
+  - eToro'nun resmi Public API'si (`public-api.etoro.com`) anahtarsız 401 döndürüyor. Gerekenler: `x-api-key` + `x-user-key` + `x-request-id`. Anahtarı kullanıcı eToro → Ayarlar → Trading → API Key Management'tan SMS doğrulamasıyla üretir.
+  - Uç noktalar OpenAPI tanımından alındı: `/api/v2/market-data/instruments?symbols=`, `/api/v1/user-info/people/search`, `/api/v1/user-info/people/{username}/portfolio/live`. Limit: uç nokta başına 60 istek/dk; istemci istekler arasında 1,1 sn bekler.
+  - eToro'nun belgelenmemiş iç uç noktası (`/sapi/rankings`) anahtarsız yanıt veriyor ama **kullanılmaz**: resmi değil ve kazıma sayılır.
+  - Binance lider trader verisi resmi API'de yok, **kapalı** bırakıldı.
+- **Anahtar yoksa** bölme sadece Myfxbook (varsa) + COT ile çalışır ve ekranda kurulum notu görünür (şartname test 18).
+- **Filtre (params.json → traders):** ≥12 ay kayıt, maks. DD (peakToValley) ≤ %20, ≥100 işlem (12 ay), son 3 ay getirisi pozitif, aylık maks. risk ≤ 6, paritede son 90 günde ≥10 işlem. Son kriter "3 aylık işlem sayısı × paritedeki işlem payı" ile yaklaşık hesaplanır. Parite başına en çok kazanan 10 trader, toplam en fazla 45 portföy isteği.
+- **Sıklık:** aday listesi ve enstrüman kimlikleri 6/24 saatte bir, açık pozisyonlar 15 dk'da bir güncellenir (ana tarama ve F taraması).
+- **Pozisyonlar:** trader'ın aynı paritedeki pozisyonları yatırım payıyla toplanır, net yön alınır. Kopya (social) pozisyonlar sayılmaz.
+- **Uyumsuzluk bildirimi:** bizim TAM sinyalimize karşı trader'ların ≥ %70'i ters yöndeyse (en az 3 trader) tek seferlik bildirim gider.
+- **Uyum satırında** %60 ve üzeri aynı yön "uyumlu", %30 ve altı "uyumsuz", arası "karışık" sayılır. Kalabalık uyarısı Myfxbook'ta %70 ve üzeri tek yönde ise çıkar.
