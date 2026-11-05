@@ -148,3 +148,16 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Çözüm:** `state.json` GitHub API'den (`/contents/state.json?ref=data`, anında güncel) okunur — ama sadece taramanın beklendiği anda: her 5 dakikanın 23. saniyesinden itibaren, veri gelene kadar 10 sn arayla en fazla 3 deneme; ayrıca açılışta, ekrana dönüşte ve aşağı çekerek yenilemede. API, IP başına saatte 60 istek sınırı olduğu için sürekli yoklanmaz (≈12–36/saat). API sınıra takılırsa 10 dk raw adrese düşer. Haber/geçmiş/grafikler raw'dan, dakikada bir.
 - Üst çubukta "sonraki" tarama saati gösterilir.
 - 5 dakikadan sık tarama ücretsiz planda mümkün değil: 1 dakikalık tarama 5 sembolde ≈ 3000 kredi/gün (sınır 800).
+
+## Ek Özellikler v1 — Aşama 1 (renk, ayarlar, enstrüman tablosu, kredi)
+
+- **Renkler:** yeşil/kırmızı artık sadece yön (▲ LONG / ▼ SHORT, kartın sol kenarı). TAM 🔵 mavi `#2563EB`, EKSİK sarı `#EAB308`, YOK gri, TAM–BEKLE turuncu `#F97316`. Haber riski bandı kırmızı kalır.
+- **Kredi:** uygulama sınırı dakikada 7, günde 760 (ücretsiz plan 8/800). Simülasyon tam iş günü ≈ 677.
+- **Bakiye zorunlu:** girilmeden kartta lot "—" ve "AYAR GEREKLİ" yazar; bildirimde lot yazılmaz. Varsayılan bakiye 10000 kaldırıldı.
+- **Enstrüman tablosu:** sembol başına broker sembolü, "1 birim hareketin 1 lottaki değeri", lot adımı, min lot, tipik spread (config/symbols.json varsayılanları, Ayarlar'dan düzeltilir). "Değerleri doğruladım"a basılmadan lot hesaplanmaz; bir değer değişirse doğrulama sıfırlanır. Eski "kontrat / lot" alanı yerine bu tablo kullanılır.
+- **Lot formülü (EK §3.1):** `lot = floor( riskUSD / (stop/birim × birimDeğeri) / lotAdımı ) × lotAdımı`. US100'de QQQ mesafesi US100 puanına çevrilir. Hesaplanan lot min lotun altındaysa min lot gösterilir ve gerçek risk % uyarısı çıkar. F için kaldıraç ≤ 3× bakiye korunur; F de artık "lot" olarak gösterilir (BTCUSD 1 lot = 1 BTC varsayılanı).
+- **Para birimi:** USD dışıysa kur günde 1 kez çekilir (TRY: USD/TRY Twelve Data, 1 kredi; EUR: mevcut EURUSD fiyatı, ek kredi yok). Risk tutarı USD'ye çevrilerek hesaplanır; kur yoksa lot gösterilmez. Sunucuya (abonelik tercihleri) bakiye USD'ye çevrilmiş gider.
+- **Varsayılanlar:** günlük maks. zarar %2, aynı anda maks. toplam risk %1,5 (toplam risk kilidi Aşama 2'de), sessiz saatler 00:00–07:00 TR. Eski ayarlarda boş olan bu alanlar bir kereliğine bu değerlere çekilir (schema 2 göçü).
+- **Sessiz saatler:** bildirim artık düşürülmez, sessiz gelir; 🔵 TAM, ⛔ iptal/ÇIKIŞ ve test bildirimi sesli.
+- **Günlük kayıp limiti** bakiye girilmemişse veya bugün zarar yoksa tetiklenmez.
+- **Broker bağlantısı:** şimdilik sadece "Kapalı" seçilebilir (MetaApi / EA köprüsü sonraki aşamalarda).

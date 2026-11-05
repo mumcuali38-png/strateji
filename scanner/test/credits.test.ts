@@ -5,7 +5,7 @@ import { freshCredits } from '../src/twelvedata.ts';
 import { MIN, DAY } from '../src/time.ts';
 import { conf } from './helpers.ts';
 
-test('Kredi simülasyonu: tam bir iş günü (08:00 ön pencere dahil) < 790', () => {
+test('Kredi simülasyonu: tam bir iş günü (08:00 ön pencere dahil) < 760', () => {
   const cfg = conf();
   const day = Date.UTC(2026, 10, 4); // Çarşamba
   let credits = freshCredits(null, day + 5 * 3600_000, cfg.params);
@@ -14,12 +14,12 @@ test('Kredi simülasyonu: tam bir iş günü (08:00 ön pencere dahil) < 790', (
   for (let t = day + 5 * 3600_000; t < day + 17 * 3600_000; t += 5 * MIN) {
     const plan = planFetch(cfg, t, credits, (sym, iv) => last[`${sym}${iv}`]);
     for (const p of plan) { last[`${p.sym}${p.interval === '1day' || p.interval === '1h' ? '' : p.interval}`] = t; }
-    if (t < day + 7 * 3600_000) { pre += plan.length; assert.ok(plan.every((p) => p.sym === 'XAUUSD' || p.bootstrap), 'ön pencerede sadece XAU (+ günlük bootstrap)'); }
+    if (t < day + 7 * 3600_000) { pre += plan.length; assert.ok(plan.every((p) => p.sym === 'XAUUSD' || p.bootstrap || p.sym.startsWith('FX:')), 'ön pencerede sadece XAU (+ günlük bootstrap)'); }
     credits.used += plan.length;
     total += plan.length;
     if (plan.some((p) => p.bootstrap)) credits.bootstrapDate = new Date(t).toISOString().slice(0, 10);
   }
-  assert.ok(total < 790, `günlük istek ${total} ≥ 790`);
+  assert.ok(total < 760, `günlük istek ${total} ≥ 760`);
   assert.ok(total >= 600, `beklenenden az istek (${total}) — tarama eksik olabilir`);
   console.log(`  simülasyon: ${total} kredi/gün (ön pencere ${pre})`);
   credits = freshCredits(credits, day + DAY + 60_000, cfg.params);
@@ -38,12 +38,12 @@ test('Kredi azaldığında öncelik: XAU korunur, ETH önce atlanır', () => {
   assert.ok(!syms.includes('ETHUSD'));
 });
 
-test('Sert sınır: 790 kullanıldıysa hiç istek yok', () => {
+test('Sert sınır: 760 kullanıldıysa hiç istek yok', () => {
   const cfg = conf();
   const t = Date.UTC(2026, 10, 4, 12, 0);
   const credits = freshCredits(null, t, cfg.params);
   credits.bootstrapDate = '2026-11-04';
-  credits.used = 790;
+  credits.used = 760;
   assert.equal(planFetch(cfg, t, credits, () => t - 5 * MIN).length, 0);
 });
 

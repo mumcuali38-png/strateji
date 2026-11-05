@@ -24,7 +24,7 @@ export function price(x, dec) { return x === undefined || x === null || !Number.
 export function pct(a, b) { return b ? `${(((a - b) / b) * 100).toFixed(2)}%` : '—'; }
 export function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 export const STATUS = {
-  TAM: { icon: '🟢', text: 'TAM', cls: 'tam' },
+  TAM: { icon: '🔵', text: 'TAM', cls: 'tam' },
   BEKLE: { icon: '🟠', text: 'TAM – BEKLE', cls: 'bekle' },
   EKSIK: { icon: '🟡', text: 'EKSİK', cls: 'eksik' },
   YOK: { icon: '⚪', text: 'YOK', cls: 'yok' },
@@ -36,4 +36,6 @@ export function badge(s, extra = '') {
   const rem = s.status === 'EKSIK' ? ` · ${s.remaining === 1 ? '1 şart kaldı' : s.remaining + ' şart'}` : s.status === 'BEKLE' && s.missing ? ` (${String(s.missing).replace(/^BLOK: /, '').split(' · ')[0]})` : '';
   return `<span class="badge ${st.cls}" ${extra}>${st.icon} ${st.text}${rem}</span>`;
 }
-export const dirTxt = (d) => (d === 1 ? 'LONG' : d === -1 ? 'SHORT' : '—');
+/** Yön: renk + ▲/▼ + yazı birlikte (EK §2.1) */
+export const dirTxt = (d) => (d === 1 ? '▲ LONG' : d === -1 ? '▼ SHORT' : '● —');
+export const dirCls = (d) => (d === 1 ? 'dl' : d === -1 ? 'ds' : '');

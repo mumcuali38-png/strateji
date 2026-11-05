@@ -65,7 +65,7 @@ self.addEventListener('push', (e) => {
   let p = {};
   try { p = e.data ? e.data.json() : {}; } catch { p = { title: 'Strateji Radar', body: e.data?.text() ?? '' }; }
   const title = p.title || 'Strateji Radar';
-  const opts = { body: p.body || '', tag: p.tag || undefined, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: p.url || './#/ozet' }, requireInteraction: p.kind === 'tam', vibrate: p.kind === 'tam' ? [200, 100, 200] : [100] };
+  const opts = { body: p.body || '', tag: p.tag || undefined, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: p.url || './#/ozet' }, requireInteraction: p.kind === 'tam', silent: !!p.silent, vibrate: p.silent ? undefined : p.kind === 'tam' ? [200, 100, 200] : [100] };
   e.waitUntil((async () => {
     await remember({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, t: Date.now(), title, body: opts.body, url: opts.data.url, kind: p.kind });
     await self.registration.showNotification(title, opts);

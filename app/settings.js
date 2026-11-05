@@ -2,6 +2,7 @@ import { ACTIONS_URL, PARAMS_EDIT_URL, RULES_URL, SECRETS_URL, SHORT, VERSION } 
 import { esc, tr, dateTR, ago } from './fmt.js';
 import { copy, modal, toast } from './ui.js';
 import { DEFAULTS } from './store.js';
+import { instrOf, fxToUsd } from './calc.js';
 
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64u = (s) => { const p = s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4); return Uint8Array.from(atob(p), (c) => c.charCodeAt(0)); };
@@ -18,8 +19,9 @@ export function prefsOf(App) {
   return {
     strategies: s.notify.strategies, matrix: s.notify.matrix, ready: s.notify.ready, news: s.notify.news, cancel: s.notify.cancel,
     quiet: s.notify.quiet?.from && s.notify.quiet?.to ? s.notify.quiet : null,
-    balance: Number(s.balance), riskPct: Number(s.riskPct),
-    contracts: Object.fromEntries(Object.entries(s.contracts || {}).filter(([, v]) => v !== '' && v !== null).map(([k, v]) => [k, Number(v)])),
+    // Bakiye USD'ye çevrilmiş gider (sunucu lotu USD hesaplar); enstrüman doğrulanmadıysa bildirimde lot yazılmaz
+    balance: s.instrConfirmed && Number(s.balance) ? +(Number(s.balance) * (fxToUsd(s, App.data.state) ?? 0)).toFixed(2) : undefined, riskPct: Number(s.riskPct), currency: s.currency,
+    instr: Object.fromEntries(Object.keys(App.conf.symbols ?? {}).map((k) => { const i = instrOf(k, App.conf.symbols[k], s); return [k, { valuePerUnit: i.valuePerUnit, lotStep: i.lotStep, minLot: i.minLot }]; })),
   };
 }
 export async function subscribe(App) {
@@ -56,16 +58,22 @@ export function renderSettings(App, el) {
   const draft = s.paramsDraft ?? P ?? {};
   el.innerHTML = `<div class="h1">Ayarlar</div>
   <div class="card"><h2>Hesap</h2><div class="form">
-    ${field('balance', 'Bakiye', s.balance)}${field('riskPct', 'Risk % (işlem başına)', s.riskPct)}
-    <div class="field"><label>Para birimi</label><select data-path="currency">${['USD', 'EUR', 'TRY'].map((c) => `<option ${s.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    ${field('balance', 'Hesap bakiyesi (zorunlu)', s.balance, 'number', 'örn. 10000')}
+    <div class="field"><label>Hesap para birimi</label><select data-path="currency">${['USD', 'EUR', 'TRY'].map((c) => `<option ${s.currency === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+    ${field('riskPct', 'İşlem başı risk %', s.riskPct)}
+    ${field('maxDailyLossPct', 'Günlük maks. zarar %', s.maxDailyLossPct)}
+    ${field('maxOpenRiskPct', 'Aynı anda maks. toplam risk %', s.maxOpenRiskPct)}
     ${field('maxTradesPerDay', 'Günlük maks. işlem (opsiyonel)', s.maxTradesPerDay, 'number', 'boş = limit yok')}
-    ${field('maxDailyLossPct', 'Günlük kayıp limiti % (opsiyonel)', s.maxDailyLossPct, 'number', 'boş = limit yok')}
-  </div><div class="muted small">Limit doldurulursa ve aşılırsa (günlüğe göre) tüm setuplar YOK gösterilir.</div></div>
+    <div class="field"><label>Broker bağlantısı</label><select data-path="broker"><option value="off" selected>Kapalı</option><option value="metaapi" disabled>MetaApi (yakında)</option><option value="ea" disabled>EA Köprüsü (yakında)</option></select></div>
+  </div>
+  <div class="muted small">${!Number(s.balance) ? '<b style="color:var(--eksik)">⚙️ Bakiye girilmeden lot hesaplanmaz (AYAR GEREKLİ).</b> ' : ''}${s.currency !== 'USD' ? `Kur ${s.currency}→USD: <b class="num">${fxToUsd(s, st)?.toFixed(4) ?? 'henüz yok (günde 1 kez çekilir)'}</b> · ` : ''}Günlük zarar limiti aşılırsa (günlüğe göre) tüm setuplar YOK gösterilir.</div></div>
 
-  <div class="card"><h2>Enstrüman</h2>
-    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Sembol</th><th>Kontrat / lot</th><th>Tampon</th><th>Birim</th></tr></thead><tbody>
-    ${Object.entries(syms).map(([k, c]) => `<tr><td><b>${esc(c.label)}</b></td><td><input data-path="contracts.${k}" type="number" step="any" value="${esc(s.contracts?.[k] ?? '')}" placeholder="${c.contract}" style="width:120px;min-height:44px"></td><td><input data-path="buffers.${k}" type="number" step="any" value="${esc(s.buffers?.[k] ?? '')}" placeholder="${c.buffer}" style="width:110px;min-height:44px"></td><td class="muted small">${c.bufferType === 'pct' ? '%' : c.bufferType === 'us100pts' ? 'US100 puan' : 'fiyat'} · spread ${c.spread}${c.spreadType === 'pct' ? '%' : ''}</td></tr>`).join('')}
+  <div class="card"><h2>Enstrüman tablosu</h2>
+    <p class="muted small">Brokerındaki değerlerle karşılaştır, farklıysa düzelt, sonra <b>Değerleri doğruladım</b>'a bas. Doğrulanmadan lot hesaplanmaz.</p>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Sembol</th><th>Broker sembolü</th><th>1 lotta değer</th><th>Lot adımı</th><th>Min lot</th><th>Tipik spread</th><th>Stop tamponu</th></tr></thead><tbody>
+    ${Object.entries(syms).map(([k, c]) => { const i = instrOf(k, c, s); const inp = (path, v, w = 96, type = 'number') => `<input data-path="${path}" type="${type}" step="any" value="${esc(v ?? '')}" style="width:${w}px;min-height:44px">`; return `<tr><td><b>${esc(c.label)}</b></td><td>${inp(`instr.${k}.brokerSymbol`, i.brokerSymbol, 110, 'text')}</td><td class="num"><span class="muted small">${esc(i.unitLabel)} = $</span>${inp(`instr.${k}.valuePerUnit`, i.valuePerUnit, 80)}</td><td>${inp(`instr.${k}.lotStep`, i.lotStep, 70)}</td><td>${inp(`instr.${k}.minLot`, i.minLot, 70)}</td><td>${inp(`instr.${k}.spread`, i.spread, 90)} <span class="muted small">${i.spreadType === 'us100pts' ? 'puan' : 'fiyat'}</span></td><td>${inp(`buffers.${k}`, s.buffers?.[k] ?? '', 80).replace('value=""', `placeholder="${c.buffer}"`)} <span class="muted small">${c.bufferType === 'pct' ? '%' : c.bufferType === 'us100pts' ? 'puan' : 'fiyat'}</span></td></tr>`; }).join('')}
     </tbody></table></div>
+    <div class="btns"><button class="btn ${s.instrConfirmed ? '' : 'primary'}" data-confirm-instr>${s.instrConfirmed ? '✓ Doğrulandı · ' + dateTR(s.instrConfirmed) : 'Değerleri doğruladım'}</button></div>
     <div class="form" style="margin-top:10px">${field('us100Price', 'US100 güncel fiyatı (QQQ oranı için)', s.us100Price, 'number', 'örn. 25000')}</div>
     <div class="muted small">US100 seviyeleri QQQ fiyatıdır; US100 fiyatı girilirse oran (US100/QQQ) ile çevrilip yanında gösterilir. "Pip" notu: XAU'da 1 pip brokera göre 0.01 veya 0.10 $ olabilir — uygulama mesafeleri fiyat/dolar cinsinden gösterir.</div></div>
 
@@ -78,6 +86,7 @@ export function renderSettings(App, el) {
     <textarea class="code hidden" id="subcode" readonly></textarea>
     <div style="margin-top:10px">${sw('notify.ready', '🟡 "Hazırlan" (1 şart kaldı) bildirimleri', s.notify.ready)}${sw('notify.news', '⚠️ Haber riski bildirimleri', s.notify.news)}${sw('notify.cancel', '⛔ İptal bildirimleri', s.notify.cancel)}</div>
     <div class="form">${field('notify.quiet.from', 'Sessiz saat başlangıç (TR)', s.notify.quiet?.from, 'time')}${field('notify.quiet.to', 'Sessiz saat bitiş (TR)', s.notify.quiet?.to, 'time')}</div>
+    <div class="muted small">Sessiz saatlerde bildirimler sessiz gelir; sadece 🔵 TAM ve ⛔ ÇIKIŞ sesli.</div>
     <h3 style="margin-top:12px">Strateji × sembol</h3>
     <div class="tbl-wrap"><table class="mx"><thead><tr><th></th>${Object.keys(SHORT).map((y) => `<th>${SHORT[y]}</th>`).join('')}</tr></thead><tbody>
     ${['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((k) => `<tr><th><label class="chk" style="min-height:40px"><input type="checkbox" data-path="notify.strategies.${k}" ${s.notify.strategies?.[k] !== false ? 'checked' : ''}> ${k}</label></th>${Object.keys(SHORT).map((y) => stratSym[k].includes(y) ? `<td><input type="checkbox" data-path="notify.matrix.${k}:${y}" ${s.notify.matrix?.[`${k}:${y}`] !== false ? 'checked' : ''} aria-label="${k} ${y}"></td>` : '<td class="muted">·</td>').join('')}</tr>`).join('')}
@@ -109,7 +118,7 @@ export function renderSettings(App, el) {
 
   <div class="card"><h2>Veri</h2>
     <div>Son tarama: <b>${st ? `${dateTR(st.lastScan)} ${tr(st.lastScan)} TR (${ago(st.lastScan)})` : '—'}</b></div>
-    <div>Kredi bugün: <b class="num">${st?.credits?.used ?? '—'} / ${st?.credits?.hardStop ?? 790}</b> <span class="muted small">(sıfırlama UTC 00:00 = 03:00 TR)</span></div>
+    <div>Kredi: <b class="num">${st?.credits?.used ?? '—'}/800 bugün</b> <span class="muted small">(uygulama sınırı ${st?.credits?.hardStop ?? 760}, dakikada 7)</span> <span class="muted small">(sıfırlama UTC 00:00 = 03:00 TR)</span></div>
     <div class="bars" style="margin-top:8px">${credDays.slice(-7).map((d) => `<div class="bar"><span class="small">${d.date.slice(5)}</span><span class="t"><i style="width:${Math.min(100, (d.used / 800) * 100)}%"></i></span><span class="num">${d.used}</span></div>`).join('')}</div>
     <div style="margin-top:8px">Takvim güncelliği: <b>${App.data.news ? `${tr(App.data.news.fetchedAt)} TR (${ago(App.data.news.fetchedAt)})` : '—'}</b> · FMP: ${App.data.news?.fmp ?? '—'}</div>
     <div class="muted small">Veri adresi: <span class="mono">${esc(App.dataBase)}</span></div>
@@ -128,13 +137,15 @@ export function renderSettings(App, el) {
     if (path.startsWith('p.')) { s.paramsDraft = structuredClone(s.paramsDraft ?? P); setPath(s.paramsDraft, path.slice(2), v); }
     else if (path.startsWith('notify.matrix.')) { s.notify.matrix = s.notify.matrix || {}; s.notify.matrix[path.slice(14)] = v; }
     else setPath(s, path, v);
+    if (path.startsWith('instr.')) s.instrConfirmed = 0;
     App.save(); App.applyTheme();
-    if (path.startsWith('notify.')) toast('Tercih kaydedildi — abonelik kodunu yeniden kopyalayın');
+    if (/^(notify\.|instr\.|balance|riskPct|currency)/.test(path)) toast('Tercih kaydedildi — abonelik kodunu yeniden kopyalayın');
   }));
   el.querySelector('[data-sub]').addEventListener('click', async () => {
     try { const code = await subscriptionCode(App); const ta = el.querySelector('#subcode'); ta.value = code; ta.classList.remove('hidden'); await copy(code); }
     catch (e) { toast(e.message, 4000); }
   });
+  el.querySelector('[data-confirm-instr]').addEventListener('click', () => { s.instrConfirmed = Date.now(); App.save(); toast('Enstrüman değerleri doğrulandı — abonelik kodunu yeniden kopyalayın'); App.render(); });
   el.querySelector('[data-test]').addEventListener('click', async () => { try { await testNotification(); } catch (e) { toast(e.message); } });
   el.querySelector('[data-vapid]').addEventListener('click', async () => {
     const k = await genVapid();

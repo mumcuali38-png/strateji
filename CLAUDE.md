@@ -325,7 +325,7 @@ data dalı (branch "data")     → candles/*.json, state.json, history.json, new
 
 ---
 
-## 15. TWELVE DATA KREDİ BÜTÇESİ (ücretsiz plan: 8/dk, 800/gün) — ASLA AŞILMAZ
+## 15. TWELVE DATA KREDİ BÜTÇESİ (ücretsiz plan: 8/dk, 800/gün) — ASLA AŞILMAZ (§24: uygulama sınırı 7/dk, 760/gün)
 
 - **Semboller:** XAU/USD, EUR/USD, GBP/USD, BTC/USD, ETH/USD, QQQ. (XAG/USD ücretsiz planda yok — kaldırıldı, bkz. §23)
 - **Sadece en düşük TF çekilir:** normalde 5min. 15m/1H/4H/1D **koddan üretilir** (5m'den toplanır).
@@ -368,7 +368,7 @@ data dalı (branch "data")     → candles/*.json, state.json, history.json, new
 - Animasyon az ve anlamlı: yalnızca durum değişince kart kısa süre parlar.
 - Tüm metin Türkçe, kısa, teknik terimler stratejideki gibi (OB, FVG, CHoCH...).
 
-### 17.2 Renk paleti (CSS değişkenleri)
+### 17.2 Renk paleti (CSS değişkenleri) — **§24 ile değişti: TAM mavi, yeşil/kırmızı sadece yön**
 - Arka plan `#0E1116`, kart `#161B22`, kenarlık `#2A313C`, metin `#E6EDF3`, ikincil metin `#8B949E`
 - TAM `#2EA043`, EKSİK `#D29922`, YOK `#6E7681`, HABER/İPTAL `#F85149`, Long vurgusu `#3FB950`, Short vurgusu `#FF7B72`, bilgi `#58A6FF`
 - Açık tema için karşılıkları ayrıca tanımlanır.
@@ -522,3 +522,14 @@ Tam şartname: **[`docs/KURULUM_G.md`](docs/KURULUM_G.md)** (bu dosyanın parça
 
 - **05.11.2026 — XAG/USD kaldırıldı:** Twelve Data ücretsiz planında yok (Grow/Venture gerekir). §1.3, §10, §15'teki XAG ifadeleri geçersizdir; D artık US100, XAU/USD, GBP/USD, BTC/USD, ETH/USD'de çalışır. Plan yükseltilirse `config/symbols.json`'a geri eklenebilir.
 - **05.11.2026 — Ekran gecikmesi giderildi:** raw.githubusercontent'ın ~5 dk önbelleği yerine `state.json` tarama anında GitHub API'den okunur; §17.12 güncellendi.
+
+---
+
+## 24. EK ÖZELLİKLER v1 (işlem, Piyasa Yönü, Başarılı Trader'lar)
+
+Tam şartname: **[`docs/EK_OZELLIKLER_v1.md`](docs/EK_OZELLIKLER_v1.md)** (bu dosyanın parçası sayılır). Aşamalar halinde uygulanır (§10 orada). Bu bölüm önceki bölümleri şu noktalarda **değiştirir**:
+- **Renkler (§17.2'nin yerine):** yeşil/kırmızı **sadece yön** içindir (▲/▼ ve LONG/SHORT yazısıyla birlikte). Durum renkleri: TAM **mavi `#2563EB`**, EKSİK sarı `#EAB308`, YOK gri, TAM–BEKLE turuncu `#F97316`. Haber riski bandı kırmızı kalır (§3.4 orada).
+- **Kredi (§15'in yerine):** kayan pencerede dakikada en fazla **7**, günde en fazla **760** istek (ücretsiz plan 8/800; 1 güvenlik payı). Öncelik: açık işlem takibi → aktif kurulum taramaları → Piyasa Yönü → diğer.
+- **Ayarlar (§17.10'a ek):** bakiye zorunlu (girilmeden lot "AYAR GEREKLİ"), hesap para birimi (USD dışıysa günlük kur), günlük maks. zarar %2, aynı anda maks. toplam risk %1,5, broker sembol eşleme, sembol başına tipik spread, broker bağlantısı (şimdilik Kapalı), sessiz saatler 00:00–07:00 TR (bu aralıkta sadece TAM ve ÇIKIŞ sesli).
+- **Enstrüman tablosu:** kontrat, "1 birim hareketin 1 lottaki değeri", lot adımı, min lot, tipik spread; kullanıcı doğrulamadan lot hesaplanmaz.
+- XAG/USD §23 gereği yoktur (belgedeki XAG satırları "VERİ YOK").
