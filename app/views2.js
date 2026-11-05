@@ -36,7 +36,7 @@ export async function renderJournal(App, el, openId) {
   const done = list.filter((t) => t.result);
   const wins = done.filter((t) => t.result === 'TP' || (t.r ?? 0) > 0);
   const totR = done.reduce((a, t) => a + (Number(t.r) || 0), 0);
-  const byStrat = ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => { const x = done.filter((t) => t.strategy === s); return { s, n: list.filter((t) => t.strategy === s).length, w: x.filter((t) => (t.r ?? 0) > 0).length, d: x.length, r: x.reduce((a, t) => a + (Number(t.r) || 0), 0), rr: x.length ? x.reduce((a, t) => a + (t.rr || 0), 0) / x.length : 0 }; });
+  const byStrat = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => { const x = done.filter((t) => t.strategy === s); return { s, n: list.filter((t) => t.strategy === s).length, w: x.filter((t) => (t.r ?? 0) > 0).length, d: x.length, r: x.reduce((a, t) => a + (Number(t.r) || 0), 0), rr: x.length ? x.reduce((a, t) => a + (t.rr || 0), 0) / x.length : 0 }; });
   const hours = {};
   for (const t of done) { const hh = Math.floor(trMinutes(t.t) / 60); hours[hh] = (hours[hh] ?? 0) + (Number(t.r) || 0); }
   const hk = Object.entries(hours).sort((a, b) => b[1] - a[1]);
@@ -86,7 +86,7 @@ function editTrade(App, t, isNew = false) {
   const f = (k, label, type = 'number', extra = '') => `<div class="field"><label>${label}</label><input name="${k}" type="${type}" step="any" value="${esc(t[k] ?? '')}" ${extra}></div>`;
   modal(`<h2>${isNew ? 'Yeni işlem' : `${SHORT[t.symbol] ?? t.symbol} ${t.strategy} · ${dirTxt(t.dir)}`}</h2>
     <form class="form" id="tf">
-      <div class="field"><label>Strateji</label><select name="strategy">${['A', 'B', 'C', 'D', 'E', 'F'].map((s) => `<option ${s === t.strategy ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Strateji</label><select name="strategy">${['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => `<option ${s === t.strategy ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
       <div class="field"><label>Sembol</label><select name="symbol">${Object.keys(SHORT).map((s) => `<option value="${s}" ${s === t.symbol ? 'selected' : ''}>${SHORT[s]}</option>`).join('')}</select></div>
       <div class="field"><label>Yön</label><select name="dir"><option value="1" ${t.dir === 1 ? 'selected' : ''}>LONG</option><option value="-1" ${t.dir === -1 ? 'selected' : ''}>SHORT</option></select></div>
       ${f('entry', 'Gerçek giriş')}${f('stop', 'Stop')}${f('tp1', 'Hedef')}${f('lot', 'Lot')}
@@ -122,7 +122,7 @@ export function renderHistory(App, el) {
   const h = App.data.history ?? [];
   const f = App.histFilter;
   const list = h.filter((e) => (!f.s || e.strategy === f.s) && (!f.sym || e.symbol === f.sym) && (!f.o || (e.result?.outcome ?? 'ACIK') === f.o) && (!f.k || e.kind === f.k));
-  const sum = ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => {
+  const sum = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => {
     const x = h.filter((e) => e.strategy === s && e.kind === 'TAM');
     const tp = x.filter((e) => e.result?.outcome === 'TP').length, sl = x.filter((e) => e.result?.outcome === 'SL').length, open = x.filter((e) => !e.result || e.result.outcome === 'ACIK').length;
     const rs = x.filter((e) => e.result?.r !== undefined).map((e) => e.result.r);
@@ -133,7 +133,7 @@ export function renderHistory(App, el) {
   const OUT = { TP: '🎯 TP', SL: '🛑 SL', ACIK: '⏳ açık', ZAMAN_ASIMI: '⌛ zaman aşımı', DOLMADI: '∅ dolmadı' };
   el.innerHTML = `<div class="h1">Geçmiş tarama (30 gün)</div>
     <div class="card"><h2>Özet (TAM olaylar)</h2>${sum || '<div class="muted">Henüz olay yok</div>'}<div class="muted small" style="margin-top:6px">Sonuçlar kayıtlı mumlardan otomatik değerlendirilir (ek kredi yok). Kuralların gerçekte çalışıp çalışmadığını gösterir.</div></div>
-    <div class="card"><div class="form">${sel('s', ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => [s, s]), 'Strateji')}${sel('sym', Object.keys(SHORT).map((s) => [s, SHORT[s]]), 'Sembol')}${sel('o', Object.entries(OUT), 'Sonuç')}${sel('k', [['TAM', 'TAM'], ['HAZIR', '1 şart kaldı']], 'Tür')}</div></div>
+    <div class="card"><div class="form">${sel('s', ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => [s, s]), 'Strateji')}${sel('sym', Object.keys(SHORT).map((s) => [s, SHORT[s]]), 'Sembol')}${sel('o', Object.entries(OUT), 'Sonuç')}${sel('k', [['TAM', 'TAM'], ['HAZIR', '1 şart kaldı']], 'Tür')}</div></div>
     <div class="card"><div class="list">${list.map((e, i) => `<div class="li" data-ev="${i}"><span class="badge ${e.kind === 'TAM' ? 'tam' : 'eksik'}">${e.kind === 'TAM' ? '🟢 TAM' : '🟡 1 şart'}</span><div class="grow"><b>${SHORT[e.symbol]} ${e.strategy} ${dirTxt(e.dir)}</b> · ${esc(e.sub)}<div class="muted small">${dateTR(e.t)} ${tr(e.t)} TR${e.method ? ` · giriş ${e.method.entry} · RR ${e.method.rr}` : ''}</div></div><div style="text-align:right"><div>${OUT[e.result?.outcome ?? 'ACIK'] ?? '—'}</div><div class="muted small num">MFE ${e.result?.mfeR ?? 0}R · MAE ${e.result?.maeR ?? 0}R</div></div></div>`).join('') || '<div class="empty">Filtreye uyan olay yok</div>'}</div></div>`;
   el.querySelectorAll('[data-f]').forEach((s) => s.addEventListener('change', () => { App.histFilter[s.dataset.f] = s.value; App.render(); }));
   el.querySelectorAll('[data-ev]').forEach((r) => r.addEventListener('click', () => {

@@ -38,10 +38,11 @@ export interface Params {
     windowTR: [string, string]; oneMinuteTR: [string, string]; qqqTR: [string, string]; weekdays: number[];
     cryptoWeekend: boolean; intervalMin: number; creditDailyLimit: number; creditHardStop: number; perMinute: number;
     incrementalOutput: number; maxIncrementalOutput: number; bootstrap5m: number; bootstrap1d: number; bootstrap1dSymbols: string[];
-    keep5m: number; keep1m: number; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;
+    keep5m: number; keep1m: number; preWindowTR: [string, string]; preWindowSymbols: string[]; bootstrap1h: number; bootstrap1hSymbols: string[]; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;
   };
   history: { days: number; evalMaxBars5m: number };
   general: { maxSignalAgeHours: number; maxEntryDistR: number };
+  G: { minAsiaBars: number; emaWarm: number; rangeMin: number; rangeMax: number; earlyMax: number; backInsideBars: number; dispBody: number; bufferPct: number; roundStep: number; roundDist: number; minRR1: number; minRR2: number; newsExitMin: number; smt: boolean };
   F: {
     ltf: '15m' | '5m'; springLookback1h: number; chochMaxHours: number; phaseCBars: number; lpsSosBars: number;
     trLookback: number; trMinBars: number; trMinAtr: number; trMaxAtr: number; trInsidePct: number; priorTrendBars: number; priorTrendAtr: number;

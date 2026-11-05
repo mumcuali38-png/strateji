@@ -27,15 +27,17 @@ export const STRATS = {
   D: { name: 'D · Range (ORB + konsolidasyon)', short: 'D', tab: 'D' },
   E: { name: 'E · Rejection Block', short: 'E', tab: 'E' },
   F: { name: 'F · BTC Wyckoff (Spring/UTAD)', short: 'F', tab: 'F' },
+  G: { name: 'G · XAU Judas (Asya süpürmesi)', short: 'G', tab: 'G' },
 };
 export const TABS = [
   { id: 'AB', label: 'A/B XAU', icon: '🥇', strategies: ['A', 'B'], symbols: ['XAUUSD'] },
   { id: 'C', label: 'C 10AM', icon: '🕙', strategies: ['C'], symbols: ['US100'] },
-  { id: 'D', label: 'D Range', icon: '📏', strategies: ['D'], symbols: ['US100', 'XAUUSD', 'GBPUSD', 'XAGUSD', 'BTCUSD', 'ETHUSD'] },
+  { id: 'D', label: 'D Range', icon: '📏', strategies: ['D'], symbols: ['US100', 'XAUUSD', 'GBPUSD', 'BTCUSD', 'ETHUSD'] },
   { id: 'E', label: 'E RB', icon: '🧱', strategies: ['E'], symbols: ['EURUSD', 'XAUUSD', 'GBPUSD'] },
   { id: 'F', label: 'F Wyckoff', icon: '🌀', strategies: ['F'], symbols: ['BTCUSD'] },
+  { id: 'G', label: 'G Judas', icon: '🎯', strategies: ['G'], symbols: ['XAUUSD'] },
 ];
-export const SHORT = { XAUUSD: 'XAU', XAGUSD: 'XAG', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
+export const SHORT = { XAUUSD: 'XAU', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
 
 export async function loadStaticConfig() {
   const get = async (n) => { try { const r = await fetch(`./config/${n}`, { cache: 'no-cache' }); return await r.json(); } catch { return null; } };

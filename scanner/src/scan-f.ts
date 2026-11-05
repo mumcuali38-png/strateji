@@ -16,7 +16,7 @@ const S = conf.params.scan;
 const now = process.env.SCAN_NOW ? Date.parse(process.env.SCAN_NOW) : Date.now();
 const force = process.env.FORCE === '1' || process.env.FORCE === 'true';
 const weekday = S.weekdays.includes(trDow(now));
-const mainActive = (weekday || S.cryptoWeekend) && inTrRange(now, S.windowTR[0], S.windowTR[1]);
+const mainActive = ((weekday || S.cryptoWeekend) && inTrRange(now, S.windowTR[0], S.windowTR[1])) || (weekday && inTrRange(now, S.preWindowTR[0], S.preWindowTR[1]));
 if (mainActive && !force) { console.log('Ana tarama penceresi açık — F ana taramada hesaplanıyor.'); process.exit(0); }
 
 const news = readJSON<NewsFile | null>('news.json', null);

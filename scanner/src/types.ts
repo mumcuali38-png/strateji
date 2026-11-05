@@ -4,7 +4,7 @@ export type Dir = 1 | -1;
 export type CondStatus = 'ok' | 'fail' | 'wait';
 /** BEKLE = TAM ama zaman/ortam bloğu var (sadece F: "TAM – BEKLE") */
 export type Status = 'TAM' | 'BEKLE' | 'EKSIK' | 'YOK';
-export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 
 export interface Condition {
   id: string;

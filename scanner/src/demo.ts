@@ -16,11 +16,14 @@ import type { NewsFile } from './types.ts';
 import { runF } from './f/run.ts';
 import { aggregateUTC } from './f/data.ts';
 import { scenario, to15 } from './f/synthetic.ts';
+import { gDay, gHistory } from './g/synthetic.ts';
+import { evalG } from './g/judas.ts';
+import { Ctx } from './context.ts';
 
 const conf = loadConfig();
 const now = process.argv[2] ? Date.parse(process.argv[2]) : Date.now();
 const start = now - 25 * DAY;
-const base: Record<string, [number, number]> = { XAUUSD: [4000, 0.45], XAGUSD: [48, 0.012], EURUSD: [1.16, 0.00009], GBPUSD: [1.33, 0.0001], BTCUSD: [104000, 45], ETHUSD: [3600, 2.2], US100: [610, 0.12] };
+const base: Record<string, [number, number]> = { XAUUSD: [4000, 0.45], EURUSD: [1.16, 0.00009], GBPUSD: [1.33, 0.0001], BTCUSD: [104000, 45], ETHUSD: [3600, 2.2], US100: [610, 0.12] };
 const data: Record<string, SymData> = {};
 let seed = 7;
 for (const [sym, [p0, vol]] of Object.entries(base)) {
@@ -45,6 +48,9 @@ const fsc = scenario();
 const fd = { h1: fsc.h1, m15: to15(fsc.h1), m5: to15(fsc.h1), h4: aggregateUTC(fsc.h1, 4 * HOUR), d1: aggregateUTC(fsc.h1, 24 * HOUR), source: 'binance' as const };
 const fr = await runF(conf, fsc.now, [], async () => ({ data: fd, errors: [] }));
 results.F = { BTCUSD: fr.setups };
+// G: sentetik Judas günü (gerçek veri DEĞİL)
+const gd = gDay({ nowNY: [2, 50] });
+results.G = { XAUUSD: evalG(conf, new Ctx('XAUUSD', conf, gd.now, { m5: gd.m5, m1: [], d1: [] }, []), gHistory(), []) };
 const credits = freshCredits(null, now, conf.params); credits.used = 512;
 const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings: ['DEMO VERİSİ — sentetik mumlar'], fetched: [], window: { active: true, oneMin: false, weekday: true } });
 writeJSON('state.json', state);

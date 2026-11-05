@@ -39,11 +39,11 @@ export function renderOverview(App, el) {
   const all = allSetups(App);
   const tams = all.filter((x) => x.status === 'TAM' || x.status === 'BEKLE').sort(rank);
   const near = all.filter((x) => x.status === 'EKSIK' && x.remaining === 1).length;
-  const symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'US100', 'XAGUSD', 'BTCUSD', 'ETHUSD'];
+  const symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'US100', 'BTCUSD', 'ETHUSD'];
   const nowHtml = tams.length
     ? `<div class="now-strip">${tams.map((s) => tamCard(App, s)).join('')}</div>`
     : `<div class="card now-empty">Şu an TAM setup yok · ${near ? `<span style="color:var(--eksik)">${near} setup 1 şart uzakta</span>` : 'yakın setup yok'}</div>`;
-  const rows = ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
     const applicable = (App.conf.symbols?.[sym]?.strategies ?? []).includes(s);
     if (!applicable) return '<td><div class="cell na">·</div></td>';
     const b = bestOf(App, s, sym);
@@ -53,7 +53,7 @@ export function renderOverview(App, el) {
     const txt = b.status === 'TAM' ? '🟢 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
     return `<td><div class="cell ${cls} ${news ? 'news' : ''}" data-go="#/${s}/${sym}/${encodeURIComponent(b.id)}" title="${esc(b.sub)}">${txt}</div></td>`;
   }).join('')}</tr>`).join('');
-  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
+  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
   el.innerHTML = `
     <div class="h1">Şu an</div>${nowHtml}
     <div class="card"><h2>Durum ızgarası</h2>
@@ -181,6 +181,7 @@ function noneBox(App, s) {
     <dt>Ne bekleniyor</dt><dd>${esc(s.none?.waiting ?? '—')}</dd>
     <dt>Senaryo ne zaman biter</dt><dd>${esc(s.none?.ends ?? s.invalidation ?? '—')}</dd></dl>
     ${s.limitNote ? `<div class="inval">${esc(s.limitNote)}</div>` : ''}
+    ${gBox(s)}
     ${extraHtml(s)}
     <div class="btns"><button class="btn" data-act="claude">🤖 Claude'a gönder</button></div></div>`;
 }
@@ -211,8 +212,8 @@ function setupCard(App, s) {
     <div class="kv"><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` / ${m.rr2.toFixed(2)}` : ''}${m.rr3 !== undefined ? ` / ${m.rr3.toFixed(2)}` : ''}</span><span>Risk <b>$${m.riskUsd.toFixed(0)}</b></span>${s.strategy === 'F' ? `<span>Miktar <b>${m.lot.toFixed(4)} BTC</b></span><span>Kaldıraç <b>${m.leverage.toFixed(2)}x</b></span>` : `<span>Lot <b>${m.lot.toFixed(2)}</b></span>`}</div>
     ${m.capNote ? `<div class="warnline">⚠️ ${esc(m.capNote)}</div>` : ''}
     ${m.note ? `<div class="muted small" style="margin-top:6px">${esc(m.note)}</div>` : ''}
-    ${s.strategy === 'F' ? '' : rrWarn}
-    ${fBox(s)}
+    ${s.strategy === 'F' || s.strategy === 'G' ? '' : rrWarn}
+    ${fBox(s)}${gBox(s)}
     ${s.invalidation ? `<div class="inval">Geçersiz olur: ${esc(s.invalidation)}</div>` : ''}
     ${(s.warnings ?? []).map((w) => `<div class="warnline">⚠️ ${esc(w)}</div>`).join('')}
     ${s.missing ? `<div class="warnline">⏳ Eksik: ${esc(s.missing)}</div>` : ''}
@@ -232,6 +233,29 @@ function fBox(s) {
     <b>Funding</b><span>sıradaki ${c.nextFunding ? tr(c.nextFunding) + ' TR' : '—'}</span>
     <b>Saat</b><span>${c.saturday ? 'Cumartesi — yeni giriş yok' : c.sunday ? 'Pazar — teyit gerekir' : 'Hafta içi'} · ${c.inBestWindow ? 'en iyi pencerede' : 'pencere dışı (15:30–19:00 TR)'}</span>
     <b>Kaynak</b><span>${esc(f.source ?? '—')} (BTCUSDT) · ${tr(Date.parse(f.evaluated_at_utc))} TR</span>
+  </div>`;
+}
+/** G: günün seviyeleri, bias bileşenleri ve zaman çubuğu (TR) */
+function gBox(s) {
+  const g = s.info?.g;
+  if (s.strategy !== 'G' || !g?.levels) return '';
+  const L = g.levels, b = g.bias ?? {};
+  const p = (x) => (Number.isFinite(x) ? Number(x).toFixed(2) : '—');
+  const ok = (v) => (v ? '✅' : '❌');
+  const mo = g.mo, t0 = mo - 4 * 3600000, t1 = mo + 12 * 3600000;
+  const pos = (t) => Math.max(0, Math.min(100, ((t - t0) / (t1 - t0)) * 100));
+  const ticks = [[t0, 'Asya'], [mo, 'MO'], [mo + 2 * 3600000, 'süpürme'], [mo + 4 * 3600000, 'süp. son'], [mo + 5 * 3600000, 'son giriş'], [t1, 'kapanış']];
+  return `<div class="fbox">
+    <b>Asya</b><span class="num">AH ${p(L.AH)} · AL ${p(L.AL)} · AR ${p(L.AR)}</span>
+    <b>MO</b><span class="num">${p(L.MO)} · ADR20 ${p(L.ADR)}</span>
+    <b>Dün / hafta</b><span class="num">PDH ${p(L.PDH)} · PDL ${p(L.PDL)} · WEQ ${p(L.WEQ)}</span>
+    <b>Bias</b><span>${esc(b.value ?? '—')} · B1 4H EMA ${b.b1 === 1 ? 'LONG' : b.b1 === -1 ? 'SHORT' : '—'} · B2 ${b.b2 === 1 ? 'DISCOUNT' : 'PREMIUM'} · B3 ${b.b3?.long ? 'LONG ' + esc(b.b3.long) : ''}${b.b3?.short ? ' SHORT ' + esc(b.b3.short) : ''}</span>
+    <b>Kalite</b><span>${esc(g.quality ?? '—')}${g.flags?.length ? ' · ' + g.flags.map(esc).join(', ') : ''}</span>
+  </div>
+  <div class="tline" aria-label="Günün zaman çubuğu (TR)">
+    <div class="bar"></div><div class="seg" style="left:${pos(mo + 2 * 3600000)}%;width:${pos(mo + 5 * 3600000) - pos(mo + 2 * 3600000)}%"></div>
+    ${ticks.map(([t, l], i) => `<div class="tk ${i % 2 ? 'lo' : ''}" style="left:${pos(t)}%">${tr(t)}<br>${l}</div>`).join('')}
+    <div class="now" style="left:${pos(Date.now())}%" title="şimdi"></div>
   </div>`;
 }
 function extraHtml(s) {

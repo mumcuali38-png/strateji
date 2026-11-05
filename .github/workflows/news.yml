@@ -3,7 +3,8 @@ name: news
 # Tarama penceresinde (07–16 UTC) haber tarama döngüsü içinde çekilir; bu iş sadece pencere dışında çalışır.
 on:
   schedule:
-    - cron: '7 0-6,17-23 * * *'
+    - cron: '7 0-4,17-23 * * *'
+    - cron: '7 5-6 * * 0,6'
   workflow_dispatch:
 permissions:
   contents: write
