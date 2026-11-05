@@ -29,9 +29,10 @@ console.log(`Tarama ${new Date(now).toISOString()} · TR ${String(Math.floor(trM
 if (pushTest) {
   const r = await sendAll(conf, [{ kind: 'test', title: '🔔 Test bildirimi', body: 'Strateji Radar bildirimleri çalışıyor. Karar her zaman senin.', url: './#/ozet', tag: `test-${now}` }], now);
   r.log.forEach((l) => console.log(l));
-  if (!force && !active) process.exit(0);
+  if (!force && !active) process.exit(3);
 }
-if (!active && !force) { console.log('Tarama penceresi dışında — çekim yok.'); process.exit(0); }
+// Çıkış kodu 3 = pencere dışında (döngü durur)
+if (!active && !force) { console.log('Tarama penceresi dışında — çekim yok.'); process.exit(3); }
 
 // --- Kredi ---
 let credits: Credits = freshCredits(readJSON<Credits | null>('credits.json', null), now, P);

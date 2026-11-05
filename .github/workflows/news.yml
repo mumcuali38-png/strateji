@@ -1,8 +1,9 @@
 name: news
 # Saatte bir Forex Factory takvimi (daha sık değil — engellenebilir). FMP_KEY varsa gerçek değerler.
+# Tarama penceresinde (07–16 UTC) haber tarama döngüsü içinde çekilir; bu iş sadece pencere dışında çalışır.
 on:
   schedule:
-    - cron: '7 * * * *'
+    - cron: '7 0-6,17-23 * * *'
   workflow_dispatch:
 permissions:
   contents: write

@@ -114,3 +114,10 @@ Rastgele veride A/B/C/E (temiz trend ve yapı gerektirir) setup üretmedi; bu ku
 | F13 | Kripto manşetleri | "ETF, borsa, regülasyon manşetleri gösterilir, blok koymaz": FMP başlıkları Haber → Son dakika'da zaten görünüyor; ayrı kripto filtresi yok. | — |
 
 Doğrulama: §18'deki 13 senaryonun hepsi + temel TAM ve short (UTAD) senaryosu birim testinde (`scanner/test/f.test.ts`, sentetik veri). Geliştirme ortamından Binance/Coinbase'e erişim yoktu; gerçek veriyle ilk deneme Actions'ta `scan-f` elle çalıştırılarak yapılacak.
+
+## Tarama zamanlaması (05.11.2026 düzeltmesi)
+- **Sorun:** GitHub `*/5` zamanlamasını ilk gün yaklaşık **saatte bire** düşürdü (11:07, 12:00, 12:54, 13:48 TR). GitHub zamanlanmış görevleri yoğunlukta geciktirebilir; yeni/az hareketli depolarda bu sık olur.
+- **Çözüm:** Tetiklenen `scan` işi, tarama penceresi boyunca kendi içinde **5 dakikada bir** tarar (`scripts/scan-loop.sh`; 5 dk sınırından ~20 sn sonra). Pencere kapanınca (tarayıcı çıkış kodu 3) ya da 5,5 saatte biter; sonraki zamanlanmış tetik (sırada bekleyen) döngüyü devam ettirir.
+- Haber takvimi pencere içinde döngüde saatte bir çekilir; `news` ve `scan-f` iş akışları yalnız pencere dışında zamanlanır (aynı kuyrukta tarama döngüsünü engellemesinler).
+- Actions sekmesinde "cancelled" görünen tarama çalışmaları normaldir: döngü çalışırken sıraya giren yeni tetikler birbirinin yerini alır.
+- Pencere dışında `scan-f` (F) GitHub'ın zamanlayıcısına bağlıdır (15 dk planlı, pratikte 15–60 dk). F 1H/4H mumlarına dayandığı için kabul edildi.
