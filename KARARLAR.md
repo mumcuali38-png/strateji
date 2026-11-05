@@ -228,3 +228,10 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Pozisyonlar:** trader'ın aynı paritedeki pozisyonları yatırım payıyla toplanır, net yön alınır. Kopya (social) pozisyonlar sayılmaz.
 - **Uyumsuzluk bildirimi:** bizim TAM sinyalimize karşı trader'ların ≥ %70'i ters yöndeyse (en az 3 trader) tek seferlik bildirim gider.
 - **Uyum satırında** %60 ve üzeri aynı yön "uyumlu", %30 ve altı "uyumsuz", arası "karışık" sayılır. Kalabalık uyarısı Myfxbook'ta %70 ve üzeri tek yönde ise çıkar.
+- **OKX (BTC/ETH), 05.11.2026 eki:** eToro'ya Türkiye'den erişilemediği için kripto tarafında Trader'lar bölmesine OKX oranları eklendi.
+  - **Büyük trader'lar:** OKX'te en büyük hesapların pozisyon long/short oranı.
+  - **Tüm hesaplar:** OKX'teki tüm hesapların long/short oranı (kalabalık göstergesi).
+  - Oran long %'ye çevrilir: oran / (1 + oran).
+  - Veri Piyasa Yönü'nün saatlik önbelleğinden okunur, ek istek yapılmaz.
+  - eToro trader'ı yoksa uyum satırı ve uyumsuzluk bildirimi (≥ %70 ters yön) BTC/ETH için bu büyük trader oranını kullanır.
+  - Uyum satırında %60 ve üzeri "uyumlu", %40 ve altı "uyumsuz" sayılır.
