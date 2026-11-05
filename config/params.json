@@ -51,7 +51,7 @@
     "staleBars": 72, "deleteBars": 168, "springMaxDepthAtr": 1.5, "rvLow": 0.7, "rvHigh": 1.5, "cpStrong": 0.6,
     "stopAtr": 0.5, "minRR3": 3, "minRR2": 1.5, "lpsMinRR": 3, "trMiddlePct": 0.35, "zoneDistAtr4h": 0.5,
     "bestWindowUTC": ["12:30", "16:00"], "fundingUTC": ["00:00", "08:00", "16:00"], "fundingBlockMin": 15,
-    "liqAtrMult": 2, "liqBarAtr": 3, "liqWaitBars": 2, "maxLeverage": 3
+    "liqAtrMult": 2, "liqBarAtr": 3, "liqWaitBars": 2, "maxLeverage": 3, "maxDataAgeMin": 120
   },
   "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
   "history": { "days": 30, "evalMaxBars5m": 288 },

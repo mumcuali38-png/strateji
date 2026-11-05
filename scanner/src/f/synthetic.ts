@@ -2,7 +2,7 @@
 import type { Candle } from '../types.ts';
 import { HOUR, MIN } from '../time.ts';
 
-export interface Opt { trend?: 1 | -1; depthAtr?: number; twoBar?: boolean; failAfter?: boolean; springVol?: number; noChoch?: boolean; testVol?: number; shiftDays?: number }
+export interface Opt { noTest?: boolean; extra?: { o?: number; c: number; h?: number; l?: number; v?: number }[]; trend?: 1 | -1; depthAtr?: number; twoBar?: boolean; failAfter?: boolean; springVol?: number; noChoch?: boolean; testVol?: number; shiftDays?: number }
 /** 1H bar dizisi: yükseliş → düşüş → 4 dalgalı TR → spring → yükseliş (CHoCH) → zone testi */
 export function scenario(o: Opt = {}) {
   const h1: Candle[] = [];
@@ -30,7 +30,9 @@ export function scenario(o: Opt = {}) {
   else if (o.noChoch) { for (let k = 0; k < 26; k++) { bars.push({ o: p, c: p + (k % 2 ? -20 : 20) }); p += k % 2 ? -20 : 20; } }
   else {
     for (const c of [L + 90, L + 150, L + 200]) { bars.push({ o: p, c }); p = c; }
-    bars.push({ o: p, c: L + 60, l: L + 15, v: o.testVol ?? 40 }); p = L + 60; // zone testi
+    if (o.noTest) { for (const c of [L + 260, L + 300]) { bars.push({ o: p, c }); p = c; } }
+    else { bars.push({ o: p, c: L + 60, l: L + 15, v: o.testVol ?? 40 }); p = L + 60; } // zone testi
+    for (const b of o.extra ?? []) { bars.push({ o: b.o ?? p, c: L + b.c, h: b.h !== undefined ? L + b.h : undefined, l: b.l !== undefined ? L + b.l : undefined, v: b.v ?? 60 }); p = L + b.c; }
   }
   // Test mumu Çarşamba 13:00 UTC → bar zaman damgaları
   const t0 = t - (bars.length - 1) * HOUR;

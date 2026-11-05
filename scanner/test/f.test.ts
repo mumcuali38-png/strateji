@@ -133,3 +133,41 @@ test('Short: aynalanmış birikim (dağıtım) → UTAD TAM (short), fiyatlar ge
   assert.ok(m.stop > m.entry && m.tp1 < m.entry && m.tp3! < m.tp2!, `${m.entry} ${m.stop} ${m.tp1} ${m.tp3}`);
   assert.match(s.sub, /UTAD/);
 });
+
+// ---------- Hatalı sinyal koruması ----------
+test('Koruma: CHoCH sonrası limit dolmadan fiyat T1\'e kaçtı → YOK (kovalanmaz)', () => {
+  const sc = scenario({ noTest: true });
+  const s = springOf(evalF(conf(), sc.now, data(sc.h1), []));
+  assert.equal(s.status, 'YOK', why(s));
+  assert.match(s.conditions.at(-1)!.detail, /Limit dolmadan T1/);
+});
+
+test('Koruma: veri 2 saatten eski → VERİ ESKİ, sinyal üretilmez', () => {
+  const sc = scenario();
+  const res = evalF(conf(), sc.now + 4 * HOUR, data(sc.h1), []);
+  assert.equal(res.length, 1);
+  assert.equal(res[0].status, 'YOK');
+  assert.match(res[0].conditions[0].detail, /VERİ ESKİ/);
+});
+
+test('Koruma: dolumdan 6 saat sonra TAM kalmaz (eski sinyal)', () => {
+  const sc = scenario({ extra: Array.from({ length: 7 }, (_, k) => ({ c: 60 + (k % 2 ? 10 : -10), h: 90, l: 30 })) });
+  const s = springOf(evalF(conf(), sc.now, data(sc.h1), []));
+  assert.equal(s.status, 'YOK', why(s));
+  assert.match(s.conditions.at(-1)!.detail, /önce\) — eski/);
+});
+
+test('Koruma: dolumdan sonra T1 görüldü → YOK + "T1 – %50 kapat" bildirimi', () => {
+  const sc = scenario({ extra: [{ c: 150 }, { c: 260 }] });
+  const s = springOf(evalF(conf(), sc.now, data(sc.h1), []));
+  assert.equal(s.status, 'YOK', why(s));
+  assert.ok(s.notices?.some((n) => n.body === 'F: T1 – %50 kapat, stop girişe'));
+});
+
+test('Koruma: dolumdan sonra stop görüldü → YOK + ÇIKIŞ bildirimi (TAM bildirildiyse)', () => {
+  const sc = scenario({ extra: [{ c: -150, l: -160, v: 60 }] });
+  const s = springOf(evalF(conf(), sc.now, data(sc.h1), []));
+  assert.equal(s.status, 'YOK', why(s));
+  const exit = s.notices?.find((n) => n.body.includes('ÇIKIŞ'));
+  assert.ok(exit && exit.requires?.endsWith('+TAM'));
+});

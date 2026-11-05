@@ -28,6 +28,13 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
       conditions: [cond('data', 'Veri', 'fail', `VERİ YOK — Binance ve Coinbase cevap vermedi (${errors.join(' · ') || '—'}). Analiz yapılmadı.`)],
       none: { why: 'VERİ YOK — tahmin üretilmez', waiting: 'Bir sonraki taramada veri kaynağı', ends: '—' }, info: { f: { status: 'VERI_YOK' } } })];
   }
+  const lastH1 = data.h1[data.h1.length - 1];
+  const dataAge = lastH1 ? now - (lastH1.t + HOUR) : Infinity;
+  if (dataAge > F.maxDataAgeMin * 60_000 || data.h4.length < 60) {
+    return [finalize(ctx, { ...base, id: 'F-BTCUSD-veri', sub: 'Wyckoff · VERİ ESKİ', dir: 0, zoneId: 'veri', methods: [], overlays: [],
+      conditions: [cond('data', 'Veri', 'fail', `VERİ ESKİ — son kapanmış 1H mum ${lastH1 ? fmtTR(lastH1.t) + ' TR' : '—'} (${durationText(dataAge)} önce, ${data.source}). Eski mumla sinyal üretilmez.`)],
+      none: { why: 'Veri güncel değil', waiting: 'Bir sonraki taramada güncel veri', ends: '—' }, info: { f: { status: 'VERI_YOK', source: data.source } } })];
+  }
   const bias = biasOf(data.h4);
   const biasTxt = `4H kapanış ${bias.close.toFixed(1)} · EMA50 ${bias.ema.toFixed(1)} · eğim ${bias.slope >= 0 ? '+' : ''}${bias.slope.toFixed(1)}`;
   if (!bias.value) {
@@ -135,7 +142,23 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
     if (m.tp2 !== undefined) ov.push({ kind: 'line', style: 'tp', label: 'T2', price: m.tp2 });
     if (m.tp3 !== undefined) ov.push({ kind: 'line', style: 'tp', label: 'T3', price: m.tp3 });
   };
-  const finish = (s: Parameters<typeof finalize>[1]): Setup => {
+  /**
+   * Hatalı sinyal koruması — dolum ÖNCESİ (dolum sonrası ortak staleGuard'dadır):
+   * limit henüz dolmadıysa ve fiyat T1'i gördüyse ya da limitten maxEntryDistR'den fazla uzaklaştıysa
+   * setup biter (kovalanmaz). Fiyatlar ayna uzayında (long mantığı).
+   */
+  const preFill = (s: { conditions: Condition[]; signalAt?: number }, g?: { from: number; entry: number; stop: number; t1: number }) => {
+    if (!g || s.signalAt || s.conditions.some((c) => c.status === 'fail')) return;
+    const risk = g.entry - g.stop;
+    const after = ltf.filter((x) => x.t > g.from);
+    const hit = after.find((x) => x.h >= g.t1);
+    if (hit) { s.conditions.push(cond('stale', 'Sinyal güncel mi', 'fail', `Limit dolmadan T1 ${side.f(g.t1)} görüldü (${fmtTR(hit.t)} TR) — fırsat geçti, kovalanmaz`)); return; }
+    const lastC = after[after.length - 1]?.c;
+    if (risk > 0 && lastC !== undefined && (lastC - g.entry) / risk > conf.params.general.maxEntryDistR)
+      s.conditions.push(cond('stale', 'Sinyal güncel mi', 'fail', `Fiyat ${side.f(lastC)} limitten ${((lastC - g.entry) / risk).toFixed(1)}R uzak — kovalanmaz`));
+  };
+  const finish = (s: Parameters<typeof finalize>[1], guard?: Parameters<typeof preFill>[1]): Setup => {
+    preFill(s, guard);
     const st = finalize(ctx, s);
     const nonOk = st.conditions.filter((c) => c.status !== 'ok');
     if (st.status === 'EKSIK' && nonOk.length === 1 && nonOk[0].id === 'filters') {
@@ -174,6 +197,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
     let signalAt: number | undefined;
     const notes: string[] = [];
     let zone: ReturnType<typeof entryZone> = null, ch: ReturnType<typeof chochAfter> = null;
+    let guard: Parameters<typeof preFill>[1];
     const springKey = sp ? `F-spring-${dir}-${sp.t}` : '';
     if (!tr) {
       conds.push(cond('trigger', `${side.w.spring}`, 'wait', 'Önce TR'));
@@ -234,6 +258,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
         const middle = entry > tr.low + F.trMiddlePct * hgt;
         const m = mkMethod('spring', `${side.w.spring} → ${F.ltf} zone limit`, entry, stop, tg);
         methods = [m];
+        guard = { from: ch.t, entry, stop, t1: tg.t1 };
         conds.push(middle ? cond('rr', 'RR şartı', 'fail', `TR ortası — giriş ${side.f(entry)} TR yüksekliğinin %${F.trMiddlePct * 100}'inin ötesinde`)
           : tg.rr3 >= F.minRR3 && tg.rr2 >= F.minRR2 ? cond('rr', 'RR şartı', 'ok', `T3 RR ${tg.rr3.toFixed(2)} · T2 RR ${tg.rr2.toFixed(2)}`, side.P(tg.t3))
             : cond('rr', 'RR şartı', 'fail', `RR yetersiz — T3 ${tg.rr3.toFixed(2)} (≥${F.minRR3}) · T2 ${tg.rr2.toFixed(2)} (≥${F.minRR2})`));
@@ -257,7 +282,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
       invalidation: sp ? `${side.w.spring} ${side.w.low}u ${side.f(sp.low)} ötesinde kapanış, zone kırılması veya ${F.chochMaxHours} saat içinde CHoCH gelmemesi` : 'TR kırılırsa (Faz E)',
       overlays: ov, signalAt, zoneId: sp ? `S${sp.t}` : tr ? `TR${tr.firstT}` : 'none', stars, tags, warnings: notes, notices,
       info: { f: fInfo('SPRING', sp, ch, zone) },
-    });
+    }, guard);
     out.push(st);
   }
 
@@ -269,6 +294,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
       const ov = [...overlaysBase];
       let methods: EntryMethod[] = [];
       let signalAt: number | undefined;
+      let guard: Parameters<typeof preFill>[1];
       conds.push(cond('trigger', `${side.w.sos} → ${side.w.lps}`, 'ok', `${side.w.sos} ${fmtTR(h1[sos].t)} TR · kapanış ${side.f(h1[sos].c)} · RV ${rv(h1, sos).toFixed(2)}`, side.P(h1[sos].c)));
       let d = -1;
       for (let k = sos + 1; k < n; k++) if (d < 0 || h1[k].l < h1[d].l) d = k;
@@ -305,6 +331,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
             const t1 = dir === 1 ? sosTop : tr.high, t2 = tr.high + hgt;
             const m = mkMethod('lps', `${side.w.lps} → ${F.ltf} zone limit`, entry, stop, { t1, t2 });
             methods = [m];
+            guard = { from: chL.t, entry, stop, t1 };
             conds.push((m.rr2 ?? 0) >= F.lpsMinRR ? cond('rr', 'RR şartı', 'ok', `T2 RR ${(m.rr2 ?? 0).toFixed(2)} (≥ ${F.lpsMinRR})`) : cond('rr', 'RR şartı', 'fail', `RR yetersiz — T2 ${(m.rr2 ?? 0).toFixed(2)} (≥ ${F.lpsMinRR})`));
           } else { conds.push(cond('test', 'Giriş bölgesine dönüş', 'wait', '—')); conds.push(cond('rr', 'RR şartı', 'wait', '—')); }
         } else { conds.push(cond('test', 'Giriş bölgesine dönüş', 'wait', 'CHoCH sonrası')); conds.push(cond('rr', 'RR şartı', 'wait', `T2 RR ≥ ${F.lpsMinRR}`)); }
@@ -312,7 +339,7 @@ export function evalF(conf: Config, now: number, data: FData | null, news: NewsE
       conds.push(filterCond(fBlocks({ t: h1[sos].t, okAfter: sundayOk(d >= 0 ? h1[d].l : tr.low, h1[sos].t) })));
       tradeOverlays(ov, methods[0]);
       out.push(finish({ ...base, id: `F-BTCUSD-lps-${dir}`, sub: `Wyckoff ${side.w.sos} → ${side.w.lps} · Faz D`, dir, conditions: conds, methods, defaultMethod: methods[0]?.id,
-        invalidation: `${side.w.lps} ${side.w.low}u veya TR EQ ötesinde kapanış`, overlays: ov, signalAt, zoneId: `L${h1[sos].t}`, stars, tags, info: { f: fInfo(dir === 1 ? 'LPS' : 'LPSY', null, null, null) } }));
+        invalidation: `${side.w.lps} ${side.w.low}u veya TR EQ ötesinde kapanış`, overlays: ov, signalAt, zoneId: `L${h1[sos].t}`, stars, tags, info: { f: fInfo(dir === 1 ? 'LPS' : 'LPSY', null, null, null) } }, guard));
     }
   }
 
