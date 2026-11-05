@@ -30,7 +30,7 @@ export interface Params {
   C: { tnmCandleMode: 'from10' | 'aligned'; maxTradesPerDay: number; stdv: number[] };
   D: {
     d1: { momentumBodyPct: number; rejectWickBody: number; retestTolAtr1m: number; maxPerDay: number };
-    d2: { tfs: TF[]; minBars: number; maxBars: number; minTests: number; narrowAtrMult: number; edgeZoneAtr: number; confirmMaxBars: number };
+    d2: { tfs: TF[]; minBars: number; maxBars: number; minTests: number; narrowAtrMult: number; edgeZoneAtr: number; confirmMaxBars: number; signalValidityBars: number; breakoutValidityBars: number };
   };
   E: { tfs: TF[]; maxCandles: number; limitInsidePct: number; fib: number[]; lookbackBars: number };
   extra: { rsiPeriod: number; rsiHigh: number; rsiLow: number; emaLong: number; macd: number[]; bb: number[]; kc: number[] };

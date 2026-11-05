@@ -91,3 +91,5 @@ Rastgele veride A/B/C/E (temiz trend ve yapı gerektirir) setup üretmedi; bu ku
 ## Gerçek veriyle ilk tarama sonrası (05.11.2026)
 - **XAG/USD Twelve Data ücretsiz planında yok** ("Grow plan" hatası). Plan hatası alınan sembol `credits.json → unavailable` listesine yazılır, **7 gün boyunca istenmez** (kredi yakılmaz), arayüzde uyarı gösterilir. Plan yükseltilirse 7 gün sonra kendiliğinden yeniden denenir.
 - Kredi bütçesi, kalan taramaları artık **pencere başlangıcından** (10:00 TR) sayar; pencere öncesi elle çalıştırmada semboller gereksiz yere atlanmaz.
+- **D2 geçerlilik süresi (05.11.2026 düzeltmesi):** Dönüş setupı, onaydan sonra fiyat TP1'e (EQ) ulaşırsa ("giriş fırsatı geçti, kovalanmaz") veya onay 24 LTF mumundan eskiyse biter (`D.d2.signalValidityBars`). Kırılım setupı stop/projeksiyon görülünce veya 6 TF mumundan sonra biter (`D.d2.breakoutValidityBars`). Önceden eski bir BTC dönüş sinyali fiyat 4% uzaklaşmışken TAM görünüyordu.
+- Özet kartı ve bildirimde TP2 varsa RR ikisiyle birlikte gösterilir ("RR 1.2 / TP2 3.4"); D2 dönüşünde kural TP2'ye göredir.

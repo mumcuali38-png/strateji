@@ -73,7 +73,7 @@ function tamCard(App, s) {
   return `<div class="card tam-card" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">
     <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><span class="big">${SHORT[s.symbol]} · ${s.strategy}</span>${m?.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}</div>
     <div class="muted" style="margin:6px 0">${esc(s.sub)}</div>
-    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b></span><span>Lot <b>${m.lot.toFixed(2)}</b></span></div>` : ''}
+    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` · TP2 <b>${m.rr2.toFixed(2)}</b>` : ''}</span><span>Lot <b>${m.lot.toFixed(2)}</b></span></div>` : ''}
   </div>`;
 }
 export function nextNews(App, n) {
