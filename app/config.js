@@ -14,6 +14,8 @@ let override = null;
 try { override = qs.get('data') || sessionStorage.getItem('dataOverride'); if (qs.get('data')) sessionStorage.setItem('dataOverride', qs.get('data')); } catch { override = qs.get('data'); }
 export const DATA_BASE = override || (location.hostname.endsWith('github.io') ? `https://raw.githubusercontent.com/${REPO.owner}/${REPO.repo}/data/` : './data/');
 export const GH = `https://github.com/${REPO.owner}/${REPO.repo}`;
+/** state.json için GitHub API (raw.githubusercontent dal içeriğini ~5 dk önbellekte tutuyor). Yerel/özel veri adresinde kullanılmaz. */
+export const API_STATE = !override && location.hostname.endsWith('github.io') ? `https://api.github.com/repos/${REPO.owner}/${REPO.repo}/contents/state.json?ref=data` : null;
 export const RULES_URL = `${GH}/blob/main/MASTERPROMPT.md`;
 export const ACTIONS_URL = `${GH}/actions/workflows/scan.yml`;
 export const SECRETS_URL = `${GH}/settings/secrets/actions`;
