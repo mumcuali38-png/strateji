@@ -141,3 +141,8 @@ Doğrulama: §15'teki 18 senaryonun hepsi + temel TAM + short (ayna) + 3 koruma 
 
 ## XAG/USD kaldırıldı (05.11.2026)
 Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m listeleri, uygulama menüsü ve ızgaradan çıkarıldı (MASTERPROMPT §23). Plan yükseltilirse sembol satırı geri eklenebilir.
+
+## Gecikme (05.11.2026)
+- Ölçüm: 5m mum kapanışı → tarama +20 sn → GitHub'a yazım +2 sn → bildirim ≈ +25 sn. 20 sn pay, Twelve Data'nın kapanan mumu kesinleştirmesi için (daha erken çekilirse yarım mum "kapanmış" sanılabilir).
+- Uygulama yenilemesi 60 sn → **15 sn** (`state.json`; haber/geçmiş dakikada bir). Üst çubukta "sonraki" tarama saati.
+- 5 dakikadan sık tarama ücretsiz planda mümkün değil: 1 dakikalık tarama 5 sembolde ≈ 3000 kredi/gün (sınır 800).

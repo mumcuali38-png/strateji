@@ -53,7 +53,7 @@ function topbar() {
     <span class="sep"></span>
     <div class="grp"><span class="kz ${kz.on ? 'on' : ''}"><span class="dot"></span>${kz.on ? `${kz.name} <span class="muted">(kalan ${dur(kz.left)})</span>` : `Killzone dışı <span class="muted">· ${kz.name ?? ''} ${kz.at ? tr(kz.at) : ''}</span>`}</span></div>
     <span class="sep"></span>
-    <div class="grp scan ${cls}" title="Son tarama">Son tarama ${st ? tr(st.lastScan) : '—'} ${cls === 'ok' ? '✓' : cls === 'warn' ? '⚠' : '✕'}</div>
+    <div class="grp scan ${cls}" title="Son tarama">Son tarama ${st ? tr(st.lastScan) : '—'} ${cls === 'ok' ? '✓' : cls === 'warn' ? '⚠' : '✕'}${st && inWin ? ` <span class="muted small">· sonraki ${tr(Math.floor(now / 300000) * 300000 + 300000 + 20000)}</span>` : ''}</div>
     <div class="grp" title="Twelve Data günlük kredi">Kredi <span class="num">${used}/${stop}</span> <span class="meter ${pctc > 95 ? 'err' : pctc > 85 ? 'warn' : ''}"><i style="width:${pctc}%"></i></span></div>
     <div class="grp right"><button class="icon-b" data-bell aria-label="Bildirim geçmişi">🔔</button><a class="icon-b" href="#/ayarlar" aria-label="Ayarlar" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">⚙</a></div>`;
   document.querySelector('[data-bell]').onclick = () => notifHistory(App);
@@ -145,10 +145,14 @@ async function computeLimits() {
   const lossUsd = list.reduce((a, t) => a + (Number(t.r) < 0 ? -Number(t.r) * (t.riskUsd || 0) : 0), 0);
   if (maxL > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
 }
+let lastFull = 0;
 async function reload(manual = false) {
   const prev = new Map(allSetups(App).map((s) => [s.id, s.status]));
   const prevGen = data.state?.generatedAt;
-  const ok = await refresh();
+  // state.json 15 sn'de bir; haber ve geçmiş dakikada bir (gereksiz istek yok)
+  const full = manual || Date.now() - lastFull > 55000;
+  const ok = await refresh(full ? ['state', 'news', 'history'] : ['state']);
+  if (full && ok) lastFull = Date.now();
   await computeLimits();
   if (data.state?.generatedAt !== prevGen) for (const s of allSetups(App)) if (prev.has(s.id) && prev.get(s.id) !== s.status) App.flashIds.add(s.id);
   if (manual) toast(ok ? `Güncellendi · son tarama ${data.state ? tr(data.state.lastScan) : '—'}` : 'Veri alınamadı — son kopya gösteriliyor');
@@ -179,7 +183,7 @@ function pullToRefresh() {
   window.addEventListener('online', () => reload());
   window.addEventListener('offline', () => { data.offline = true; render(); });
   setInterval(() => { topbar(); }, 15000);
-  setInterval(() => reload(), 60000); // Actions 5 dk'da bir yazar; uygulama 60 sn'de bir kontrol eder
+  setInterval(() => reload(), 15000); // Tarama mum kapanışından ~20 sn sonra yazar; uygulama 15 sn'de bir kontrol eder
   document.addEventListener('visibilitychange', () => { if (!document.hidden) reload(); });
   pullToRefresh();
   if (!App.settings.onboarded) onboarding(App);
