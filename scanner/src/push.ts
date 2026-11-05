@@ -84,6 +84,10 @@ export function readyMsg(s: Setup): Msg {
 export function cancelMsg(s: Setup, why: string): Msg {
   return { kind: 'cancel', strategy: s.strategy, symbol: s.symbol, setup: s, title: `⛔ İptal · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy} ${s.dir === 1 ? 'LONG' : 'SHORT'} iptal: ${why}`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: `${s.id}+IPTAL` };
 }
+/** Son giriş süresi doldu (EK §3.5) — orta öncelik */
+export function expiredMsg(s: Setup): Msg {
+  return { kind: 'info', strategy: s.strategy, symbol: s.symbol, setup: s, title: `⏰ SÜRE DOLDU · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy} ${s.dir === 1 ? 'LONG' : 'SHORT'}: son giriş ${fmtTR(s.lastEntry!)} TR geçti — dolmamış limit emrini iptal et`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: `${s.id}+SURE` };
+}
 export function newsMsg(e: NewsEvent, now: number, affected: string[]): Msg {
   return { kind: 'news', title: `⚠️ HABER RİSKİ · ${e.currency} ${e.title}`, body: `${e.currency} ${e.title} ${durationText(e.t - now)} sonra (${fmtTR(e.t)} TR) · ${affected.map((s) => SHORT[s]).join(', ')} setupları askıda`, url: './#/haber', tag: `news+${e.id}` };
 }

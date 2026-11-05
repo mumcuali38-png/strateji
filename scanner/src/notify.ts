@@ -1,7 +1,7 @@
 import type { Config } from './config.ts';
 import type { NewsEvent, Setup } from './types.ts';
 import { MIN } from './time.ts';
-import { cancelMsg, newsMsg, readyMsg, tamMsg, type Msg } from './push.ts';
+import { cancelMsg, expiredMsg, newsMsg, readyMsg, tamMsg, type Msg } from './push.ts';
 
 /**
  * Durum değişimlerinden bildirim listesi. Tekrar yok: anahtar strateji+sembol+yön+bölge_id+durum.
@@ -16,6 +16,10 @@ export function computeMessages(conf: Config, all: Setup[], prev: { strategies?:
       if (nt.key in notified || (nt.requires && !(nt.requires in notified))) continue;
       msgs.push({ kind: 'info', title: nt.title, body: nt.body, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: nt.key, strategy: s.strategy, symbol: s.symbol });
       notified[nt.key] = now;
+    }
+    const base = `${s.strategy}+${s.symbol}+${s.dir}+${s.zoneId}+`;
+    if (s.lastEntry && s.conditions.some((c) => c.id === 'deadline') && (`${base}TAM` in notified || `${base}BEKLE` in notified) && !(`${s.id}+SURE` in notified)) {
+      msgs.push(expiredMsg(s)); notified[`${s.id}+SURE`] = now;
     }
     if ((s.status === 'TAM' || s.status === 'BEKLE') && !(s.key in notified)) { if (!s.info?.mergedWithB) msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
     else if (s.status === 'EKSIK' && s.remaining === 1 && !(s.key in notified)) { msgs.push(readyMsg(s)); notified[s.key] = now; }

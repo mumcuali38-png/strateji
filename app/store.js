@@ -50,6 +50,14 @@ async function tx(store, mode, fn) {
     t.onerror = () => rej(t.error);
   });
 }
+/** "Girmedim" kayıtları (EK §3.11) — tablette, son 300 */
+const SKIP_KEY = 'strateji.skipped.v1';
+const skipList = () => { try { return JSON.parse(localStorage.getItem(SKIP_KEY) || '[]'); } catch { return []; } };
+export const skipped = {
+  all: skipList,
+  map: () => Object.fromEntries(skipList().map((x) => [x.signal_id, x])),
+  put: (x) => { const l = skipList().filter((y) => y.signal_id !== x.signal_id); l.push(x); try { localStorage.setItem(SKIP_KEY, JSON.stringify(l.slice(-300))); } catch { /* depolama dolu */ } },
+};
 export const trades = {
   all: async () => { try { return (await tx('trades', 'readonly', (s) => s.getAll())) || []; } catch { return []; } },
   put: (x) => tx('trades', 'readwrite', (s) => s.put(x)),
