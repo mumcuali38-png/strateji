@@ -459,7 +459,7 @@ data dalı (branch "data")     → candles/*.json, state.json, history.json, new
 
 ### 17.12 Performans
 - İlk açılış < 2 sn (tablet, 4G). Framework zorunlu değil; tercih: Vite + Preact veya saf TypeScript. Toplam JS < 250 KB (grafik kütüphanesi hariç).
-- Uygulama açıkken 15 sn'de bir `state.json` kontrol edilir; değiştiyse arayüz güncellenir (Actions 5 dk'da bir, mum kapanışından ~20 sn sonra yazar). Üst çubukta sonraki tarama saati gösterilir.
+- `state.json` taramanın beklendiği anda (her 5 dakikanın ~23. saniyesi) GitHub API'den okunur (raw.githubusercontent ~5 dk önbellekli); diğer veriler dakikada bir raw'dan. Üst çubukta sonraki tarama saati gösterilir.
 
 ---
 
@@ -521,4 +521,4 @@ Tam şartname: **[`docs/KURULUM_G.md`](docs/KURULUM_G.md)** (bu dosyanın parça
 ## 23. DEĞİŞİKLİK NOTLARI
 
 - **05.11.2026 — XAG/USD kaldırıldı:** Twelve Data ücretsiz planında yok (Grow/Venture gerekir). §1.3, §10, §15'teki XAG ifadeleri geçersizdir; D artık US100, XAU/USD, GBP/USD, BTC/USD, ETH/USD'de çalışır. Plan yükseltilirse `config/symbols.json`'a geri eklenebilir.
-- **05.11.2026 — Yenileme 60 sn → 15 sn:** kullanıcı gecikme istemedi; §17.12 güncellendi.
+- **05.11.2026 — Ekran gecikmesi giderildi:** raw.githubusercontent'ın ~5 dk önbelleği yerine `state.json` tarama anında GitHub API'den okunur; §17.12 güncellendi.

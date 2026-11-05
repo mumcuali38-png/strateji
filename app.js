@@ -146,12 +146,12 @@ async function computeLimits() {
   if (maxL > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
 }
 let lastFull = 0;
-async function reload(manual = false) {
+async function reload(manual = false, api = false) {
   const prev = new Map(allSetups(App).map((s) => [s.id, s.status]));
   const prevGen = data.state?.generatedAt;
   // state.json 15 sn'de bir; haber ve geçmiş dakikada bir (gereksiz istek yok)
   const full = manual || Date.now() - lastFull > 55000;
-  const ok = await refresh(full ? ['state', 'news', 'history'] : ['state']);
+  const ok = await refresh(full ? ['state', 'news', 'history'] : ['state'], api || manual);
   if (full && ok) lastFull = Date.now();
   await computeLimits();
   if (data.state?.generatedAt !== prevGen) for (const s of allSetups(App)) if (prev.has(s.id) && prev.get(s.id) !== s.status) App.flashIds.add(s.id);
@@ -174,7 +174,7 @@ function pullToRefresh() {
   App.conf = await loadStaticConfig();
   loadCached();
   render();
-  await reload();
+  await reload(false, true); // açılışta API (anında güncel)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('SW kaydı başarısız', e));
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'navigate' && e.data.url) location.hash = e.data.url.split('#')[1] ?? '/ozet'; if (e.data?.type === 'push') reload(); });
@@ -183,8 +183,17 @@ function pullToRefresh() {
   window.addEventListener('online', () => reload());
   window.addEventListener('offline', () => { data.offline = true; render(); });
   setInterval(() => { topbar(); }, 15000);
-  setInterval(() => reload(), 15000); // Tarama mum kapanışından ~20 sn sonra yazar; uygulama 15 sn'de bir kontrol eder
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) reload(); });
+  // Tarama her 5 dakikanın ~20. saniyesinde yazar. O anda GitHub API'den (anında güncel) okunur;
+  // diğer zamanlarda raw adres (sınırsız ama ~5 dk önbellekli). API: 5 dk'da en fazla 3 istek.
+  let slot = 0, tries = 0, lastTry = 0;
+  setInterval(() => {
+    const now = Date.now(), s = Math.floor(now / 300000) * 300000;
+    if (s !== slot) { slot = s; tries = 0; }
+    const fresh = (data.state?.lastScan ?? 0) >= s;
+    if (!fresh && !document.hidden && scanWindowOpen(now) && now - s >= 23000 && tries < 3 && now - lastTry >= 10000) { tries++; lastTry = now; reload(false, true); }
+  }, 2000);
+  setInterval(() => reload(), 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) reload(false, true); });
   pullToRefresh();
   if (!App.settings.onboarded) onboarding(App);
 })();

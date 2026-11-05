@@ -144,5 +144,7 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 
 ## Gecikme (05.11.2026)
 - Ölçüm: 5m mum kapanışı → tarama +20 sn → GitHub'a yazım +2 sn → bildirim ≈ +25 sn. 20 sn pay, Twelve Data'nın kapanan mumu kesinleştirmesi için (daha erken çekilirse yarım mum "kapanmış" sanılabilir).
-- Uygulama yenilemesi 60 sn → **15 sn** (`state.json`; haber/geçmiş dakikada bir). Üst çubukta "sonraki" tarama saati.
+- **Asıl gecikme `raw.githubusercontent.com`'daydı:** dal içeriğini ~5 dk önbellekte tutuyor, `?t=` bunu aşmıyor (ölçüm: 17:05:21 taraması raw'da 17:10:11'de göründü). Tarama aralığıyla birleşince ekranda ~10 dk eski veri.
+- **Çözüm:** `state.json` GitHub API'den (`/contents/state.json?ref=data`, anında güncel) okunur — ama sadece taramanın beklendiği anda: her 5 dakikanın 23. saniyesinden itibaren, veri gelene kadar 10 sn arayla en fazla 3 deneme; ayrıca açılışta, ekrana dönüşte ve aşağı çekerek yenilemede. API, IP başına saatte 60 istek sınırı olduğu için sürekli yoklanmaz (≈12–36/saat). API sınıra takılırsa 10 dk raw adrese düşer. Haber/geçmiş/grafikler raw'dan, dakikada bir.
+- Üst çubukta "sonraki" tarama saati gösterilir.
 - 5 dakikadan sık tarama ücretsiz planda mümkün değil: 1 dakikalık tarama 5 sembolde ≈ 3000 kredi/gün (sınır 800).
