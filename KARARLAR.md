@@ -161,3 +161,24 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Sessiz saatler:** bildirim artık düşürülmez, sessiz gelir; 🔵 TAM, ⛔ iptal/ÇIKIŞ ve test bildirimi sesli.
 - **Günlük kayıp limiti** bakiye girilmemişse veya bugün zarar yoksa tetiklenmez.
 - **Broker bağlantısı:** şimdilik sadece "Kapalı" seçilebilir (MetaApi / EA köprüsü sonraki aşamalarda).
+
+## Ek Özellikler v1 — Aşama 2 (emir kartı, risk kilidi, son giriş)
+
+- **Emir kartı** TAM ve TAM–BEKLE setup kartının altında. Emir tipi limit setupta fiyatın konumuna göre **LIMIT** (giriş fiyatın iyi tarafında) veya **STOP** (giriş fiyatın ötesinde) yazılır. "Piyasa" sadece fiyat girişe 0,3R'den yakınsa seçilebilir.
+- **Lot bölme:** %50 TP1 / %50 TP2. Lot adımı korunur, tek kalan TP1 parçasına eklenir (0,41 → 0,21 + 0,20). Min lot tek parçaysa bölünmez.
+- **Risk** satırı, yuvarlanmış lotun stoptaki gerçek zararını gösterir (hedef riskten küçükse yanında "hedef $X").
+- **Kopyala formatı:** `XAUUSD BUY LIMIT 4056.85 SL 4045.60 TP1 4071.20 TP2 4088.00 LOT 0.06 (2×0.03)`. Sembol olarak broker sembolü kullanılır. US100'de seviyeler QQQ × oran ile US100'e çevrilir; Ayarlar'da US100 fiyatı yoksa tahmini oran kullanılır ve kartta uyarı çıkar.
+- **Spread kontrolü:** ayarlardaki tipik spread girişe eklenir (long +, short −). Strateji minimum RR'sinin altına düşerse "Spread ile RR yetersiz". Minimumlar: A–E TP1 ≥ 2; G T1 ≥ 1 ve T2 ≥ 2; F T2 ≥ 1,5 ve T3 ≥ 3.
+- **Risk kilidi:** "BUGÜN DUR" (bugünkü zarar ≥ günlük maks. zarar %, tüm setuplar YOK) ve "RİSK DOLU" (sonucu girilmemiş işlemlerin riski + bu işlem > maks. toplam risk %; kartta kırmızı kilit, setup durumu değişmez). Hesaplar USD'ye çevrilmiş bakiyeyle yapılır.
+- **Aynı fikir:** aynı paritede aynı yönde başka bir stratejide TAM varsa kartta "tek işlem aç" uyarısı (B+G birleşimi önceki gibi sunucuda da işaretlenir).
+- **Son giriş (sunucuda, `lastEntry`):**
+  - G: 13:00 TR.
+  - C ve D1: 11:00 NY (19:00 TR).
+  - F: spring/UTAD + 24 saat.
+  - A, B, E: sinyalin oluştuğu killzone'un bitişi.
+  - D2 ve killzone dışı sinyaller: sinyal + 6 saat (bayat sinyal sınırı).
+- **Süre dolunca:** dolmamış TAM setup YOK'a düşer ("SÜRE DOLDU"). TAM bildirimi gitmişse tek seferlik orta öncelikli "⏰ SÜRE DOLDU" bildirimi gider; iptal bildirimiyle karışmaz. Dolmuş G limiti etkilenmez. Kartta geri sayım 15 sn'de bir güncellenir.
+- **Haber bandı:** kart açıkken ilgili kırmızı habere ≤ 30 dk kaldıysa (veya haberden sonraki 15 dk) kırmızı "HABER RİSKİ" bandı.
+- **MT5'e Gönder:** soluk ve pasif. Dokununca "MT5 bağlantısı henüz aktif değil…" mesajı çıkar. `app/broker.js`'te BrokerAdapter arayüzü, `DisabledAdapter`, magic numaraları (A=1001 … G=1007) ve yorum formatı (`G-LONG-20261106`) hazır.
+- **Girdim:** gerçek giriş fiyatı ve lot sorulur (varsayılan önerilen), önerilen değerlerle birlikte günlüğe kaydedilir.
+- **Girmedim:** sebep seçilir (Geç gördüm / Korktum / Kurala uymadı / Haber / Risk dolu / Spread / Diğer + not), tablette saklanır. Sanal sonuç takibi Aşama 3'te.

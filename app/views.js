@@ -4,7 +4,9 @@ import { recompute, us100Ratio } from './calc.js';
 import { mountChart } from './chart.js';
 import { chart as loadChart } from './data.js';
 import { copy, modal, toast } from './ui.js';
-import { trades } from './store.js';
+import { trades, skipped } from './store.js';
+import { buildOrder, orderCardHtml, SKIP_REASONS } from './order.js';
+import { getAdapter, MT5_OFF_MSG } from './broker.js';
 
 const ORDER = { TAM: 0, BEKLE: 1, EKSIK: 2, YOK: 3 };
 export const rank = (a, b) => (ORDER[a.status] - ORDER[b.status]) || (a.remaining - b.remaining) || ((b.stars ?? 0) - (a.stars ?? 0));
@@ -219,7 +221,7 @@ function setupCard(App, s) {
     ${(s.warnings ?? []).map((w) => `<div class="warnline">⚠️ ${esc(w)}</div>`).join('')}
     ${s.missing ? `<div class="warnline">⏳ Eksik: ${esc(s.missing)}</div>` : ''}
     ${extraHtml(s)}
-    <div class="btns"><button class="btn primary big" data-act="entered">✔ İşleme girdim</button><button class="btn big" data-act="copy">⧉ Kopyala</button><button class="btn big" data-act="claude">🤖 Claude'a gönder</button></div>
+    ${s.status === 'TAM' || s.status === 'BEKLE' ? orderCardHtml(App, s, buildOrder(App, s, m, cfg)) + '<div class="btns"><button class="btn" data-act="copy">⧉ Kartı metin olarak kopyala</button><button class="btn" data-act="claude">🤖 Claude\'a gönder</button></div>' : '<div class="btns"><button class="btn primary big" data-act="entered">✔ İşleme girdim</button><button class="btn big" data-act="copy">⧉ Kopyala</button><button class="btn big" data-act="claude">🤖 Claude\'a gönder</button></div>'}
   </div>`;
 }
 /** F: faz, kalite, saat bilgisi (sonraki funding, hafta sonu, en iyi pencere) */
@@ -289,13 +291,49 @@ function wireCard(App, el, s) {
   el.querySelectorAll('[data-method]').forEach((b) => b.addEventListener('click', () => { App.methodSel[s.id] = b.dataset.method; App.render(); }));
   el.querySelector('[data-act="copy"]')?.addEventListener('click', () => copy(setupText(App, s, false)));
   el.querySelector('[data-act="claude"]')?.addEventListener('click', () => copy(setupText(App, s, true)));
-  el.querySelector('[data-act="entered"]')?.addEventListener('click', async () => {
-    const cfg = symCfg(App, s.symbol);
-    const m = recompute(methodOf(App, s), s, cfg, App.settings, App.data.state);
-    const t = { id: `${Date.now()}`, t: Date.now(), strategy: s.strategy, symbol: s.symbol, dir: s.dir, sub: s.sub, method: m.label, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, rr: +m.rr.toFixed(2), lot: m.lotOk ? +m.lot.toFixed(2) : null, riskUsd: +m.riskUsd.toFixed(2), note: '', result: null, r: null, setupId: s.id };
-    await trades.put(t);
-    toast('Günlüğe kaydedildi');
-    App.go(`#/gunluk/${t.id}`);
+  const cur = () => { const cfg = symCfg(App, s.symbol); const m = recompute(methodOf(App, s), s, cfg, App.settings, App.data.state); return { cfg, m, o: s.status === 'TAM' || s.status === 'BEKLE' ? buildOrder(App, s, m, cfg) : null }; };
+  el.querySelectorAll('[data-otype]').forEach((b) => b.addEventListener('click', () => { if (b.disabled) return; App.orderType[s.id] = b.dataset.otype; App.render(); }));
+  el.querySelector('[data-act="ocopy"]')?.addEventListener('click', () => copy(cur().o.text));
+  el.querySelector('[data-act="mt5"]')?.addEventListener('click', () => {
+    const { o } = cur();
+    if (getAdapter(App.settings).status() !== 'CONNECTED') return toast(MT5_OFF_MSG);
+    if (o.locks.length) return toast(`Kilitli: ${o.locks.map((l) => l.text).join(' · ')}`);
+  });
+  el.querySelector('[data-act="skip"]')?.addEventListener('click', () => {
+    modal(`<h3>Neden girmedin?</h3><div class="btns" style="flex-wrap:wrap">${SKIP_REASONS.map(([k, l]) => `<button class="btn" data-r="${k}">${l}</button>`).join('')}</div>
+      <div class="field"><label>Not (opsiyonel)</label><input id="skipnote" style="min-height:44px"></div>`, (sh, close) => {
+      sh.querySelectorAll('[data-r]').forEach((b) => b.addEventListener('click', () => {
+        const { m, o } = cur();
+        const rec = { signal_id: s.id, t: Date.now(), reason: b.dataset.r, reasonText: SKIP_REASONS.find((x) => x[0] === b.dataset.r)[1], note: sh.querySelector('#skipnote').value.trim(),
+          strategy: s.strategy, symbol: s.symbol, dir: s.dir, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, signalAt: s.signalAt ?? s.evaluatedAt, lastEntry: s.lastEntry ?? null, virtual_result_r: null, warnings: o?.warnings.map((w) => w.code) ?? [] };
+        skipped.put(rec); App.skipped = skipped.map(); close(); toast('Kaydedildi — sanal sonuç takip edilecek'); App.render();
+      }));
+    });
+  });
+  el.querySelector('[data-act="entered"]')?.addEventListener('click', () => {
+    const { m, o } = cur();
+    const d = symCfg(App, s.symbol).decimals ?? 2;
+    const lot0 = m.lotOk ? +m.lot.toFixed(2) : '';
+    const entry0 = o && o.type === 'market' ? App.data.state?.symbols?.[s.symbol]?.price ?? m.entry : m.entry;
+    const save = async (entry, lot) => {
+      const t = { id: `${Date.now()}`, t: Date.now(), strategy: s.strategy, symbol: s.symbol, dir: s.dir, sub: s.sub, method: m.label, signal_id: s.id,
+        suggested: { entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, lot: m.lotOk ? +m.lot.toFixed(2) : null, parts: o?.parts ?? [], type: o?.type ?? m.type },
+        entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, rr: +m.rr.toFixed(2), lot, riskUsd: +(o && o.lot > 0 && lot ? o.riskUsd * lot / o.lot : m.lotOk && m.lot > 0 && lot ? m.riskUsd * lot / m.lot : m.riskUsd).toFixed(2),
+        quality: s.info?.g?.quality ?? (s.stars ? `${s.stars}★` : ''), lastEntry: s.lastEntry ?? null, note: '', result: null, r: null, setupId: s.id, events: [] };
+      await trades.put(t);
+      toast('Günlüğe kaydedildi');
+      App.go(`#/gunluk/${t.id}`);
+    };
+    modal(`<h3>Girdim — ${esc(s.strategy)} ${esc(SHORT[s.symbol] ?? s.symbol)} ${dirTxt(s.dir)}</h3>
+      <div class="form"><div class="field"><label>Gerçek giriş fiyatı</label><input id="fe" type="number" step="any" value="${Number(entry0).toFixed(d)}" style="min-height:48px"></div>
+      <div class="field"><label>Lot</label><input id="fl" type="number" step="any" value="${lot0}" style="min-height:48px"></div></div>
+      <div class="btns"><button class="btn primary big" data-ok>Kaydet</button></div>`, (sh, close) => {
+      sh.querySelector('[data-ok]').addEventListener('click', async () => {
+        const e = Number(sh.querySelector('#fe').value), l = sh.querySelector('#fl').value === '' ? null : Number(sh.querySelector('#fl').value);
+        if (!(e > 0)) return toast('Giriş fiyatı gir');
+        close(); await save(e, l);
+      });
+    });
   });
 }
 export const _m = modal;

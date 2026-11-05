@@ -18,6 +18,7 @@ import { aggregateUTC } from './f/data.ts';
 import { scenario, to15 } from './f/synthetic.ts';
 import { gDay, gHistory } from './g/synthetic.ts';
 import { evalG } from './g/judas.ts';
+import { annotateDeadlines } from './deadline.ts';
 import { Ctx } from './context.ts';
 
 const conf = loadConfig();
@@ -51,6 +52,7 @@ results.F = { BTCUSD: fr.setups };
 // G: sentetik Judas günü (gerçek veri DEĞİL)
 const gd = gDay({ nowNY: [2, 50] });
 results.G = { XAUUSD: evalG(conf, new Ctx('XAUUSD', conf, gd.now, { m5: gd.m5, m1: [], d1: [] }, []), gHistory(), []) };
+annotateDeadlines(conf, results.G.XAUUSD, gd.now);
 const credits = freshCredits(null, now, conf.params); credits.used = 512;
 const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings: ['DEMO VERİSİ — sentetik mumlar'], fetched: [], window: { active: true, oneMin: false, weekday: true } });
 writeJSON('state.json', state);

@@ -1,7 +1,9 @@
 // Strateji Radar — PWA giriş noktası
 import { DATA_BASE, TABS, STRATS, SHORT, ACTIONS_URL, SECRETS_URL, loadStaticConfig } from './app/config.js';
 import { data, refresh, loadCached } from './app/data.js';
-import { loadSettings, saveSettings, trades } from './app/store.js';
+import { loadSettings, saveSettings, trades, skipped } from './app/store.js';
+import { fxToUsd } from './app/calc.js';
+import { openRiskPct, deadlineTxt } from './app/order.js';
 import { tr, ny, dur, nyMinutes, parseHM, nyDayStart, MIN, DAY, HOUR, trMinutes, trDayStart, esc, dateTR } from './app/fmt.js';
 import { renderOverview, renderStrategy, tabBest, allSetups } from './app/views.js';
 import { renderNews, renderJournal, renderHistory, notifHistory } from './app/views2.js';
@@ -10,7 +12,7 @@ import { toast } from './app/ui.js';
 
 const App = {
   settings: loadSettings(), conf: {}, data, dataBase: DATA_BASE, links: { actions: ACTIONS_URL, secrets: SECRETS_URL },
-  methodSel: {}, histFilter: {}, flashIds: new Set(), chartCtl: null, limits: { reached: false, why: '' },
+  methodSel: {}, orderType: {}, skipped: {}, histFilter: {}, flashIds: new Set(), chartCtl: null, limits: { reached: false, why: '' },
   save() { saveSettings(this.settings); },
   go(h) { if (location.hash === h) this.render(); else location.hash = h; },
   applyTheme() {
@@ -132,18 +134,25 @@ async function render() {
   App.flashIds.clear();
 }
 
+/* Son giriş sayaçları (EK §3.5): kart yeniden çizilmeden metin güncellenir */
+function tickDeadlines() {
+  document.querySelectorAll('[data-deadline]').forEach((el) => { const t = Number(el.dataset.deadline); el.innerHTML = deadlineTxt({ t, left: t - Date.now(), expired: Date.now() >= t }); el.classList.toggle('exp', Date.now() >= t); });
+}
+
 /* ---------- Veri döngüsü ---------- */
 async function computeLimits() {
   const s = App.settings;
   const maxN = Number(s.maxTradesPerDay), maxL = Number(s.maxDailyLossPct);
   const allTrades = await trades.all();
-  App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result) };
+  const balUsd = (Number(s.balance) || 0) * (fxToUsd(s, App.data.state) ?? 0);
+  App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result), openRiskPct: openRiskPct(allTrades, balUsd) };
+  App.skipped = skipped.map();
   if (!(maxN > 0) && !(maxL > 0)) return;
   const today = trDayStart(Date.now());
   const list = allTrades.filter((t) => t.t >= today);
   if (maxN > 0 && list.length >= maxN) App.limits = { ...App.limits, reached: true, why: `Günlük işlem limiti doldu (${list.length}/${maxN})` };
   const lossUsd = list.reduce((a, t) => a + (Number(t.r) < 0 ? -Number(t.r) * (t.riskUsd || 0) : 0), 0);
-  if (maxL > 0 && Number(s.balance) > 0 && lossUsd > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
+  if (maxL > 0 && balUsd > 0 && lossUsd > 0 && lossUsd >= (balUsd * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `BUGÜN DUR — günlük zarar limiti doldu (−$${lossUsd.toFixed(0)} ≥ %${maxL})` };
 }
 let lastFull = 0;
 async function reload(manual = false, api = false) {
@@ -182,7 +191,7 @@ function pullToRefresh() {
   window.addEventListener('hashchange', render);
   window.addEventListener('online', () => reload());
   window.addEventListener('offline', () => { data.offline = true; render(); });
-  setInterval(() => { topbar(); }, 15000);
+  setInterval(() => { topbar(); tickDeadlines(); }, 15000);
   // Tarama her 5 dakikanın ~20. saniyesinde yazar. O anda GitHub API'den (anında güncel) okunur;
   // diğer zamanlarda raw adres (sınırsız ama ~5 dk önbellekli). API: 5 dk'da en fazla 3 istek.
   let slot = 0, tries = 0, lastTry = 0;

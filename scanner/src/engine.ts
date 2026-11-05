@@ -1,6 +1,7 @@
 import type { Candle, NewsEvent, Setup, StrategyId } from './types.ts';
 import type { Config } from './config.ts';
-import { Ctx } from './context.ts';
+import { Ctx, rankSetups } from './context.ts';
+import { annotateDeadlines } from './deadline.ts';
 import { evalA } from './strategies/a.ts';
 import { evalB } from './strategies/b.ts';
 import { evalC } from './strategies/c.ts';
@@ -34,6 +35,7 @@ export function runEngine(conf: Config, now: number, data: Record<string, SymDat
     }
   }
   mergeGB(results);
+  for (const bySym of Object.values(results)) for (const list of Object.values(bySym)) { annotateDeadlines(conf, list, now); list.sort(rankSetups); }
   return { results, ctxs, errors };
 }
 

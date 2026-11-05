@@ -74,6 +74,8 @@ export interface Setup {
   chartTf: TF;
   tfs: TF[];
   signalAt?: number;
+  /** Son giriş zamanı (EK §3.5), UTC ms */
+  lastEntry?: number;
   evaluatedAt: number;
   zoneId: string;
   info?: Record<string, unknown>;

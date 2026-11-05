@@ -337,7 +337,7 @@ export function evalG(conf: Config, ctx: Ctx, h1Store: Candle[], news: NewsEvent
     overlays: ov, signalAt, stars: score, tags: flags, notices,
     none: reason ? { why: reason, waiting: 'Yarın 00:00 NY (08:00 TR) yeni seviyeler', ends: noneEnds } : undefined,
     warnings: newsDay ? [`Haber günü: ${newsDay.title} ${fmtTR(newsDay.t)} TR — T1 alınmadıysa ${G.newsExitMin} dk önce tüm pozisyon kapatılır`] : [],
-    info: gInfo({ quality, flags, sweep: sweepBar ? { side: W.side, bar: sweepBar.t, ext: P(ext), depth } : null, early: Number.isFinite(early) ? S * early : null, newsDay: newsDay ? { t: newsDay.t, title: newsDay.title } : null, timeline: { asia: T(-4), mo, sweep: T(2), sweepEnd: T(4), lastEntry: T(5), forceExit: T(12) } }),
+    info: gInfo({ filled: !!signalAt, quality, flags, sweep: sweepBar ? { side: W.side, bar: sweepBar.t, ext: P(ext), depth } : null, early: Number.isFinite(early) ? S * early : null, newsDay: newsDay ? { t: newsDay.t, title: newsDay.title } : null, timeline: { asia: T(-4), mo, sweep: T(2), sweepEnd: T(4), lastEntry: T(5), forceExit: T(12) } }),
   })];
 }
 export const _g = { durationText };

@@ -6,6 +6,7 @@ import { mergeCandles } from '../candles.ts';
 import { readCandles, writeCandles, writeJSON } from '../store.ts';
 import { fetchF, type FData } from './data.ts';
 import { evalF } from './setup.ts';
+import { annotateDeadlines } from '../deadline.ts';
 
 export const F_CANDLE_KEY = 'BTCUSD_F';
 const pack6 = (c: Candle[]) => c.map((x) => [x.t, x.o, x.h, x.l, x.c, x.v ?? 0]);
@@ -28,5 +29,6 @@ export async function runF(conf: Config, now: number, news: NewsEvent[], fetcher
     writeCandles(F_CANDLE_KEY, '5min', m5);
     writeJSON(`charts/${F_CANDLE_KEY}.json`, fChart(data, now));
   }
+  annotateDeadlines(conf, setups, now);
   return { setups, errors: data ? [] : errors, m5, source: data?.source ?? null };
 }

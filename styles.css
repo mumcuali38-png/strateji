@@ -175,6 +175,18 @@ a { color: var(--info); }
 .kv { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); }
 .kv b { font-size: 1.15rem; }
 .inval { color: var(--danger); font-size: .85rem; margin-top: 8px; }
+/* Emir kartı (EK §3.2) */
+.order { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); display: grid; gap: 8px; }
+.order.dl { border-left: 4px solid var(--long); } .order.ds { border-left: 4px solid var(--short); }
+.ogrid { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: baseline; }
+.order .dir { font-size: .9rem; padding: 2px 8px; }
+.ogrid .k { color: var(--muted); font-weight: 600; } .ogrid .v { white-space: nowrap; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 1.15rem; font-weight: 700; }
+.ogrid .d { font-family: var(--mono); font-size: .8rem; color: var(--muted); text-align: right; }
+.lockline { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); border-radius: 10px; padding: 8px 10px; font-weight: 700; }
+.deadline { font-size: .95rem; } .deadline.exp { color: var(--bekle); font-weight: 700; }
+.btn.mt5.l { border-color: var(--long); color: var(--long); } .btn.mt5.s { border-color: var(--short); color: var(--short); }
+.btn.mt5.off { opacity: .45; }
+.seg-b[disabled] { opacity: .4; }
 .warnline { color: var(--eksik); font-size: .85rem; margin-top: 4px; }
 .extra { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .9rem; }
 .extra summary { cursor: pointer; min-height: 32px; }
