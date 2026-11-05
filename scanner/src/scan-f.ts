@@ -6,6 +6,7 @@ import { loadConfig } from './config.ts';
 import { readJSON, writeJSON } from './store.ts';
 import { runF } from './f/run.ts';
 import { computeMessages } from './notify.ts';
+import { openSignalIds, trackMessages } from './track.ts';
 import { sendAll } from './push.ts';
 import { updateHistory, type HistEvent } from './history.ts';
 import { inTrRange, trDow } from './time.ts';
@@ -34,11 +35,13 @@ const all = Object.values(state.strategies).flatMap((b) => Object.values(b).flat
 state.summary = { tam: all.filter((x) => x.status === 'TAM' || x.status === 'BEKLE').length, ready: all.filter((x) => x.status === 'EKSIK' && x.remaining === 1).length };
 
 const notified = readJSON<Record<string, number>>('notified.json', {});
-const msgs = computeMessages(conf, f.setups, prevF, notified, [], now);
+const hist0 = readJSON<HistEvent[]>('history.json', []);
+const msgs = computeMessages(conf, f.setups, prevF, notified, [], now, openSignalIds(hist0));
+// Sadece F olayları BTC mumlarıyla değerlendirilir (diğer semboller ana taramada; önceden yanlışlıkla BTC mumlarıyla değerlendiriliyordu)
+const hist = updateHistory(hist0, f.setups, now, conf.params.history.days, (_sym, strategy) => (strategy === 'F' ? f.m5 : []), conf.params.history.evalMaxBars5m).hist;
+msgs.push(...trackMessages(conf, hist.filter((x) => x.strategy === 'F'), notified, news?.events ?? [], now));
 const pr = await sendAll(conf, msgs, now);
 pr.log.forEach((l) => console.log(l));
-
-const hist = updateHistory(readJSON<HistEvent[]>('history.json', []), f.setups, now, conf.params.history.days, () => f.m5, conf.params.history.evalMaxBars5m).hist;
 writeJSON('state.json', state);
 writeJSON('history.json', hist);
 writeJSON('notified.json', notified);

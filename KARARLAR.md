@@ -182,3 +182,18 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **MT5'e Gönder:** soluk ve pasif. Dokununca "MT5 bağlantısı henüz aktif değil…" mesajı çıkar. `app/broker.js`'te BrokerAdapter arayüzü, `DisabledAdapter`, magic numaraları (A=1001 … G=1007) ve yorum formatı (`G-LONG-20261106`) hazır.
 - **Girdim:** gerçek giriş fiyatı ve lot sorulur (varsayılan önerilen), önerilen değerlerle birlikte günlüğe kaydedilir.
 - **Girmedim:** sebep seçilir (Geç gördüm / Korktum / Kurala uymadı / Haber / Risk dolu / Spread / Diğer + not), tablette saklanır. Sanal sonuç takibi Aşama 3'te.
+
+## Ek Özellikler v1 — Aşama 3 (canlı işlem, yönetim, ÇIKIŞ, otomatik günlük)
+
+- **Sunucu tüm TAM sinyalleri takip eder** (`history.json` → `track`), girildi mi bilmeden; işlemler tablette (IndexedDB) kalır. Mumlardan sırayla dolum → TP1 → TP2 / BE ya da SL hesaplanır. Ek kredi harcanmaz.
+- **Varsayılan yönetim:** TP1'de %50 kapat + SL girişe. Sonuç: TP2 = 0,5×RR1 + 0,5×RR2; BE = 0,5×RR1; TP1 öncesi SL = −1R; TP2 yoksa TP1'de tamamı kapanır. Aynı mumda stop ve hedef varsa stop sayılır (temkinli). Limit son giriş zamanına kadar dolmazsa DOLMADI.
+- **Bildirimler:** TP1, TP2, Stop, BE ve "açık işlemde habere 15 dk" (varsayılan kural: "TP1 alınmadıysa çık ya da stop girişe çek"; G kendi kuralını, F kendi T1'ini gönderir).
+  - Sadece TAM bildirimi gitmiş sinyaller için gönderilir.
+  - Olay en fazla 20 dk önce olmuş olmalı; böylece ilk çalıştırmada eski olay yağmuru olmaz.
+  - Telefonda o sinyale "Girdim" ile açılmış işlem yoksa bildirim **sessiz** ve "(girmedin)" etiketiyle gösterilir (service worker kontrol eder).
+- **ÇIKIŞ:** dolmuş (açık) sinyal iptal olursa (bölge tükendi, stop vb.) "⛔ ÇIKIŞ" bildirimi gider; sessiz saatleri deler. Dolmamışsa eskisi gibi "İptal".
+- **Canlı işlem ekranı** (menü → 💼 İşlemler): anlık fiyat (son tarama), anlık R, SL/TP'ye kalan mesafe, geçen süre, MAE/MFE, yönetim adımları. "TP1 alındı", "BE yapıldı", "Kapattım…" (çıkış fiyatı + kurallara uyuldu mu + not) butonları var. "Girdim"den sonra bu ekran açılır.
+- **Otomatik günlük:** tarama takibi KAPANDI olunca işlem kendiliğinden kapanır ("oto" etiketi). R kullanıcının gerçek girişine göre yeniden hesaplanır, $ sonucu = R × risk. Kullanıcı sonradan düzeltebilir.
+- **Girmediklerim:** tarama sonucu "sanal sonuç" olarak yazılır, "Kaçan R" toplamı ve sebebe göre dağılım gösterilir.
+- **Bildirim merkezi** 7 günden 30 güne çıktı.
+- **Hata düzeltmesi:** gece/hafta sonu F taraması geçmişteki XAU/EUR/GBP/US100 sinyallerini BTC mumlarıyla değerlendiriyordu (yanlış TP/SL). Artık sadece F olayları değerlendirilir. Takibi olmayan eski olaylar mumlar yetiyorsa bir kez yeniden değerlendirilir.

@@ -321,8 +321,8 @@ function wireCard(App, el, s) {
         entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, rr: +m.rr.toFixed(2), lot, riskUsd: +(o && o.lot > 0 && lot ? o.riskUsd * lot / o.lot : m.lotOk && m.lot > 0 && lot ? m.riskUsd * lot / m.lot : m.riskUsd).toFixed(2),
         quality: s.info?.g?.quality ?? (s.stars ? `${s.stars}★` : ''), lastEntry: s.lastEntry ?? null, note: '', result: null, r: null, setupId: s.id, events: [] };
       await trades.put(t);
-      toast('Günlüğe kaydedildi');
-      App.go(`#/gunluk/${t.id}`);
+      toast('İşlem başladı — canlı takip ve günlük kaydı açıldı');
+      App.go(`#/islemler/${encodeURIComponent(s.id)}`);
     };
     modal(`<h3>Girdim — ${esc(s.strategy)} ${esc(SHORT[s.symbol] ?? s.symbol)} ${dirTxt(s.dir)}</h3>
       <div class="form"><div class="field"><label>Gerçek giriş fiyatı</label><input id="fe" type="number" step="any" value="${Number(entry0).toFixed(d)}" style="min-height:48px"></div>

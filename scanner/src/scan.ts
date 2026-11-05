@@ -6,6 +6,7 @@ import { runEngine, type SymData } from './engine.ts';
 import { buildChart, buildState } from './state.ts';
 import { sendAll } from './push.ts';
 import { computeMessages } from './notify.ts';
+import { openSignalIds, trackMessages } from './track.ts';
 import { planFetch } from './plan.ts';
 import { runF } from './f/run.ts';
 import { updateHistory, type HistEvent } from './history.ts';
@@ -103,15 +104,16 @@ const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(byS
 // --- Bildirimler ---
 const prev = readJSON<{ strategies?: Record<string, Record<string, Setup[]>> } | null>('state.json', null);
 const notified = readJSON<Record<string, number>>('notified.json', {});
-const msgs = computeMessages(conf, all, prev, notified, news?.events ?? [], now);
-const pr = await sendAll(conf, msgs, now);
-pr.log.forEach((l) => console.log(l));
-if (pr.failed) warnings.push(`${pr.failed} bildirim gönderilemedi`);
+const msgs = computeMessages(conf, all, prev, notified, news?.events ?? [], now, openSignalIds(hist));
 
-// --- Geçmiş ---
+// --- Geçmiş + işlem takibi ---
 const candlesOf = (sym: string, strategy?: string): Candle[] => (strategy === 'F' ? fRun.m5 : data[sym]?.m5 ?? []);
 const h = updateHistory(hist, all, now, P.history.days, candlesOf, P.history.evalMaxBars5m);
 hist = h.hist;
+msgs.push(...trackMessages(conf, hist, notified, news?.events ?? [], now));
+const pr = await sendAll(conf, msgs, now);
+pr.log.forEach((l) => console.log(l));
+if (pr.failed) warnings.push(`${pr.failed} bildirim gönderilemedi`);
 
 // --- Yaz ---
 const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings, fetched, window: { active, pre: inPre, oneMin: inTrRange(now, S.oneMinuteTR[0], S.oneMinuteTR[1]), weekday, start: S.windowTR[0], end: S.windowTR[1] } });

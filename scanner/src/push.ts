@@ -13,7 +13,7 @@ export interface Prefs {
   instr?: Record<string, { valuePerUnit?: number; lotStep?: number; minLot?: number }>;
 }
 export interface Sub { endpoint: string; keys: { p256dh: string; auth: string }; prefs?: Prefs; label?: string }
-export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test' | 'info'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup }
+export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test' | 'info' | 'trade'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup; /** İşlem bildirimleri: sinyal kimliği (uygulama açık işlemle eşler) */ signal?: string }
 
 export const SHORT: Record<string, string> = { XAUUSD: 'XAU', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
 
@@ -81,7 +81,9 @@ export function readyMsg(s: Setup): Msg {
   if (s.strategy === 'F') return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: '🟡 F · BTC 1 şart kaldı', body: `F: BTC 1 şart kaldı: ${w ? `${w.label} — ${w.detail}` : '—'}`, url: `./#/F/BTCUSD/${encodeURIComponent(s.id)}`, tag: s.key };
   return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: `🟡 Hazırlan · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy}: sadece ${w ? `${w.label} — ${w.detail}` : 'son şart'} bekleniyor`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key };
 }
-export function cancelMsg(s: Setup, why: string): Msg {
+export function cancelMsg(s: Setup, why: string, open = false): Msg {
+  // Dolmuş (açık) işlemde iptal = ÇIKIŞ (EK §3.8, en yüksek öncelik, sessiz saati deler)
+  if (open) return { kind: 'cancel', strategy: s.strategy, symbol: s.symbol, setup: s, signal: s.id, title: `⛔ ÇIKIŞ · ${SHORT[s.symbol]} ${s.strategy} ${s.dir === 1 ? '▲ LONG' : '▼ SHORT'}`, body: `${s.strategy}: kurulum iptal — ${why}. Açık işlemi kapat.`, url: `./#/islemler/${encodeURIComponent(s.id)}`, tag: `${s.id}+IPTAL` };
   return { kind: 'cancel', strategy: s.strategy, symbol: s.symbol, setup: s, title: `⛔ İptal · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy} ${s.dir === 1 ? 'LONG' : 'SHORT'} iptal: ${why}`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: `${s.id}+IPTAL` };
 }
 /** Son giriş süresi doldu (EK §3.5) — orta öncelik */
@@ -125,7 +127,7 @@ export async function sendAll(conf: Config, msgs: Msg[], now: number): Promise<{
     for (const m0 of msgs) {
       if (!allowed(m0, sub.prefs, now)) continue;
       const m = m0.kind === 'tam' && m0.setup ? tamMsg(conf, m0.setup, sub.prefs) : m0;
-      const payload = JSON.stringify({ title: m.title, body: m.body, url: m.url, tag: m.tag, kind: m.kind, t: now, silent: isSilent(m0, sub.prefs, now) });
+      const payload = JSON.stringify({ title: m.title, body: m.body, url: m.url, tag: m.tag, kind: m.kind, t: now, signal: m.signal, silent: isSilent(m0, sub.prefs, now) });
       try {
         await webpush.sendNotification(sub as webpush.PushSubscription, payload, { TTL: 900, urgency: m.kind === 'ready' ? 'normal' : 'high' });
         sent++;
