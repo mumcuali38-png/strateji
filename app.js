@@ -192,7 +192,13 @@ function pullToRefresh() {
   render();
   await reload(false, true); // açılışta API (anında güncel)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('SW kaydı başarısız', e));
+    const hadController = !!navigator.serviceWorker.controller; // ilk kurulumda yeniden yükleme yok
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+      reg.update().catch(() => {});
+      // Yeni sürüm devreye girince bir kez yeniden yükle (eski kabuk ekranda kalmasın)
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded && hadController) { reloaded = true; location.reload(); } });
+    }).catch((e) => console.warn('SW kaydı başarısız', e));
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'navigate' && e.data.url) location.hash = e.data.url.split('#')[1] ?? '/ozet'; if (e.data?.type === 'push') reload(); });
   }
   window.addEventListener('hashchange', render);

@@ -8,7 +8,8 @@ const LIB = 'https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(SHELL);
-    await c.addAll(ASSETS);
+    // HTTP önbelleğini atla (GitHub Pages 10 dk önbellekler): yeni sürüm eski dosyalarla dolmasın
+    await c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })));
     try { await c.add(new Request(LIB, { mode: 'no-cors' })); } catch { /* çevrimdışı kurulum */ }
     await self.skipWaiting();
   })());
@@ -42,7 +43,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
       const c = await caches.open(SHELL);
       const hit = await c.match(e.request, { ignoreSearch: url.origin === location.origin });
-      const net = fetch(e.request).then((r) => { if (r.ok || r.type === 'opaque') c.put(e.request, r.clone()); return r; }).catch(() => null);
+      const net = fetch(url.origin === location.origin ? new Request(e.request.url, { cache: 'no-cache' }) : e.request).then((r) => { if (r.ok || r.type === 'opaque') c.put(e.request, r.clone()); return r; }).catch(() => null);
       return hit ?? (await net) ?? (await c.match('./index.html'));
     })());
   }
@@ -83,6 +84,10 @@ self.addEventListener('push', (e) => {
     await self.registration.showNotification(title, opts);
     for (const c of await self.clients.matchAll({ type: 'window' })) c.postMessage({ type: 'push' });
   })());
+});
+// Uygulamadan "önbelleği yenile" isteği
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'clear-shell') e.waitUntil((async () => { for (const k of await caches.keys()) if (k !== DATA) await caches.delete(k); })());
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
