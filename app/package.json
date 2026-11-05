@@ -1,0 +1,5 @@
+{
+  "//": "app/ altındaki .js dosyaları ES modülüdür (tarayıcı + node testleri; Node 20 bunu otomatik algılamaz)",
+  "type": "module",
+  "private": true
+}
