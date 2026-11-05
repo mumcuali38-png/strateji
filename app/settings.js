@@ -127,6 +127,8 @@ export function renderSettings(App, el) {
 
   <div class="card"><h2>Hakkında</h2>
     <p><b>Uygulama sinyal verir, karar senindir.</b> Strateji Radar sinyal ve durum gösterir, işlem açmaz. Karar her zaman kullanıcınındır.</p>
+    <div class="btns"><button class="btn" data-hardrefresh>↻ Uygulamayı güncelle (önbelleği yenile)</button></div>
+    <div class="muted small">Ayarların, günlüğün ve bildirim aboneliğin silinmez.</div>
     <div class="muted small">Sürüm ${esc(VERSION)} · <a href="${RULES_URL}" target="_blank" rel="noopener">Kural dosyası (MASTERPROMPT.md)</a></div>
     ${dstNote ? '<div class="warnline">⚠️ Mart–Kasım: New York yaz saatinde. Strateji saatleri bilinçli olarak sabit UTC-5\'tir; borsa saatleri 1 saat kaymış görünebilir.</div>' : ''}
   </div>`;
@@ -145,6 +147,15 @@ export function renderSettings(App, el) {
   el.querySelector('[data-sub]').addEventListener('click', async () => {
     try { const code = await subscriptionCode(App); const ta = el.querySelector('#subcode'); ta.value = code; ta.classList.remove('hidden'); await copy(code); }
     catch (e) { toast(e.message, 4000); }
+  });
+  el.querySelector('[data-hardrefresh]')?.addEventListener('click', async () => {
+    toast('Güncelleniyor…');
+    try {
+      for (const k of await caches.keys()) if (k !== 'data-v1') await caches.delete(k);
+      const reg = await navigator.serviceWorker?.getRegistration();
+      await reg?.update();
+    } catch { /* yok say */ }
+    location.reload();
   });
   el.querySelector('[data-confirm-instr]').addEventListener('click', () => { s.instrConfirmed = Date.now(); App.save(); toast('Enstrüman değerleri doğrulandı — abonelik kodunu yeniden kopyalayın'); App.render(); });
   el.querySelector('[data-test]').addEventListener('click', async () => { try { await testNotification(); } catch (e) { toast(e.message); } });
