@@ -191,6 +191,23 @@ a { color: var(--info); }
 .card.live.dl { border-left: 6px solid var(--long); } .card.live.ds { border-left: 6px solid var(--short); }
 .liveR { font-family: var(--mono); font-size: 1.6rem; font-weight: 800; } .liveR.pos { color: var(--long); } .liveR.neg { color: var(--short); }
 .steps { display: grid; gap: 4px; margin: 10px 0; }
+/* Piyasa Yönü (EK §5.7) */
+.dirgauge .score { font-family: var(--mono); font-size: 2.6rem; font-weight: 800; }
+.dirgauge.l2, .dircard .l2 { --c: var(--long-strong); } .dirgauge.l1 { --c: var(--long-weak); } .dirgauge.s1 { --c: var(--short-weak); } .dirgauge.s2 { --c: var(--short-strong); }
+.dirgauge { border-left: 6px solid var(--c, var(--neutral)); }
+.dirgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.dircard { cursor: pointer; }
+.chg { font-family: var(--mono); font-size: .85rem; color: var(--muted); } .chg.up { color: var(--long); } .chg.down { color: var(--short); }
+.spark { width: 160px; height: 36px; } .spark polyline { fill: none; stroke-width: 2; stroke: var(--neutral); }
+.spark polyline.l2 { stroke: var(--long-strong); } .spark polyline.l1 { stroke: var(--long-weak); } .spark polyline.s1 { stroke: var(--short-weak); } .spark polyline.s2 { stroke: var(--short-strong); }
+.spark .mid { stroke: var(--border); stroke-dasharray: 3 3; }
+.comps { display: grid; gap: 8px; margin-top: 10px; }
+.dirgrid > .card, .grid2 > .dirgauge { margin: 0; }
+.comp { display: grid; grid-template-columns: 8.5rem 1fr 7rem; gap: 4px 10px; align-items: center; }
+.comp .note { grid-column: 1 / -1; }
+.cbar { position: relative; height: 10px; background: var(--bg); border-radius: 5px; border: 1px solid var(--border); }
+.cbar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.cbar i { position: absolute; top: 0; bottom: 0; border-radius: 4px; } .cbar i.pos { background: var(--long); } .cbar i.neg { background: var(--short); }
 .warnline { color: var(--eksik); font-size: .85rem; margin-top: 4px; }
 .extra { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .9rem; }
 .extra summary { cursor: pointer; min-height: 32px; }

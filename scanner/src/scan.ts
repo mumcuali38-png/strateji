@@ -6,6 +6,7 @@ import { runEngine, type SymData } from './engine.ts';
 import { buildChart, buildState } from './state.ts';
 import { sendAll } from './push.ts';
 import { computeMessages } from './notify.ts';
+import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
 import { openSignalIds, trackMessages } from './track.ts';
 import { planFetch } from './plan.ts';
 import { runF } from './f/run.ts';
@@ -58,6 +59,12 @@ if (td && !credits.exhausted) {
       const r = await td.series(p.sym, pair, '1day', p.size);
       const last = r.candles[r.candles.length - 1];
       if (last) { fx[pair] = { rate: last.c, t: now }; writeJSON('fx.json', fx); } else if (r.error) errors.push(`${pair}: ${r.error}`);
+      continue;
+    }
+    if (p.sym.startsWith('DIR:')) { // Piyasa Yönü makro ETF'leri (UUP, IEF) günlük
+      const s = p.sym.slice(4);
+      const r = await td.series(p.sym, s, '1day', p.size);
+      if (r.candles.length) writeCandles(s, '1day', mergeCandles(readCandles(s, '1day'), r.candles, 400)); else if (r.error) warnings.push(`Piyasa Yönü ${s}: ${r.error}`);
       continue;
     }
     const cfg = conf.symbols[p.sym];
@@ -114,6 +121,16 @@ msgs.push(...trackMessages(conf, hist, notified, news?.events ?? [], now));
 const pr = await sendAll(conf, msgs, now);
 pr.log.forEach((l) => console.log(l));
 if (pr.failed) warnings.push(`${pr.failed} bildirim gönderilemedi`);
+
+// --- Piyasa Yönü (saatte bir; kredi ≥ %90 ise 4 saatte bir; saatlik ek kredi yok) ---
+if (shouldRun(readJSON<DirFile | null>('direction.json', null), now, credits.used / credits.hardStop)) {
+  try {
+    const d = await runDirection(conf, now, { setups: all, news: news?.events ?? [], m5: Object.fromEntries(Object.entries(data).map(([s, v]) => [s, v.m5])) });
+    const dm = capDirection(d.msgs, notified, now);
+    if (dm.length) (await sendAll(conf, dm, now)).log.forEach((l) => console.log(l));
+    console.log(`Piyasa Yönü · Forex ${d.file.forex.general.score ?? '—'} · Kripto ${d.file.crypto.general.score ?? '—'}`);
+  } catch (e) { warnings.push(`Piyasa Yönü hesaplanamadı: ${(e as Error).message}`); }
+}
 
 // --- Yaz ---
 const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings, fetched, window: { active, pre: inPre, oneMin: inTrRange(now, S.oneMinuteTR[0], S.oneMinuteTR[1]), weekday, start: S.windowTR[0], end: S.windowTR[1] } });

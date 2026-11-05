@@ -61,6 +61,8 @@ jobs:
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+          MYFXBOOK_EMAIL: ${{ secrets.MYFXBOOK_EMAIL }}
+          MYFXBOOK_PASSWORD: ${{ secrets.MYFXBOOK_PASSWORD }}
           FORCE_FIRST: ${{ inputs.force && '1' || '0' }}
           PUSH_TEST: ${{ inputs.push_test && '1' || '0' }}
           LOOP_MAX_MIN: '330'

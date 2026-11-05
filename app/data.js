@@ -2,7 +2,7 @@ import { DATA_BASE, API_STATE } from './config.js';
 import { lsGet, lsSet } from './store.js';
 
 const mem = { charts: {} };
-export const data = { state: null, news: null, history: null, offline: false, lastOk: 0, error: '' };
+export const data = { state: null, news: null, history: null, direction: null, offline: false, lastOk: 0, error: '' };
 
 let apiBlockedUntil = 0;
 /**
@@ -36,7 +36,11 @@ export async function refresh(which = ['state', 'news', 'history'], api = false)
       if (w === 'state' && data.state && out[w]?.lastScan < data.state.lastScan) out[w] = data.state;
       lsSet(`cache.${w}`, out[w]);
     }
-    catch (e) { ok = false; data.error = e.message; out[w] = data[w] ?? lsGet(`cache.${w}`, null); }
+    catch (e) {
+      out[w] = data[w] ?? lsGet(`cache.${w}`, null);
+      if (w === 'direction') return; // henüz üretilmemiş olabilir — çevrimdışı sayılmaz
+      ok = false; data.error = e.message;
+    }
   }));
   Object.assign(data, out);
   data.offline = !ok && !navigator.onLine ? true : !ok;
@@ -44,7 +48,7 @@ export async function refresh(which = ['state', 'news', 'history'], api = false)
   return ok;
 }
 export function loadCached() {
-  for (const w of ['state', 'news', 'history']) data[w] = lsGet(`cache.${w}`, null);
+  for (const w of ['state', 'news', 'history', 'direction']) data[w] = lsGet(`cache.${w}`, null);
 }
 export async function chart(sym, force = false) {
   const c = mem.charts[sym];
