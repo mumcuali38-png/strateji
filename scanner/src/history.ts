@@ -1,12 +1,15 @@
 import type { Candle, Condition, Dir, Overlay, Setup, StrategyId } from './types.ts';
 import { DAY } from './time.ts';
+import { trackEvent, type Track } from './track.ts';
 
 export interface HistEvent {
   id: string; key: string; t: number; strategy: StrategyId; symbol: string; dir: Dir; kind: 'TAM' | 'HAZIR';
-  sub: string; signalAt?: number;
+  sub: string; signalAt?: number; lastEntry?: number;
   method?: { id: string; label: string; type: 'market' | 'limit'; entry: number; stop: number; tp1: number; tp2?: number; rr: number };
   conditions: Pick<Condition, 'label' | 'status' | 'detail'>[];
   overlays: Overlay[];
+  /** İşlem takibi (TP1 %50 + BE yönetimiyle), EK §3.6 */
+  track?: Track;
   result?: { outcome: 'TP' | 'SL' | 'ACIK' | 'ZAMAN_ASIMI' | 'DOLMADI'; filledAt?: number; closedAt?: number; mfeR: number; maeR: number; r?: number };
 }
 
@@ -14,7 +17,7 @@ export function toEvent(s: Setup, kind: 'TAM' | 'HAZIR', now: number): HistEvent
   if (!s.dir) return null;
   const m = s.methods.find((x) => x.id === s.defaultMethod) ?? s.methods[0];
   return {
-    id: s.id, key: s.key, t: now, strategy: s.strategy, symbol: s.symbol, dir: s.dir, kind, sub: s.sub, signalAt: s.signalAt,
+    id: s.id, key: s.key, t: now, strategy: s.strategy, symbol: s.symbol, dir: s.dir, kind, sub: s.sub, signalAt: s.signalAt, lastEntry: s.lastEntry,
     method: m ? { id: m.id, label: m.label, type: m.type, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2, rr: m.rr } : undefined,
     conditions: s.conditions.map((c) => ({ label: c.label, status: c.status, detail: c.detail })),
     overlays: s.overlays.slice(0, 12),
@@ -60,8 +63,13 @@ export function updateHistory(hist: HistEvent[], setups: Setup[], now: number, d
   }
   const kept = hist.filter((h) => now - h.t <= days * DAY);
   for (const h of kept) {
-    if (h.result && h.result.outcome !== 'ACIK') continue;
-    h.result = evaluate(h, candlesOf(h.symbol, h.strategy), maxBars);
+    const cs = candlesOf(h.symbol, h.strategy);
+    if (!cs.length) continue; // bu taramada o sembolün mumu yok (örn. F taraması) — sonuç bozulmasın
+    const covered = cs[0].t <= h.t; // mumlar olayın başından itibaren elimizde
+    // Takibi olmayan eski olaylar bir kez yeniden değerlendirilir (F taramasındaki yanlış mum hatasının düzeltmesi)
+    if (!h.result || h.result.outcome === 'ACIK' || (!h.track && covered)) h.result = evaluate(h, cs, maxBars);
+    if (h.kind === 'TAM' && covered && h.track?.status !== 'KAPANDI' && h.track?.status !== 'DOLMADI') h.track = trackEvent(h, cs, now);
+    else if (h.kind === 'TAM' && !h.track) h.track = { status: 'KAPANDI', events: [], maeR: h.result?.maeR ?? 0, mfeR: h.result?.mfeR ?? 0, updatedAt: now, resultR: h.result?.r };
   }
   return { hist: kept.sort((a, b) => b.t - a.t), added };
 }

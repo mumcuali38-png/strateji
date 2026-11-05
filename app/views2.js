@@ -63,7 +63,7 @@ export async function renderJournal(App, el, openId) {
         <div class="bars">${Object.entries(syms).map(([s, n]) => `<div class="bar"><span>${SHORT[s] ?? s}</span><span class="t"><i style="width:${(n / Math.max(...Object.values(syms))) * 100}%"></i></span><span class="num">${n}</span></div>`).join('') || '<div class="muted">—</div>'}</div>
       </div>
     </div>
-    <div class="card"><h2>İşlemler</h2><div class="list">${list.map((t) => `<div class="li" data-edit="${t.id}"><span class="dir ${t.dir === 1 ? 'long' : 'short'}" style="font-size:.9rem">${dirTxt(t.dir)}</span><div class="grow"><b>${SHORT[t.symbol] ?? t.symbol} ${t.strategy}</b> · ${esc(t.sub ?? '')}<div class="muted small">${dateTR(t.t)} ${tr(t.t)} TR · giriş ${t.entry} · lot ${t.lot}</div></div><span class="badge ${t.result === 'TP' ? 'tam' : t.result === 'SL' ? 'news' : 'yok'}">${t.result ?? 'açık'}${t.r !== null && t.r !== undefined && t.r !== '' ? ` ${t.r > 0 ? '+' : ''}${t.r}R` : ''}</span></div>`).join('') || '<div class="empty">Henüz işlem yok · setup kartında "İşleme girdim" ile eklenir</div>'}</div></div>`;
+    <div class="card"><h2>İşlemler</h2><div class="list">${list.map((t) => `<div class="li" data-edit="${t.id}"><span class="dir ${t.dir === 1 ? 'long' : 'short'}" style="font-size:.9rem">${dirTxt(t.dir)}</span><div class="grow"><b>${SHORT[t.symbol] ?? t.symbol} ${t.strategy}</b> · ${esc(t.sub ?? '')}<div class="muted small">${dateTR(t.t)} ${tr(t.t)} TR · giriş ${t.entry} · lot ${t.lot}${t.maeR !== undefined ? ` · MAE −${t.maeR}R / MFE +${t.mfeR}R` : ''}${t.rules_followed === false ? ' · ⚠️ kurala uyulmadı' : t.rules_followed ? ' · ✔ kurala uygun' : ''}</div></div><span class="badge ${t.result === 'TP' ? 'tam' : t.result === 'SL' ? 'news' : 'yok'}">${t.result ?? 'açık'}${t.r !== null && t.r !== undefined && t.r !== '' ? ` ${t.r > 0 ? '+' : ''}${t.r}R` : ''}${t.resultUsd !== undefined && t.resultUsd !== null ? ` · $${t.resultUsd}` : ''}${t.auto ? ' · oto' : ''}</span></div>`).join('') || '<div class="empty">Henüz işlem yok · setup kartında "İşleme girdim" ile eklenir</div>'}</div></div>`;
   const doExport = async () => {
     download(`strateji-gunluk-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: 'strateji-radar', v: 1, trades: await trades.all() }, null, 1));
     App.settings.lastBackup = Date.now(); App.save(); toast('Yedek indirildi');
@@ -150,7 +150,7 @@ export function renderHistory(App, el) {
 /* ---------- BİLDİRİM GEÇMİŞİ ---------- */
 export async function notifHistory(App) {
   const { notifs } = await import('./store.js');
-  const list = (await notifs.all()).filter((n) => Date.now() - n.t < 7 * DAY).sort((a, b) => b.t - a.t);
-  modal(`<h2>🔔 Bildirim geçmişi (7 gün)</h2><div class="list">${list.map((n) => `<a class="li" href="${esc(n.url ?? '#/ozet')}" data-close style="text-decoration:none;color:inherit"><div class="grow"><b>${esc(n.title)}</b><div class="small">${esc(n.body)}</div><div class="muted small">${dateTR(n.t)} ${tr(n.t)} TR</div></div></a>`).join('') || '<div class="empty">Bu cihaza son 7 günde bildirim gelmedi</div>'}</div>`);
+  const list = (await notifs.all()).filter((n) => Date.now() - n.t < 30 * DAY).sort((a, b) => b.t - a.t);
+  modal(`<h2>🔔 Bildirim merkezi (30 gün)</h2><div class="list">${list.map((n) => `<a class="li" href="${esc(n.url ?? '#/ozet')}" data-close style="text-decoration:none;color:inherit"><div class="grow"><b>${esc(n.title)}</b><div class="small">${esc(n.body)}</div><div class="muted small">${dateTR(n.t)} ${tr(n.t)} TR</div></div></a>`).join('') || '<div class="empty">Bu cihaza son 30 günde bildirim gelmedi</div>'}</div>`);
 }
 export const _x = { HOUR, price, lsGet, lsSet, STRATS };

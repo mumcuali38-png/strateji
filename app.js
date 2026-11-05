@@ -8,6 +8,7 @@ import { tr, ny, dur, nyMinutes, parseHM, nyDayStart, MIN, DAY, HOUR, trMinutes,
 import { renderOverview, renderStrategy, tabBest, allSetups } from './app/views.js';
 import { renderNews, renderJournal, renderHistory, notifHistory } from './app/views2.js';
 import { renderSettings, onboarding } from './app/settings.js';
+import { renderLive, syncTrades } from './app/live.js';
 import { toast } from './app/ui.js';
 
 const App = {
@@ -99,7 +100,7 @@ function nav(route) {
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
-  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
+  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
   el.querySelector('[data-more]').onclick = (e) => { e.preventDefault(); el.classList.toggle('open'); };
   el.querySelectorAll('a:not([data-more])').forEach((a) => a.addEventListener('click', () => el.classList.remove('open')));
 }
@@ -121,6 +122,7 @@ async function render() {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
     else if (route.top === 'haber') renderNews(App, el, route.sub);
+    else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'gunluk') await renderJournal(App, el, route.sub);
     else if (route.top === 'gecmis') renderHistory(App, el);
     else if (route.top === 'ayarlar') renderSettings(App, el);
@@ -145,7 +147,7 @@ async function computeLimits() {
   const maxN = Number(s.maxTradesPerDay), maxL = Number(s.maxDailyLossPct);
   const allTrades = await trades.all();
   const balUsd = (Number(s.balance) || 0) * (fxToUsd(s, App.data.state) ?? 0);
-  App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result), openRiskPct: openRiskPct(allTrades, balUsd) };
+  App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result), openRiskPct: openRiskPct(allTrades, balUsd), openCount: allTrades.filter((t) => !t.result).length };
   App.skipped = skipped.map();
   if (!(maxN > 0) && !(maxL > 0)) return;
   const today = trDayStart(Date.now());
@@ -162,6 +164,7 @@ async function reload(manual = false, api = false) {
   const full = manual || Date.now() - lastFull > 55000;
   const ok = await refresh(full ? ['state', 'news', 'history'] : ['state'], api || manual);
   if (full && ok) lastFull = Date.now();
+  if (full) await syncTrades(App);
   await computeLimits();
   if (data.state?.generatedAt !== prevGen) for (const s of allSetups(App)) if (prev.has(s.id) && prev.get(s.id) !== s.status) App.flashIds.add(s.id);
   if (manual) toast(ok ? `Güncellendi · son tarama ${data.state ? tr(data.state.lastScan) : '—'}` : 'Veri alınamadı — son kopya gösteriliyor');

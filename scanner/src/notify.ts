@@ -7,7 +7,7 @@ import { cancelMsg, expiredMsg, newsMsg, readyMsg, tamMsg, type Msg } from './pu
  * Durum değişimlerinden bildirim listesi. Tekrar yok: anahtar strateji+sembol+yön+bölge_id+durum.
  * `notified` yerinde güncellenir (data dalında saklanır, 3 günde temizlenir).
  */
-export function computeMessages(conf: Config, all: Setup[], prev: { strategies?: Record<string, Record<string, Setup[]>> } | null, notified: Record<string, number>, news: NewsEvent[], now: number): Msg[] {
+export function computeMessages(conf: Config, all: Setup[], prev: { strategies?: Record<string, Record<string, Setup[]>> } | null, notified: Record<string, number>, news: NewsEvent[], now: number, openIds: Set<string> = new Set()): Msg[] {
   const P = conf.params;
   for (const [k, t] of Object.entries(notified)) if (now - t > 3 * 86400_000) delete notified[k];
   const msgs: Msg[] = [];
@@ -30,7 +30,7 @@ export function computeMessages(conf: Config, all: Setup[], prev: { strategies?:
     const ns = byId.get(ps.id);
     if (ns?.status === 'TAM') continue;
     const why = ns?.conditions.find((c) => c.status === 'fail')?.detail ?? 'setup listeden düştü';
-    if (/stop|tükendi|silindi|delindi|iptal/i.test(why) && !(`${ps.id}+IPTAL` in notified)) { msgs.push(cancelMsg(ps, why)); notified[`${ps.id}+IPTAL`] = now; }
+    if (/stop|tükendi|silindi|delindi|iptal/i.test(why) && !(`${ps.id}+IPTAL` in notified)) { msgs.push(cancelMsg(ps, why, openIds.has(ps.id))); notified[`${ps.id}+IPTAL`] = now; }
   }
   for (const e of news) {
     if (e.impact !== 'High' || !P.news.currencies.includes(e.currency)) continue;

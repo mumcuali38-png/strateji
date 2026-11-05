@@ -187,6 +187,10 @@ a { color: var(--info); }
 .btn.mt5.l { border-color: var(--long); color: var(--long); } .btn.mt5.s { border-color: var(--short); color: var(--short); }
 .btn.mt5.off { opacity: .45; }
 .seg-b[disabled] { opacity: .4; }
+/* Canlı işlem (EK §3.6) */
+.card.live.dl { border-left: 6px solid var(--long); } .card.live.ds { border-left: 6px solid var(--short); }
+.liveR { font-family: var(--mono); font-size: 1.6rem; font-weight: 800; } .liveR.pos { color: var(--long); } .liveR.neg { color: var(--short); }
+.steps { display: grid; gap: 4px; margin: 10px 0; }
 .warnline { color: var(--eksik); font-size: .85rem; margin-top: 4px; }
 .extra { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: .9rem; }
 .extra summary { cursor: pointer; min-height: 32px; }

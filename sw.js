@@ -2,7 +2,7 @@
 const VERSION = '__BUILD__';
 const SHELL = `shell-${VERSION}`;
 const DATA = 'data-v1';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './app/config.js', './app/data.js', './app/store.js', './app/fmt.js', './app/calc.js', './app/chart.js', './app/ui.js', './app/views.js', './app/views2.js', './app/settings.js', './app/order.js', './app/broker.js', './config/params.json', './config/symbols.json', './config/sessions.json', './icons/icon-192.png', './icons/icon-512.png'];
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './app/config.js', './app/data.js', './app/store.js', './app/fmt.js', './app/calc.js', './app/chart.js', './app/ui.js', './app/views.js', './app/views2.js', './app/settings.js', './app/order.js', './app/live.js', './app/broker.js', './config/params.json', './config/symbols.json', './config/sessions.json', './icons/icon-192.png', './icons/icon-512.png'];
 const LIB = 'https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js';
 
 self.addEventListener('install', (e) => {
@@ -55,18 +55,30 @@ function idb() {
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
   });
 }
+async function openTradeFor(signal) {
+  try {
+    const d = await idb();
+    const all = await new Promise((res) => { const r = d.transaction('trades', 'readonly').objectStore('trades').getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); });
+    return all.some((t) => !t.result && (t.signal_id === signal || t.setupId === signal));
+  } catch { return true; }
+}
 async function remember(n) {
   try {
     const d = await idb();
-    await new Promise((res) => { const t = d.transaction('notifs', 'readwrite'); const s = t.objectStore('notifs'); s.put(n); const lim = Date.now() - 7 * 86400000; s.openCursor().onsuccess = (ev) => { const cur = ev.target.result; if (cur) { if (cur.value.t < lim) cur.delete(); cur.continue(); } }; t.oncomplete = res; t.onerror = res; });
+    await new Promise((res) => { const t = d.transaction('notifs', 'readwrite'); const s = t.objectStore('notifs'); s.put(n); const lim = Date.now() - 30 * 86400000; s.openCursor().onsuccess = (ev) => { const cur = ev.target.result; if (cur) { if (cur.value.t < lim) cur.delete(); cur.continue(); } }; t.oncomplete = res; t.onerror = res; });
   } catch { /* yok say */ }
 }
 self.addEventListener('push', (e) => {
   let p = {};
   try { p = e.data ? e.data.json() : {}; } catch { p = { title: 'Strateji Radar', body: e.data?.text() ?? '' }; }
-  const title = p.title || 'Strateji Radar';
+  let title = p.title || 'Strateji Radar';
   const opts = { body: p.body || '', tag: p.tag || undefined, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: p.url || './#/ozet' }, requireInteraction: p.kind === 'tam', silent: !!p.silent, vibrate: p.silent ? undefined : p.kind === 'tam' ? [200, 100, 200] : [100] };
   e.waitUntil((async () => {
+    // İşlem bildirimi (TP/SL/haber/ÇIKIŞ): bu cihazda o sinyal için açık işlem yoksa sessiz ve "(girmedin)" etiketli
+    if (p.signal && (p.kind === 'trade' || /ÇIKIŞ/.test(title))) {
+      const mine = await openTradeFor(p.signal);
+      if (!mine) { title = `(girmedin) ${title}`; opts.silent = true; opts.vibrate = undefined; }
+    }
     await remember({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, t: Date.now(), title, body: opts.body, url: opts.data.url, kind: p.kind });
     await self.registration.showNotification(title, opts);
     for (const c of await self.clients.matchAll({ type: 'window' })) c.postMessage({ type: 'push' });
