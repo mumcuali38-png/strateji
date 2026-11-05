@@ -20,6 +20,7 @@ const App = {
   },
   /** Günlük işlem / kayıp limiti doluysa tüm setuplar YOK gösterilir */
   effective(s) {
+    if (s.strategy === 'F' && this.limits.openF && s.status !== 'YOK') return { ...s, status: 'YOK', limitNote: 'Açık F işlemi var — aynı anda en fazla 1 F işlemi', none: { why: 'Açık F işlemi var (günlükte sonucu girilmemiş)', waiting: 'Açık F işleminin kapanması', ends: '—' } };
     if (!this.limits.reached || s.status === 'YOK') return s;
     return { ...s, status: 'YOK', limitNote: this.limits.why, none: { why: this.limits.why, waiting: 'Yarın (TR 00:00) sıfırlanır', ends: '—' } };
   },
@@ -91,7 +92,7 @@ function nav(route) {
   const item = (href, ico, label, extra = '', cls = '') => `<a href="${href}" class="${cls} ${route.top === href.split('/')[1] ? 'on' : ''}"><span class="ico">${ico}</span><span class="lbl">${label}</span>${extra}</a>`;
   const tabs = TABS.map((t) => {
     const { best, tam } = tabBest(App, t);
-    const ic = best ? (best.status === 'TAM' ? '🟢' : best.status === 'EKSIK' ? '🟡' : '⚪') : '⚪';
+    const ic = best ? ({ TAM: '🟢', BEKLE: '🟠', EKSIK: '🟡' })[best.status] ?? '⚪' : '⚪';
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
@@ -104,15 +105,15 @@ function nav(route) {
 function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   const p0 = parts[0] || 'ozet';
-  if (['A', 'B', 'C', 'D', 'E'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
-  if (['AB', 'C', 'D', 'E'].includes(p0)) return { top: p0 };
+  if (['A', 'B', 'C', 'D', 'E', 'F'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
+  if (['AB', 'C', 'D', 'E', 'F'].includes(p0)) return { top: p0 };
   return { top: p0, sub: parts[1] };
 }
 async function render() {
   const route = parseRoute();
   topbar(); banners(); nav(route);
   const el = document.getElementById('main');
-  if (route.top !== 'AB' && route.top !== 'C' && route.top !== 'D' && route.top !== 'E') { App.chartCtl?.destroy?.(); App.chartCtl = null; }
+  if (!['AB', 'C', 'D', 'E', 'F'].includes(route.top)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
@@ -134,13 +135,14 @@ async function render() {
 async function computeLimits() {
   const s = App.settings;
   const maxN = Number(s.maxTradesPerDay), maxL = Number(s.maxDailyLossPct);
-  App.limits = { reached: false, why: '' };
+  const allTrades = await trades.all();
+  App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result) };
   if (!(maxN > 0) && !(maxL > 0)) return;
   const today = trDayStart(Date.now());
-  const list = (await trades.all()).filter((t) => t.t >= today);
-  if (maxN > 0 && list.length >= maxN) App.limits = { reached: true, why: `Günlük işlem limiti doldu (${list.length}/${maxN})` };
+  const list = allTrades.filter((t) => t.t >= today);
+  if (maxN > 0 && list.length >= maxN) App.limits = { ...App.limits, reached: true, why: `Günlük işlem limiti doldu (${list.length}/${maxN})` };
   const lossUsd = list.reduce((a, t) => a + (Number(t.r) < 0 ? -Number(t.r) * (t.riskUsd || 0) : 0), 0);
-  if (maxL > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
+  if (maxL > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
 }
 async function reload(manual = false) {
   const prev = new Map(allSetups(App).map((s) => [s.id, s.status]));

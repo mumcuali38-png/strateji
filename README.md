@@ -1,6 +1,6 @@
 # Strateji Radar
 
-5 trading stratejisini (A–E) otomatik izleyen, Android tablete **PWA** olarak kurulan ve uygulama kapalıyken bile **bildirim** gönderen uygulama.
+6 trading stratejisini (A–F) otomatik izleyen, Android tablete **PWA** olarak kurulan ve uygulama kapalıyken bile **bildirim** gönderen uygulama.
 
 > **Uygulama sinyal verir, karar senindir.** İşlem açmaz.
 
@@ -12,6 +12,7 @@
 - **Özet:** "Şu an" şeridi TAM setupları gösterir; ızgarada strateji × sembol durumu (🟢 TAM · 🟡 kalan şart · ⚪ YOK). Hücreye dokun → detay.
 - **Strateji sekmesi:** üstte sembol çipleri (kaydırarak değiştir), solda grafik, sağda şart tablosu ve setup kartı. Şart satırına dokun → grafikte seviye vurgulanır. Kartta giriş yöntemini değiştir; giriş/stop/RR/lot yeniden hesaplanır.
 - **İşleme girdim** → günlüğe kaydeder (veriler sadece tablette; JSON dışa/içe aktar). **Claude'a gönder** → şart tablosu + kart panoya.
+- **F Wyckoff (BTC):** Binance verisiyle spring/UTAD, 24 saat (gece ve hafta sonu `scan-f` ile 15 dk'da bir). 🟠 **TAM – BEKLE** = kurulum tam ama funding / Cumartesi / likidasyon / haber bloğu var. Kartta T1/T2/T3, BTC miktarı ve kaldıraç (en fazla 3x).
 - **Haber:** kırmızı haberlere −30/+15 dk kala/sonra ilgili setuplar YOK olur, üstte kırmızı şerit çıkar.
 - **Geçmiş:** son 30 günün TAM ve "1 şart kaldı" olayları ve sonuçları (TP/SL/MFE/MAE).
 - **Ayarlar:** bakiye, risk, kontrat/tampon, bildirim matrisi, parametre önerisi, tema.

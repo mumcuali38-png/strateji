@@ -256,7 +256,8 @@ export function staleGuard(ctx: Ctx, s: { signalAt?: number; dir: Dir | 0; metho
   const m = s.methods.find((x) => x.id === s.defaultMethod) ?? s.methods[0];
   if (!m) return;
   const dir = s.dir;
-  const after = [...ctx.closed('5m'), ...ctx.closed('1m')].filter((c) => c.t >= s.signalAt!);
+  // Sinyal/dolum mumunun kendisi hariç: o mumun içindeki sıra bilinmez (limit dolumundan önceki fiyat sayılmaz)
+  const after = [...ctx.closed('5m'), ...ctx.closed('1m')].filter((c) => c.t > s.signalAt!);
   const risk = Math.abs(m.entry - m.stop);
   const fail = (detail: string): void => { s.conditions.push({ id: 'stale', label: 'Sinyal güncel mi', status: 'fail', detail }); };
   if (after.some((c) => (dir === 1 ? c.l <= m.stop : c.h >= m.stop))) return fail(`Sinyalden (${fmtTR(s.signalAt)} TR) sonra stop ${ctx.fmt(m.stop)} görüldü — senaryo bitti`);
@@ -282,7 +283,7 @@ export function finalize(ctx: Ctx, s: Omit<Setup, 'status' | 'remaining' | 'eval
 
 /** Sıralama: TAM → EKSİK (az şart kalan önce) → YOK */
 export function rankSetups(a: Setup, b: Setup): number {
-  const w = (s: Setup) => (s.status === 'TAM' ? 0 : s.status === 'EKSIK' ? 1 : 2);
+  const w = (s: Setup) => ({ TAM: 0, BEKLE: 1, EKSIK: 2, YOK: 3 })[s.status];
   if (w(a) !== w(b)) return w(a) - w(b);
   if (a.remaining !== b.remaining) return a.remaining - b.remaining;
   return (b.stars ?? 0) - (a.stars ?? 0);

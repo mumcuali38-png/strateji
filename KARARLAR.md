@@ -95,3 +95,22 @@ Rastgele veride A/B/C/E (temiz trend ve yapı gerektirir) setup üretmedi; bu ku
 - Özet kartı ve bildirimde TP2 varsa RR ikisiyle birlikte gösterilir ("RR 1.2 / TP2 3.4"); D2 dönüşünde kural TP2'ye göredir.
 - **Ortak bayat sinyal kontrolü (tüm stratejiler, 05.11.2026):** Sinyal oluştuktan sonra stop veya TP1 görüldüyse, sinyal 6 saatten eskiyse (`general.maxSignalAgeHours`) ya da fiyat girişten 3R'den fazla uzaklaştıysa (`general.maxEntryDistR`) setup YOK olur ("Sinyal güncel mi ❌"). E'de kırılımdan sonra 24 mum içinde gövdeye dönüş olmazsa ya da dönüş olmadan hedef görülürse RB biter (`E.returnMaxBars`). Kayıtlı 7 günlük gerçek veride 673 tarama yeniden oynatıldı; bayat TAM kalmadı.
 - **Kripto hafta sonu açıldı (05.11.2026, kullanıcı isteği):** Cumartesi–Pazar 10:00–20:00 TR yalnız BTC/ETH çekilir ve değerlendirilir (~240 kredi/gün, hafta içi bütçesini etkilemez). Diğer semboller hafta sonu değerlendirilmez (Cuma verisiyle eski sinyal üretmesin). D1 hafta sonu da NY 09:30 range'ini kullanır.
+
+## Kurulum F — BTC Wyckoff (05.11.2026, docs/KURULUM_F.md)
+| # | Konu | Karar | Nerede değişir |
+|---|---|---|---|
+| F1 | Tarama zamanlaması | Spec "mum kapanışından 10 sn sonra" der; GitHub Actions saniye hassasiyeti vermez. Hafta içi 10–20 TR ana tarama ile 5 dk'da bir, diğer tüm saatlerde `scan-f` ile 15 dk'da bir (:01/:16/:31/:46 UTC). Her seferinde 5 TF birden çekilir (Binance ücretsiz, kredi yok). Sadece kapanmış mumlar kullanılır. | `.github/workflows/scan-f.yml` |
+| F2 | Short tarafı | Long kurallarının fiyat-aynası (fiyat × −1, hacim aynı). Spec'teki farklar: kararsız hacim = YOK (long'da ⏳), agresif giriş yok. | `src/f/setup.ts` |
+| F3 | LPSY hedefleri | Spec short hedeflerini genel verir (T1 TR.eq); LPSY girişi zaten EQ'nun altında olduğundan LPSY için T1 = TR.low, T2 = TR.low − yükseklik (LPS'in aynası), RR(T2) ≥ 3. | — |
+| F4 | 4H TR (ikincil) | 1H TR bulunamazsa 4H TR denenir; spring/UTAD yine 1H mumunda, 1H ATR ile aranır. | — |
+| F5 | TR ve spring | TR, spring adayı mumundan **önceki** mumlarla hesaplanır (spring dibi TR alt bandını aşağı çekmesin). Spring son 30 adet 1H mum içinde aranır; 2 mumlu spring tek mumluya tercih edilir. | `F.springLookback1h` |
+| F6 | 1D pivot N | Spec 1H/4H için N=3 der, 1D için belirtmez: 1D bölgelerde N=2. | — |
+| F7 | Test anı | Test hacmi, fiyatın zone'a ilk dokunduğu saatin (kapanmış) 1H mumundan okunur; sinyal/dolum zamanı o saatteki ilk dokunan LTF mumudur. Ortak bayat kontrol dolum mumunun kendisini saymaz. | — |
+| F8 | TAM – BEKLE | Şart 9 (zaman/ortam) blokluyken diğer 8 şart ✅ ise durum BEKLE (turuncu), bir kez bildirim. Blok kalkınca TAM bildirimi ayrıca gelir. | — |
+| F9 | Bayatlama | Ortak kural F için de geçerli: dolumdan sonra stop/T1 görülürse, 6 saat geçerse veya fiyat girişten 3R uzaklaşırsa YOK. T1 görülünce "T1 – %50 kapat, stop girişe" bildirimi gider. | `general.*` |
+| F10 | 1 açık F işlemi | Tarayıcı günlüğü göremez; uygulama günlükte sonucu girilmemiş bir F işlemi varsa F setuplarını YOK gösterir. | uygulama |
+| F11 | Miktar / kaldıraç | Miktar BTC = (bakiye × risk%) / |giriş − stop|; nominal 3 × bakiyeyi aşarsa düşürülür ve "risk %0,5'in altında kaldı" notu yazılır. Stop'a spread/tampon eklenmez (spec ATR payı içerir). | `F.maxLeverage` |
+| F12 | Veri farkı | F fiyatları Binance BTCUSDT'dir; diğer stratejilerdeki BTC/USD (Twelve Data) ile birkaç dolar fark olabilir. Geçmiş değerlendirmesi de Binance 5m ile yapılır. | — |
+| F13 | Kripto manşetleri | "ETF, borsa, regülasyon manşetleri gösterilir, blok koymaz": FMP başlıkları Haber → Son dakika'da zaten görünüyor; ayrı kripto filtresi yok. | — |
+
+Doğrulama: §18'deki 13 senaryonun hepsi + temel TAM ve short (UTAD) senaryosu birim testinde (`scanner/test/f.test.ts`, sentetik veri). Geliştirme ortamından Binance/Coinbase'e erişim yoktu; gerçek veriyle ilk deneme Actions'ta `scan-f` elle çalıştırılarak yapılacak.

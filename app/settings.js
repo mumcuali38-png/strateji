@@ -52,7 +52,7 @@ export function renderSettings(App, el) {
   const now = new Date();
   const dstNote = now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10;
   const credDays = st?.credits?.days ?? [];
-  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'XAGUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'] };
+  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'XAGUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'], F: ['BTCUSD'] };
   const draft = s.paramsDraft ?? P ?? {};
   el.innerHTML = `<div class="h1">Ayarlar</div>
   <div class="card"><h2>Hesap</h2><div class="form">
@@ -80,7 +80,7 @@ export function renderSettings(App, el) {
     <div class="form">${field('notify.quiet.from', 'Sessiz saat başlangıç (TR)', s.notify.quiet?.from, 'time')}${field('notify.quiet.to', 'Sessiz saat bitiş (TR)', s.notify.quiet?.to, 'time')}</div>
     <h3 style="margin-top:12px">Strateji × sembol</h3>
     <div class="tbl-wrap"><table class="mx"><thead><tr><th></th>${Object.keys(SHORT).map((y) => `<th>${SHORT[y]}</th>`).join('')}</tr></thead><tbody>
-    ${['A', 'B', 'C', 'D', 'E'].map((k) => `<tr><th><label class="chk" style="min-height:40px"><input type="checkbox" data-path="notify.strategies.${k}" ${s.notify.strategies?.[k] !== false ? 'checked' : ''}> ${k}</label></th>${Object.keys(SHORT).map((y) => stratSym[k].includes(y) ? `<td><input type="checkbox" data-path="notify.matrix.${k}:${y}" ${s.notify.matrix?.[`${k}:${y}`] !== false ? 'checked' : ''} aria-label="${k} ${y}"></td>` : '<td class="muted">·</td>').join('')}</tr>`).join('')}
+    ${['A', 'B', 'C', 'D', 'E', 'F'].map((k) => `<tr><th><label class="chk" style="min-height:40px"><input type="checkbox" data-path="notify.strategies.${k}" ${s.notify.strategies?.[k] !== false ? 'checked' : ''}> ${k}</label></th>${Object.keys(SHORT).map((y) => stratSym[k].includes(y) ? `<td><input type="checkbox" data-path="notify.matrix.${k}:${y}" ${s.notify.matrix?.[`${k}:${y}`] !== false ? 'checked' : ''} aria-label="${k} ${y}"></td>` : '<td class="muted">·</td>').join('')}</tr>`).join('')}
     </tbody></table></div>
     <details style="margin-top:12px"><summary class="btn">🔑 VAPID anahtarı (ilk kurulum)</summary>
       <p class="muted small">Bildirim için bir kez VAPID anahtar çifti gerekir. Bu cihazda üretilir, hiçbir yere gönderilmez. İki değeri GitHub Secrets'a ekle: <span class="mono">VAPID_PUBLIC</span> ve <span class="mono">VAPID_PRIVATE</span>. Gizli anahtarı başka yerde paylaşma.</p>
@@ -95,6 +95,8 @@ export function renderSettings(App, el) {
       ${field('p.displacementMult', 'Displacement katsayısı', draft.displacementMult)}${field('p.A.maxOutsideBars', 'A: dışarıda maks. 5m mum', draft.A?.maxOutsideBars)}${field('p.A.maxExcursionAtr1h', 'A: maks. uzaklık (×ATR 1H)', draft.A?.maxExcursionAtr1h)}
       ${field('p.B.liqMinAtr', 'B: likidite min (×ATR)', draft.B?.liqMinAtr)}${field('p.B.liqMaxAtr', 'B: likidite maks (×ATR)', draft.B?.liqMaxAtr)}${field('p.B.confirmMaxBars', 'B: onay maks. mum', draft.B?.confirmMaxBars)}
       ${field('p.news.beforeMin', 'Haber penceresi önce (dk)', draft.news?.beforeMin)}${field('p.news.afterMin', 'Haber penceresi sonra (dk)', draft.news?.afterMin)}${field('p.risk.minRR', 'Minimum RR', draft.risk?.minRR)}
+      <div class="field"><label>F: CHoCH zaman dilimi</label><select data-path="p.F.ltf"><option value="15m" ${draft.F?.ltf !== '5m' ? 'selected' : ''}>15m (varsayılan)</option><option value="5m" ${draft.F?.ltf === '5m' ? 'selected' : ''}>5m (daha hassas)</option></select></div>
+      ${field('p.F.maxLeverage', 'F: maks. kaldıraç (x)', draft.F?.maxLeverage)}
     </div>
     <label class="switch"><span>Kripto için hafta sonu tarama (BTC/ETH) — <b>kredi uyarısı:</b> hafta sonu ~240 kredi/gün (800'lük günlük limitin içinde; hafta içi bütçesini etkilemez)</span><input type="checkbox" data-path="p.scan.cryptoWeekend" ${draft.scan?.cryptoWeekend ? 'checked' : ''}></label>
     <div class="btns"><button class="btn primary" data-params>params.json önerisini kopyala</button><button class="btn" data-params-reset>Varsayılana dön</button></div></div>

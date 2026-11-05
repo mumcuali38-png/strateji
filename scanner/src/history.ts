@@ -49,7 +49,7 @@ export function evaluate(ev: HistEvent, candles: Candle[], maxBars: number): His
   return { outcome: filledAt === undefined ? 'ACIK' : 'ACIK', filledAt, mfeR: +mfe.toFixed(2), maeR: +mae.toFixed(2) };
 }
 
-export function updateHistory(hist: HistEvent[], setups: Setup[], now: number, days: number, candlesOf: (sym: string) => Candle[], maxBars: number): { hist: HistEvent[]; added: HistEvent[] } {
+export function updateHistory(hist: HistEvent[], setups: Setup[], now: number, days: number, candlesOf: (sym: string, strategy?: string) => Candle[], maxBars: number): { hist: HistEvent[]; added: HistEvent[] } {
   const keys = new Set(hist.map((h) => h.key));
   const added: HistEvent[] = [];
   for (const s of setups) {
@@ -61,7 +61,7 @@ export function updateHistory(hist: HistEvent[], setups: Setup[], now: number, d
   const kept = hist.filter((h) => now - h.t <= days * DAY);
   for (const h of kept) {
     if (h.result && h.result.outcome !== 'ACIK') continue;
-    h.result = evaluate(h, candlesOf(h.symbol), maxBars);
+    h.result = evaluate(h, candlesOf(h.symbol, h.strategy), maxBars);
   }
   return { hist: kept.sort((a, b) => b.t - a.t), added };
 }

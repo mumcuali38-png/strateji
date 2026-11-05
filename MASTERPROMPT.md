@@ -496,3 +496,15 @@ Ayrıca: `KARARLAR.md` (verdiğin varsayılanlar ve belirsiz kurallar listesi) v
 - E: ICT Rejection Block kaynakları (3 web sayfası + 3 video).
 - Kaynaklardaki kazanma oranı iddiaları kaynaksızdır; geçmiş veride test edilmelidir — **Geçmiş tarama ekranı tam olarak bunun için var.**
 - Açık: günlük maksimum işlem sayısı ve günlük kayıp limiti henüz belirlenmedi (C ve D1 hariç). Ayarlar'da boş/opsiyonel alan olarak bırak; doldurulursa limit aşımında tüm setuplar YOK gösterilir.
+
+---
+
+## 21. KURULUM F — BTCUSD Wyckoff (Spring / UTAD)
+
+Tam şartname: **[`docs/KURULUM_F.md`](docs/KURULUM_F.md)** (bu dosyanın parçası sayılır; F için tek doğruluk kaynağı odur).
+Ortak kurallardan farkları (sadece F için geçerli):
+- Veri **Binance** (`BTCUSDT`, hacim dahil; yedek Coinbase). Twelve Data kredisi harcanmaz. İkisi de yoksa durum **VERİ YOK**.
+- Saat hesabı **UTC** (4H mumlar UTC 00/04/08/12/16/20), gösterim TR. Killzone ve ek teyit indikatörleri F'ye uygulanmaz.
+- Durumlara ek olarak **TAM – BEKLE** (turuncu): kurulum tam ama funding / Cumartesi / likidasyon / haber / Pazar teyidi bloğu var.
+- Stop yapıya göre ATR payıyla verilir (spread/tampon eklenmez); miktar BTC cinsinden, kaldıraç en fazla 3x; aynı anda en fazla 1 açık F işlemi.
+- Tarama: hafta içi 10:00–20:00 TR ana taramayla (5 dk), diğer tüm saatlerde ve hafta sonu `scan-f` iş akışıyla 15 dk'da bir.

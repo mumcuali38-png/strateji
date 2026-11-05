@@ -45,6 +45,14 @@
     "staleWarnMin": 15,
     "staleErrorMin": 30
   },
+  "F": {
+    "ltf": "15m", "springLookback1h": 30, "chochMaxHours": 24, "phaseCBars": 12, "lpsSosBars": 12,
+    "trLookback": 120, "trMinBars": 12, "trMinAtr": 1.5, "trMaxAtr": 8, "trInsidePct": 0.7, "priorTrendBars": 48, "priorTrendAtr": 3,
+    "staleBars": 72, "deleteBars": 168, "springMaxDepthAtr": 1.5, "rvLow": 0.7, "rvHigh": 1.5, "cpStrong": 0.6,
+    "stopAtr": 0.5, "minRR3": 3, "minRR2": 1.5, "lpsMinRR": 3, "trMiddlePct": 0.35, "zoneDistAtr4h": 0.5,
+    "bestWindowUTC": ["12:30", "16:00"], "fundingUTC": ["00:00", "08:00", "16:00"], "fundingBlockMin": 15,
+    "liqAtrMult": 2, "liqBarAtr": 3, "liqWaitBars": 2, "maxLeverage": 3
+  },
   "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
   "history": { "days": 30, "evalMaxBars5m": 288 },
   "us100PerQqq": 41.0
