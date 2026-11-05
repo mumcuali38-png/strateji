@@ -23,8 +23,10 @@ const dow = trDow(now);
 const weekday = S.weekdays.includes(dow);
 const inWindow = inTrRange(now, S.windowTR[0], S.windowTR[1]);
 const weekendCrypto = !weekday && S.cryptoWeekend;
-const active = (weekday || weekendCrypto) && inWindow;
-console.log(`Tarama ${new Date(now).toISOString()} · TR ${String(Math.floor(trMinutes(now) / 60)).padStart(2, '0')}:${String(trMinutes(now) % 60).padStart(2, '0')} · pencere ${active ? 'AÇIK' : 'kapalı'}${force ? ' · FORCE' : ''}`);
+// Ön pencere (hafta içi 08:00–10:00 TR): sadece XAU (Kurulum G — Asya seviyeleri ve süpürme penceresi kaçmasın)
+const inPre = weekday && !inWindow && inTrRange(now, S.preWindowTR[0], S.preWindowTR[1]);
+const active = ((weekday || weekendCrypto) && inWindow) || inPre;
+console.log(`Tarama ${new Date(now).toISOString()} · TR ${String(Math.floor(trMinutes(now) / 60)).padStart(2, '0')}:${String(trMinutes(now) % 60).padStart(2, '0')} · pencere ${inPre ? 'ÖN PENCERE (XAU)' : active ? 'AÇIK' : 'kapalı'}${force ? ' · FORCE' : ''}`);
 
 if (pushTest) {
   const r = await sendAll(conf, [{ kind: 'test', title: '🔔 Test bildirimi', body: 'Strateji Radar bildirimleri çalışıyor. Karar her zaman senin.', url: './#/ozet', tag: `test-${now}` }], now);
@@ -41,7 +43,7 @@ const errors: string[] = [], warnings: string[] = [], fetched: string[] = [];
 if (!key) warnings.push('TWELVE_DATA_KEY yok — veri çekilmedi, kayıtlı veriyle hesaplandı');
 
 const data: Record<string, SymData> = {};
-for (const sym of Object.keys(conf.symbols)) data[sym] = { m5: readCandles(sym, '5min'), m1: readCandles(sym, '1min'), d1: readCandles(sym, '1day') };
+for (const sym of Object.keys(conf.symbols)) data[sym] = { m5: readCandles(sym, '5min'), m1: readCandles(sym, '1min'), d1: readCandles(sym, '1day'), h1: readCandles(sym, '1h') };
 
 if (td && !credits.exhausted) {
   const today = utcDateStr(now);
@@ -59,6 +61,7 @@ if (td && !credits.exhausted) {
     if (r.error) { errors.push(`${p.sym} ${p.interval}: ${r.error}`); if (r.error === 'kredi bitti') break; continue; }
     fetched.push(`${p.sym}/${p.interval}`);
     if (p.interval === '1day') { data[p.sym].d1 = mergeCandles(data[p.sym].d1, r.candles, 400); continue; }
+    if (p.interval === '1h') { data[p.sym].h1 = mergeCandles(data[p.sym].h1 ?? [], r.candles, 1500); continue; }
     if (p.interval === '5min') { data[p.sym].m5 = mergeCandles(data[p.sym].m5, r.candles, S.keep5m); continue; }
     data[p.sym].m1 = mergeCandles(data[p.sym].m1, r.candles, S.keep1m);
     // 5m, 1m'lerden üretilir (ek kredi yok) — sadece tamamlanmış kovalar
@@ -69,7 +72,7 @@ if (td && !credits.exhausted) {
     data[p.sym].m5 = mergeCandles(data[p.sym].m5, agg, S.keep5m);
   }
   if (needBootstrap && !errors.some((e) => e.includes('5min'))) credits.bootstrapDate = today;
-  for (const sym of Object.keys(data)) { writeCandles(sym, '5min', data[sym].m5); writeCandles(sym, '1min', data[sym].m1); writeCandles(sym, '1day', data[sym].d1); }
+  for (const sym of Object.keys(data)) { writeCandles(sym, '5min', data[sym].m5); writeCandles(sym, '1min', data[sym].m1); writeCandles(sym, '1day', data[sym].d1); if (data[sym].h1?.length) writeCandles(sym, '1h', data[sym].h1!); }
 }
 if (credits.used >= credits.hardStop) { credits.exhausted = true; warnings.push('Günlük kredi sınırı (790) doldu — tarama UTC 00:00\'a kadar durdu'); }
 
@@ -78,14 +81,15 @@ const news = readJSON<NewsFile | null>('news.json', null);
 let hist = readJSON<HistEvent[]>('history.json', []);
 const prior = hist.filter((h) => h.kind === 'TAM').map((h) => ({ strategy: h.strategy, symbol: h.symbol, id: h.id, t: h.signalAt ?? h.t }));
 // Hafta sonu (kripto açık): sadece BTC/ETH değerlendirilir; diğerlerinin Cuma verisiyle eski sinyal üretmesi engellenir
-const evalData = weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
+const evalData = inPre ? Object.fromEntries(Object.entries(data).filter(([s]) => S.preWindowSymbols.includes(s))) : weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
+if (inPre) warnings.push('Ön pencere (08:00–10:00 TR): sadece XAU taranıyor — diğerleri 10:00\'da');
 if (!weekday) warnings.push('Hafta sonu: sadece BTC/ETH taranıyor');
 const { results, ctxs, errors: engErr } = runEngine(conf, now, evalData, news?.events ?? [], prior);
 const fRun = await runF(conf, now, news?.events ?? []);
 results.F = { BTCUSD: fRun.setups };
 if (fRun.errors.length) errors.push(`F veri: ${fRun.errors.join(' · ')}`);
 errors.push(...engErr.filter((e) => !Object.keys(credits.unavailable ?? {}).some((u) => e.startsWith(`${u}:`))));
-for (const u of Object.keys(credits.unavailable ?? {})) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
+for (const u of Object.keys(credits.unavailable ?? {}).filter((x) => conf.symbols[x])) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
 const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());
 
 // --- Bildirimler ---
@@ -102,7 +106,7 @@ const h = updateHistory(hist, all, now, P.history.days, candlesOf, P.history.eva
 hist = h.hist;
 
 // --- Yaz ---
-const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings, fetched, window: { active, oneMin: inTrRange(now, S.oneMinuteTR[0], S.oneMinuteTR[1]), weekday, start: S.windowTR[0], end: S.windowTR[1] } });
+const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings, fetched, window: { active, pre: inPre, oneMin: inTrRange(now, S.oneMinuteTR[0], S.oneMinuteTR[1]), weekday, start: S.windowTR[0], end: S.windowTR[1] } });
 writeJSON('state.json', state);
 writeJSON('history.json', hist);
 writeJSON('credits.json', credits, true);

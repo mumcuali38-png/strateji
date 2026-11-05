@@ -34,7 +34,7 @@ export class TwelveData {
   get remaining(): number { return this.credits.hardStop - this.credits.used; }
 
   /** Dakikada en fazla perMinute istek; günlük sert sınır creditHardStop. 429 → bir sonraki dakikaya kadar bekle, tekrar deneme. */
-  async series(sym: string, tdSymbol: string, interval: '1min' | '5min' | '1day', outputsize: number): Promise<{ candles: Candle[]; error?: string }> {
+  async series(sym: string, tdSymbol: string, interval: '1min' | '5min' | '1h' | '1day', outputsize: number): Promise<{ candles: Candle[]; error?: string }> {
     if (this.credits.used >= this.credits.hardStop) { this.credits.exhausted = true; return { candles: [], error: 'kredi bitti' }; }
     const now = this.clock();
     this.times = this.times.filter((t) => now - t < 60_000);

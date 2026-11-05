@@ -25,6 +25,8 @@
   "extra": { "rsiPeriod": 12, "rsiHigh": 70, "rsiLow": 30, "emaLong": 200, "macd": [12, 26, 9], "bb": [20, 2], "kc": [20, 1.5] },
   "scan": {
     "windowTR": ["10:00", "20:00"],
+    "preWindowTR": ["08:00", "10:00"],
+    "preWindowSymbols": ["XAUUSD"],
     "oneMinuteTR": ["17:25", "19:00"],
     "qqqTR": ["16:30", "20:00"],
     "weekdays": [1, 2, 3, 4, 5],
@@ -38,10 +40,12 @@
     "bootstrap5m": 2500,
     "bootstrap1d": 60,
     "bootstrap1dSymbols": ["XAUUSD", "EURUSD", "GBPUSD", "US100"],
+    "bootstrap1h": 1200,
+    "bootstrap1hSymbols": ["XAUUSD"],
     "keep5m": 9000,
     "keep1m": 1500,
-    "priority": ["XAUUSD", "EURUSD", "GBPUSD", "US100", "XAGUSD", "BTCUSD", "ETHUSD"],
-    "oneMinuteSymbols": ["US100", "XAUUSD", "GBPUSD", "XAGUSD", "BTCUSD", "ETHUSD"],
+    "priority": ["XAUUSD", "EURUSD", "GBPUSD", "US100", "BTCUSD", "ETHUSD"],
+    "oneMinuteSymbols": ["US100", "XAUUSD", "GBPUSD", "BTCUSD", "ETHUSD"],
     "staleWarnMin": 15,
     "staleErrorMin": 30
   },
@@ -52,6 +56,10 @@
     "stopAtr": 0.5, "minRR3": 3, "minRR2": 1.5, "lpsMinRR": 3, "trMiddlePct": 0.35, "zoneDistAtr4h": 0.5,
     "bestWindowUTC": ["12:30", "16:00"], "fundingUTC": ["00:00", "08:00", "16:00"], "fundingBlockMin": 15,
     "liqAtrMult": 2, "liqBarAtr": 3, "liqWaitBars": 2, "maxLeverage": 3, "maxDataAgeMin": 120
+  },
+  "G": {
+    "minAsiaBars": 12, "emaWarm": 150, "rangeMin": 0.15, "rangeMax": 0.5, "earlyMax": 0.25, "backInsideBars": 4, "dispBody": 1.5,
+    "bufferPct": 0.0005, "roundStep": 10, "roundDist": 3, "minRR1": 1, "minRR2": 2, "newsExitMin": 15, "smt": false
   },
   "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
   "history": { "days": 30, "evalMaxBars5m": 288 },

@@ -52,7 +52,7 @@ export function renderSettings(App, el) {
   const now = new Date();
   const dstNote = now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10;
   const credDays = st?.credits?.days ?? [];
-  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'XAGUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'], F: ['BTCUSD'] };
+  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'], F: ['BTCUSD'], G: ['XAUUSD'] };
   const draft = s.paramsDraft ?? P ?? {};
   el.innerHTML = `<div class="h1">Ayarlar</div>
   <div class="card"><h2>Hesap</h2><div class="form">
@@ -80,7 +80,7 @@ export function renderSettings(App, el) {
     <div class="form">${field('notify.quiet.from', 'Sessiz saat başlangıç (TR)', s.notify.quiet?.from, 'time')}${field('notify.quiet.to', 'Sessiz saat bitiş (TR)', s.notify.quiet?.to, 'time')}</div>
     <h3 style="margin-top:12px">Strateji × sembol</h3>
     <div class="tbl-wrap"><table class="mx"><thead><tr><th></th>${Object.keys(SHORT).map((y) => `<th>${SHORT[y]}</th>`).join('')}</tr></thead><tbody>
-    ${['A', 'B', 'C', 'D', 'E', 'F'].map((k) => `<tr><th><label class="chk" style="min-height:40px"><input type="checkbox" data-path="notify.strategies.${k}" ${s.notify.strategies?.[k] !== false ? 'checked' : ''}> ${k}</label></th>${Object.keys(SHORT).map((y) => stratSym[k].includes(y) ? `<td><input type="checkbox" data-path="notify.matrix.${k}:${y}" ${s.notify.matrix?.[`${k}:${y}`] !== false ? 'checked' : ''} aria-label="${k} ${y}"></td>` : '<td class="muted">·</td>').join('')}</tr>`).join('')}
+    ${['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((k) => `<tr><th><label class="chk" style="min-height:40px"><input type="checkbox" data-path="notify.strategies.${k}" ${s.notify.strategies?.[k] !== false ? 'checked' : ''}> ${k}</label></th>${Object.keys(SHORT).map((y) => stratSym[k].includes(y) ? `<td><input type="checkbox" data-path="notify.matrix.${k}:${y}" ${s.notify.matrix?.[`${k}:${y}`] !== false ? 'checked' : ''} aria-label="${k} ${y}"></td>` : '<td class="muted">·</td>').join('')}</tr>`).join('')}
     </tbody></table></div>
     <details style="margin-top:12px"><summary class="btn">🔑 VAPID anahtarı (ilk kurulum)</summary>
       <p class="muted small">Bildirim için bir kez VAPID anahtar çifti gerekir. Bu cihazda üretilir, hiçbir yere gönderilmez. İki değeri GitHub Secrets'a ekle: <span class="mono">VAPID_PUBLIC</span> ve <span class="mono">VAPID_PRIVATE</span>. Gizli anahtarı başka yerde paylaşma.</p>

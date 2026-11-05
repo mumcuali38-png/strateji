@@ -17,7 +17,7 @@ export function computeMessages(conf: Config, all: Setup[], prev: { strategies?:
       msgs.push({ kind: 'info', title: nt.title, body: nt.body, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: nt.key, strategy: s.strategy, symbol: s.symbol });
       notified[nt.key] = now;
     }
-    if ((s.status === 'TAM' || s.status === 'BEKLE') && !(s.key in notified)) { msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
+    if ((s.status === 'TAM' || s.status === 'BEKLE') && !(s.key in notified)) { if (!s.info?.mergedWithB) msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
     else if (s.status === 'EKSIK' && s.remaining === 1 && !(s.key in notified)) { msgs.push(readyMsg(s)); notified[s.key] = now; }
   }
   const byId = new Map(all.map((s) => [s.id, s]));

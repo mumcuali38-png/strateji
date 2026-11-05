@@ -16,7 +16,7 @@ export function writeJSON(name: string, v: unknown, pretty = false): void {
   mkdirSync(dirname(f), { recursive: true });
   writeFileSync(f, pretty ? JSON.stringify(v, null, 1) : JSON.stringify(v));
 }
-export type Interval = '1min' | '5min' | '1day';
+export type Interval = '1min' | '5min' | '1h' | '1day';
 export function readCandles(sym: string, interval: Interval): Candle[] {
   return unpack(readJSON<number[][]>(`candles/${sym}_${interval}.json`, []));
 }

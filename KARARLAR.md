@@ -121,3 +121,23 @@ Doğrulama: §18'deki 13 senaryonun hepsi + temel TAM ve short (UTAD) senaryosu 
 - Haber takvimi pencere içinde döngüde saatte bir çekilir; `news` ve `scan-f` iş akışları yalnız pencere dışında zamanlanır (aynı kuyrukta tarama döngüsünü engellemesinler).
 - Actions sekmesinde "cancelled" görünen tarama çalışmaları normaldir: döngü çalışırken sıraya giren yeni tetikler birbirinin yerini alır.
 - Pencere dışında `scan-f` (F) GitHub'ın zamanlayıcısına bağlıdır (15 dk planlı, pratikte 15–60 dk). F 1H/4H mumlarına dayandığı için kabul edildi.
+
+## Kurulum G — XAU Judas (05.11.2026, docs/KURULUM_G.md)
+| # | Konu | Karar | Nerede değişir |
+|---|---|---|---|
+| G1 | Veri / kredi | Spec kendi çağrı planını önerir; uygulama zaten XAU 5m'yi 5 dk'da bir çektiği için G **ek istek açmaz**: 15m/1H bu 5m'den, uzun geçmiş günde 1 kez `1h × 1200` (1 kredi) ile. Ortak kredi sayacı. | `scan.bootstrap1h*` |
+| G2 | Ön pencere | Hafta içi 08:00–10:00 TR sadece XAU taranır (≈24 kredi). Sebep: GitHub'ın sabah ilk tetiği gecikebiliyor; G'nin 10:00–12:00 süpürme penceresi kaçmasın, "08:00 seviyeler hazır" bildirimi zamanında gitsin. Tam gün simülasyonu 676 kredi. | `scan.preWindowTR/Symbols` |
+| G3 | Seri sınırları | 4H: 02/06/10/14/18/22, gün 18:00→17:00, hafta Pazar 18:00→Cuma 17:00 (strateji saati). Eksik saatli 4H ve 10 saatten kısa günler atılır. EMA50 için ≥150 4H mum; yoksa ⏳. | — |
+| G4 | Bias | 00:00 NY'de kapanmış 4H mumlarla yazılır, gün içinde değişmez. B3: PDH (veya hafta tepesi) MO'nun üstünde ve 18:00→00:00 arasında alınmamış olmalı. | — |
+| G5 | TAM anı | Spec: "1–10 ✅ → limit emir seviyesi aktif". TAM limit kurulduğunda verilir; dolum ayrıca "Giriş doldu" bildirimiyle. Dolum 5m mumlarla sırayla simüle edilir (her mumda o ana kadarki en yeni FVG CE → iFVG → OB); bu yüzden limit deterministik. | — |
+| G6 | Hatalı sinyal koruması | **Dolum öncesi:** T1 (Asya karşı tarafı) dolumdan önce görülürse, süpürme ucunun ötesinde 5m kapanış olursa, 05:00 NY'ye kadar dolmazsa veya fiyat limitten 3R'den uzaksa YOK. **Dolum sonrası:** ortak kural (stop/T1 → YOK, 6 saat, 3R). Hafta sonu G çalışmaz. | `general.*` |
+| G7 | Aynı tarafta iki delinme | 02:00 sonrası ilk delinen mum iki tarafı da delmişse "bias tarafı önce alındı" sayılır (temkinli). | — |
+| G8 | B ile çakışma | Aynı gün B aynı yönde TAM ise G "B ile birleşik" işaretlenir, ayrı TAM bildirimi gitmez (tek işlem). | `engine.mergeGB` |
+| G9 | SMT | Varsayılan kapalı (spec), hesaplanmıyor; kalite puanı likidite kümesi, FVG+OB ve A+ ile. | `G.smt` |
+| G10 | Haber çıkışı / 20:00 | Dolmuş ve açık pozisyon için haberden 15 dk önce (T1 yoksa) ve 19:50 TR'de "kalan pozisyonu kapat" bildirimi. Tarama 20:00 TR'de bittiği için 20:00 bildirimi 10 dk erken gider. | `G.newsExitMin` |
+| G11 | Saat dışı | 05:00 NY (13:00 TR) sonrası dolmamış kurulum "bugün için bitti" (YOK), ertesi gün 08:00 TR yeniden. | — |
+
+Doğrulama: §15'teki 18 senaryonun hepsi + temel TAM + short (ayna) + 3 koruma testi (`scanner/test/g.test.ts`, sentetik veri). Gerçek veride ilk tam gün, `1h × 1200` geçmişi yarın sabahki ilk taramada çekildikten sonra.
+
+## XAG/USD kaldırıldı (05.11.2026)
+Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m listeleri, uygulama menüsü ve ızgaradan çıkarıldı (MASTERPROMPT §23). Plan yükseltilirse sembol satırı geri eklenebilir.

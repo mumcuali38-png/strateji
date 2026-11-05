@@ -222,7 +222,7 @@ Ayrı strateji. Enstrüman NAS100/US100 CFD; veri **QQQ** (Twelve Data endeksi v
 
 ---
 
-## 10. KURULUM D — Range (US100, XAU/USD, GBP/USD, XAG/USD, BTC/USD, ETH/USD)
+## 10. KURULUM D — Range (US100, XAU/USD, GBP/USD, BTC/USD, ETH/USD — XAG kaldırıldı, bkz. §23)
 
 İki alt model, her paritede ayrı hesaplanır. A/B/C'den bağımsız. US100 için QQQ kullanılır; seviyeler QQQ fiyatı + yüzde mesafe.
 
@@ -327,7 +327,7 @@ data dalı (branch "data")     → candles/*.json, state.json, history.json, new
 
 ## 15. TWELVE DATA KREDİ BÜTÇESİ (ücretsiz plan: 8/dk, 800/gün) — ASLA AŞILMAZ
 
-- **Semboller:** XAU/USD, XAG/USD, EUR/USD, GBP/USD, BTC/USD, ETH/USD, QQQ.
+- **Semboller:** XAU/USD, EUR/USD, GBP/USD, BTC/USD, ETH/USD, QQQ. (XAG/USD ücretsiz planda yok — kaldırıldı, bkz. §23)
 - **Sadece en düşük TF çekilir:** normalde 5min. 15m/1H/4H/1D **koddan üretilir** (5m'den toplanır).
 - **1m penceresi:** 17:25–19:00 TR arasında (D1 ve C için) tüm ilgili semboller **1min** çekilir; 5m bu 1m'lerden üretilir (ek kredi yok). 3m de 1m'den üretilir.
 - **Artımlı çekim:** Her taramada `outputsize` küçük (son 6 mum); `data` dalındaki geçmişle birleştirilir.
@@ -335,7 +335,7 @@ data dalı (branch "data")     → candles/*.json, state.json, history.json, new
 - **Tarama penceresi:** Pazartesi–Cuma **10:00–20:00 TR**. Dışında otomatik çekim yok. QQQ sadece ABD piyasa saatlerinde (16:30–20:00 TR). Hafta sonu yok (Ayarlar'da kripto için hafta sonu açılabilir; kredi uyarısıyla).
 - **Tahmini kullanım:** 6 sembol × 120 tarama = 720 + QQQ ~42 + bootstrap ~11 ≈ **773/gün**.
 - **Sert sınır:** Günlük sayaç **790**'a ulaşınca tarama durur, kalan gün "kredi bitti" gösterilir. 429 dönerse bir sonraki dakikaya kadar beklenir, tekrar denenmez.
-- **Öncelik (kredi azalırsa):** XAU > EUR > GBP > QQQ > XAG > BTC > ETH; son sıradakiler önce atlanır.
+- **Öncelik (kredi azalırsa):** XAU > EUR > GBP > QQQ > BTC > ETH; son sıradakiler önce atlanır.
 - Kredi sayacı `credits.json`'da tutulur, NY 00:00 değil **UTC 00:00**'da sıfırlanır (Twelve Data'nın günlük sıfırlaması). API yanıt başlıklarındaki kalan krediyle karşılaştırılır.
 - Anahtarlar **GitHub Secrets**: `TWELVE_DATA_KEY`, `FMP_KEY` (opsiyonel), `VAPID_PUBLIC`, `VAPID_PRIVATE`, `PUSH_SUBSCRIPTIONS`. Kodda veya public dosyada asla anahtar yok.
 
@@ -508,3 +508,16 @@ Ortak kurallardan farkları (sadece F için geçerli):
 - Durumlara ek olarak **TAM – BEKLE** (turuncu): kurulum tam ama funding / Cumartesi / likidasyon / haber / Pazar teyidi bloğu var.
 - Stop yapıya göre ATR payıyla verilir (spread/tampon eklenmez); miktar BTC cinsinden, kaldıraç en fazla 3x; aynı anda en fazla 1 açık F işlemi.
 - Tarama: hafta içi 10:00–20:00 TR ana taramayla (5 dk), diğer tüm saatlerde ve hafta sonu `scan-f` iş akışıyla 15 dk'da bir.
+
+---
+
+## 22. KURULUM G — XAUUSD Asya Range Süpürmesi (ICT Judas Swing)
+
+Tam şartname: **[`docs/KURULUM_G.md`](docs/KURULUM_G.md)** (bu dosyanın parçası sayılır; G için tek doğruluk kaynağı odur).
+- Veri: mevcut XAU/USD 5m akışı (Twelve Data, ortak kredi sayacı) + günde 1 kez `1h × 1200` (EMA50 ısınması, ADR20, PDH/PDL, haftalık range). 15m/1H/4H/günlük koddan üretilir; G'nin 4H sınırları 02/06/10/14/18/22, günü 18:00→17:00 (strateji saati, sabit UTC-5).
+- **Ön pencere:** hafta içi 08:00–10:00 TR sadece XAU taranır (Asya seviyeleri 08:00'de hazır, süpürme penceresi 10:00'da kaçmasın).
+- G'ye de ortak **hatalı sinyal koruması** uygulanır (dolum öncesi ve sonrası); günde en fazla 1 G işlemi; aynı gün aynı yönde B TAM ise tek işlem sayılır ("B ile birleşik").
+
+## 23. DEĞİŞİKLİK NOTLARI
+
+- **05.11.2026 — XAG/USD kaldırıldı:** Twelve Data ücretsiz planında yok (Grow/Venture gerekir). §1.3, §10, §15'teki XAG ifadeleri geçersizdir; D artık US100, XAU/USD, GBP/USD, BTC/USD, ETH/USD'de çalışır. Plan yükseltilirse `config/symbols.json`'a geri eklenebilir.

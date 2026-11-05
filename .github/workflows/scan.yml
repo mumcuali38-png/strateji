@@ -4,6 +4,7 @@ name: scan
 on:
   schedule:
     - cron: '*/5 7-16 * * *'
+    - cron: '*/5 5-6 * * 1-5' # ön pencere 08:00–10:00 TR (sadece XAU / Kurulum G)
     - cron: '17 6 1 * *' # aylık keepalive (60 gün hareketsizlikte durmasın)
   workflow_dispatch:
     inputs:
