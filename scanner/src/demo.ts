@@ -80,7 +80,7 @@ writeJSON('history.json', h.hist);
   const empty = { traders: [], long: 0, short: 0, candidates: 0 };
   writeJSON('traders.json', { updatedAt: now, status: 'ok', source: 'DEMO', filters: { minMonths: 12, maxDDPct: 20, minTrades: 100, last3mPositive: true, maxRisk: 6, minPairTrades90d: 10, perPair: 10 },
     pairs: { XAUUSD: { traders: xau, long: 5, short: 2, candidates: 40 }, EURUSD: empty, GBPUSD: empty, XAGUSD: empty, US100: empty, BTCUSD: empty, ETHUSD: empty },
-    crowd: { XAUUSD: 74, EURUSD: 61 }, cot: { XAUUSD: { net: 182340, change4w: -12400, z: -0.8 } } });
+    crowd: { XAUUSD: 74, EURUSD: 61 }, cot: { XAUUSD: { net: 182340, change4w: -12400, z: -0.8 } }, okx: { BTCUSD: { topLS: 0.9, allLS: 2.81, topLongPct: 47.4, allLongPct: 73.8 }, ETHUSD: { topLS: 1.3, allLS: 3.07, topLongPct: 56.5, allLongPct: 75.4 } } });
 }
 console.log(`Demo yazıldı · TAM ${state.summary.tam} · Hazırlan ${state.summary.ready} · hatalar: ${errors.join(' | ') || 'yok'}`);
 for (const [s, bySym] of Object.entries(results)) for (const [sym, list] of Object.entries(bySym)) console.log(`  ${s} ${sym}: ${list.map((x) => `${x.status}${x.status === 'EKSIK' ? '(' + x.remaining + ')' : ''}`).join(' ')}`);

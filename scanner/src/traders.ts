@@ -28,6 +28,8 @@ export interface TradersFile {
   updatedAt: number; status: string; source: string; filters: TraderFilters;
   pairs: Record<string, { traders: TraderPos[]; long: number; short: number; candidates: number; error?: string }>;
   crowd: Record<string, number | null>; cot: Record<string, { net: number; change4w: number; z?: number } | null>;
+  /** OKX (BTC/ETH): büyük trader'ların pozisyon L/S oranı ve tüm hesapların L/S oranı → long % */
+  okx?: Record<string, { topLongPct: number | null; allLongPct: number | null; topLS: number | null; allLS: number | null } | null>;
 }
 
 interface SearchItem { userName: string; gain: number; riskScore: number; maxMonthlyRiskScore?: number; trades: number; peakToValley?: number; weeksSinceRegistration?: number; instrumentPct?: number; activeWeeks?: number; dailyDd?: number }
@@ -66,10 +68,16 @@ export async function runTraders(conf: Config, now: number, setups: Setup[], not
     const n = cotRaw?.[p];
     cot[p] = n && n.length > 5 ? { net: n.at(-1)!, change4w: n.at(-1)! - n.at(-5)!, z: cotScore(n).z } : null;
   }
-  const file: TradersFile = { updatedAt: now, status: 'ok', source: 'eToro Public API', filters: f, pairs: {}, crowd, cot };
+  // OKX büyük trader / tüm hesaplar oranı (Piyasa Yönü önbelleğinden; ek istek yok)
+  const okx: NonNullable<TradersFile['okx']> = {};
+  for (const [p, k] of [['BTCUSD', 'okx_btc'], ['ETHUSD', 'okx_eth']] as const) {
+    const d = dcache.v[k] as { topLS?: number; globalLS?: number } | undefined;
+    okx[p] = d ? { topLS: d.topLS ?? null, allLS: d.globalLS ?? null, topLongPct: lsToPct(d.topLS), allLongPct: lsToPct(d.globalLS) } : null;
+  }
+  const file: TradersFile = { updatedAt: now, status: 'ok', source: 'eToro Public API', filters: f, pairs: {}, crowd, cot, okx };
   for (const p of PAIRS) file.pairs[p] = { traders: [], long: 0, short: 0, candidates: 0 };
   const key = process.env.ETORO_API_KEY, user = process.env.ETORO_USER_KEY;
-  if (!key || !user) { file.status = 'no_keys'; file.source = 'eToro anahtarı yok — sadece Myfxbook + COT'; writeJSON('traders.json', file); return { file, msgs: [] }; }
+  if (!key || !user) { file.status = 'no_keys'; file.source = 'eToro anahtarı yok — Myfxbook + COT + OKX (BTC/ETH)'; writeJSON('traders.json', file); return { file, msgs: disagreement(setups, file, notified, now) }; }
   const api = new Etoro(key, user);
   const cache = readJSON<{ ids?: Record<string, number>; idsAt?: number; picks?: Record<string, { u: string; y: SearchItem }[]>; picksAt?: number }>('traders-cache.json', {});
   try {
@@ -137,15 +145,20 @@ export function disagreement(setups: Setup[], file: TradersFile, notified: Recor
     if ((s.status !== 'TAM' && s.status !== 'BEKLE') || !s.dir) continue;
     const p = file.pairs[s.symbol];
     const n = (p?.long ?? 0) + (p?.short ?? 0);
-    if (!p || n < 3) continue;
-    const against = s.dir === 1 ? p.short : p.long;
+    const top = file.okx?.[s.symbol]?.topLongPct ?? null;
+    // eToro trader'ları (≥3) yoksa kripto için OKX büyük trader oranı
+    const againstPct = n >= 3 ? ((s.dir === 1 ? p.short : p.long) / n) * 100 : top !== null ? (s.dir === 1 ? 100 - top : top) : null;
+    const who = n >= 3 ? `seçili trader'ların (${n})` : 'OKX büyük trader pozisyonlarının';
     const key = `${s.id}+TRUYUM`;
-    if (against / n < 0.7 || key in notified) continue;
+    if (againstPct === null || againstPct < 70 || key in notified) continue;
     notified[key] = now;
-    out.push({ kind: 'info', strategy: s.strategy, symbol: s.symbol, title: `👥 ${s.strategy} · ${SHORT[s.symbol] ?? s.symbol}: trader'lar ters yönde`, body: `${s.strategy} ${s.dir === 1 ? 'LONG' : 'SHORT'} TAM — seçili trader'ların %${Math.round((against / n) * 100)}'i ${s.dir === 1 ? 'SHORT' : 'LONG'} (${n} trader). Sinyal değil, teyit bilgisi.`, url: `./#/trader/${s.symbol}`, tag: key });
+    out.push({ kind: 'info', strategy: s.strategy, symbol: s.symbol, title: `👥 ${s.strategy} · ${SHORT[s.symbol] ?? s.symbol}: trader'lar ters yönde`, body: `${s.strategy} ${s.dir === 1 ? 'LONG' : 'SHORT'} TAM — ${who} %${Math.round(againstPct)}'i ${s.dir === 1 ? 'SHORT' : 'LONG'}. Sinyal değil, teyit bilgisi.`, url: `./#/trader/${s.symbol}`, tag: key });
   }
   return out;
 }
+
+/** Long/short oranı → long % (oran 2 → %66,7) */
+export function lsToPct(r?: number | null): number | null { return r !== undefined && r !== null && Number.isFinite(r) && r > 0 ? +((r / (1 + r)) * 100).toFixed(1) : null; }
 
 export function shouldRunTraders(prev: TradersFile | null, now: number): boolean {
   return !prev || now - prev.updatedAt >= 14 * MIN;

@@ -36,3 +36,13 @@ test('Uyum satırı: "G LONG TAM — trader\'ların %71\'i LONG → uyumlu ✅"'
   assert.equal(agreement([s], { long: 1, short: 5 })[0].ok, false);
   assert.match(agreement([s], { long: 0, short: 0 })[0].text, /trader verisi yok/);
 });
+
+test('OKX büyük trader oranı (BTC/ETH): oran → long %, uyum ve uyumsuzluk', async () => {
+  const { lsToPct } = await import('../src/traders.ts');
+  assert.equal(lsToPct(2), 66.7); assert.equal(lsToPct(0.9), 47.4); assert.equal(lsToPct(null), null);
+  const b = { id: 'F-1', strategy: 'F', symbol: 'BTCUSD', dir: 1, status: 'TAM', remaining: 0 } as unknown as Setup;
+  const f: TradersFile = { ...file(0, 0), pairs: { BTCUSD: { traders: [], long: 0, short: 0, candidates: 0 } }, okx: { BTCUSD: { topLS: 0.35, allLS: 2.8, topLongPct: 25.9, allLongPct: 73.7 } } };
+  const m = disagreement([b], f, {}, 0);
+  assert.equal(m.length, 1); assert.match(m[0].body, /OKX büyük trader pozisyonlarının %74'i SHORT/);
+  assert.match(agreement([b], { long: 0, short: 0 }, 66.7)[0].text, /OKX büyük trader'ların %67'i LONG → uyumlu ✅/);
+});
