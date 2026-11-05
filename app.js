@@ -46,7 +46,7 @@ function topbar() {
   const sc = App.conf.params?.scan ?? { staleWarnMin: 15, staleErrorMin: 30 };
   const inWin = scanWindowOpen(now);
   const cls = !st ? 'err' : !inWin ? 'ok' : age > sc.staleErrorMin * MIN ? 'err' : age > sc.staleWarnMin * MIN ? 'warn' : 'ok';
-  const used = st?.credits?.used ?? 0, stop = st?.credits?.hardStop ?? 790;
+  const used = st?.credits?.used ?? 0, stop = st?.credits?.hardStop ?? 760;
   const pctc = Math.min(100, (used / stop) * 100);
   document.getElementById('topbar').innerHTML = `
     <div class="grp"><span class="clock">🕐 ${tr(now)} <span class="muted">TR</span></span><span class="muted num">${ny(now)} NY</span></div>
@@ -93,7 +93,7 @@ function nav(route) {
   const item = (href, ico, label, extra = '', cls = '') => `<a href="${href}" class="${cls} ${route.top === href.split('/')[1] ? 'on' : ''}"><span class="ico">${ico}</span><span class="lbl">${label}</span>${extra}</a>`;
   const tabs = TABS.map((t) => {
     const { best, tam } = tabBest(App, t);
-    const ic = best ? ({ TAM: '🟢', BEKLE: '🟠', EKSIK: '🟡' })[best.status] ?? '⚪' : '⚪';
+    const ic = best ? ({ TAM: '🔵', BEKLE: '🟠', EKSIK: '🟡' })[best.status] ?? '⚪' : '⚪';
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
@@ -143,7 +143,7 @@ async function computeLimits() {
   const list = allTrades.filter((t) => t.t >= today);
   if (maxN > 0 && list.length >= maxN) App.limits = { ...App.limits, reached: true, why: `Günlük işlem limiti doldu (${list.length}/${maxN})` };
   const lossUsd = list.reduce((a, t) => a + (Number(t.r) < 0 ? -Number(t.r) * (t.riskUsd || 0) : 0), 0);
-  if (maxL > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
+  if (maxL > 0 && Number(s.balance) > 0 && lossUsd > 0 && lossUsd >= (Number(s.balance) * maxL) / 100) App.limits = { ...App.limits, reached: true, why: `Günlük kayıp limiti doldu (−$${lossUsd.toFixed(0)})` };
 }
 let lastFull = 0;
 async function reload(manual = false, api = false) {

@@ -4,6 +4,7 @@ import type { Results } from './engine.ts';
 import type { Ctx } from './context.ts';
 import type { Credits } from './twelvedata.ts';
 import { pack } from './candles.ts';
+import { readJSON } from './store.ts';
 import type { TF } from './types.ts';
 
 export const VERSION = 1;
@@ -38,6 +39,7 @@ export function buildState(conf: Config, now: number, res: Results, ctxs: Record
     newsMeta: news ? { fetchedAt: news.fetchedAt, ffFetchedAt: news.ffFetchedAt, stale: news.stale, fmp: news.fmp } : null,
     summary: { tam, ready },
     symbols, strategies: strategies as Record<StrategyId, Record<string, Setup[]>>,
+    fx: readJSON<Record<string, { rate: number; t: number }>>('fx.json', {}),
     fetched: extra.fetched, errors: extra.errors, warnings: extra.warnings,
   };
 }

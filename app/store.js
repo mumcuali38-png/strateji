@@ -1,14 +1,26 @@
 // Ayarlar (localStorage) ve günlük/bildirim geçmişi (IndexedDB). Hepsi sadece bu cihazda.
 const KEY = 'strateji.settings.v1';
 export const DEFAULTS = {
-  balance: 10000, riskPct: 0.5, currency: 'USD', maxTradesPerDay: '', maxDailyLossPct: '',
-  contracts: {}, buffers: {}, us100Price: '',
-  notify: { ready: true, news: true, cancel: true, quiet: { from: '', to: '' }, strategies: { A: true, B: true, C: true, D: true, E: true }, matrix: {} },
+  schema: 2,
+  balance: '', riskPct: 0.5, currency: 'USD', maxTradesPerDay: '', maxDailyLossPct: 2, maxOpenRiskPct: 1.5,
+  contracts: {}, buffers: {}, us100Price: '', instr: {}, instrConfirmed: 0, broker: 'off',
+  notify: { ready: true, news: true, cancel: true, quiet: { from: '00:00', to: '07:00' }, strategies: { A: true, B: true, C: true, D: true, E: true, F: true, G: true }, matrix: {} },
   theme: 'dark', fontSize: 'normal', chartTf: '', layers: { zones: true, liq: true, trade: true, kz: true, ema: true },
   onboarded: false, lastBackup: 0, paramsDraft: null,
 };
 function merge(a, b) { const o = { ...a }; for (const k of Object.keys(b || {})) o[k] = b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object' ? merge(a[k], b[k]) : b[k]; return o; }
-export function loadSettings() { try { return merge(DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { return structuredClone(DEFAULTS); } }
+export function loadSettings() {
+  let s;
+  try { s = merge(DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { return structuredClone(DEFAULTS); }
+  // Göç (EK v1): eski boş değerlere yeni varsayılanlar
+  if ((s.schema ?? 1) < 2) {
+    if (!s.notify.quiet?.from && !s.notify.quiet?.to) s.notify.quiet = { from: '00:00', to: '07:00' };
+    if (s.maxDailyLossPct === '' || s.maxDailyLossPct === undefined) s.maxDailyLossPct = 2;
+    if (s.maxOpenRiskPct === '' || s.maxOpenRiskPct === undefined) s.maxOpenRiskPct = 1.5;
+    s.schema = 2;
+  }
+  return s;
+}
 export function saveSettings(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* özel pencere */ } }
 export function lsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }
 export function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* yok say */ } }

@@ -1,5 +1,5 @@
 import { STRATS, TABS, SHORT } from './config.js';
-import { badge, COND_ICON, dirTxt, esc, price, pct, tr, ny, trny, dur, nyDayStart, parseHM, MIN, DAY, STATUS, dayNameTR } from './fmt.js';
+import { badge, COND_ICON, dirTxt, dirCls, esc, price, pct, tr, ny, trny, dur, nyDayStart, parseHM, MIN, DAY, STATUS, dayNameTR } from './fmt.js';
 import { recompute, us100Ratio } from './calc.js';
 import { mountChart } from './chart.js';
 import { chart as loadChart } from './data.js';
@@ -50,7 +50,7 @@ export function renderOverview(App, el) {
     const news = st.symbols?.[sym]?.newsRisk?.active;
     if (!b) return `<td><div class="cell yok ${news ? 'news' : ''}" data-go="#/${s}/${sym}">—</div></td>`;
     const cls = STATUS[b.status].cls;
-    const txt = b.status === 'TAM' ? '🟢 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
+    const txt = b.status === 'TAM' ? '🔵 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
     return `<td><div class="cell ${cls} ${news ? 'news' : ''}" data-go="#/${s}/${sym}/${encodeURIComponent(b.id)}" title="${esc(b.sub)}">${txt}</div></td>`;
   }).join('')}</tr>`).join('');
   const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
@@ -58,7 +58,7 @@ export function renderOverview(App, el) {
     <div class="h1">Şu an</div>${nowHtml}
     <div class="card"><h2>Durum ızgarası</h2>
       <div class="tbl-wrap"><table class="matrix"><thead><tr><th></th>${symbols.map((s) => `<th>${SHORT[s]}${st.symbols?.[s]?.newsRisk?.active ? ' 🔴' : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="muted small">🟢 TAM · 🟡 N = kalan şart sayısı · ⚪ YOK · 🔴 haber riski · boş = uygulanmaz</div>
+      <div class="muted small">🔵 TAM · 🟠 TAM–BEKLE · 🟡 N = kalan şart · ⚪ YOK · 🔴 haber riski · boş = uygulanmaz · yön: <span style="color:var(--long)">▲ LONG</span> / <span style="color:var(--short)">▼ SHORT</span></div>
     </div>
     <div class="card"><h2>Yakın setuplar</h2><div class="list">${sorted.map((s) => `<div class="li" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">${badge(s)}<div class="grow"><b>${SHORT[s.symbol]} ${s.strategy}</b> · ${esc(s.sub)}<div class="muted small">${esc(s.status === 'YOK' ? s.none?.why ?? '' : s.missing ?? 'Tüm şartlar sağlandı')}</div></div></div>`).join('') || '<div class="empty">Setup yok</div>'}</div></div>
     <div class="grid2" style="margin-top:12px">
@@ -70,10 +70,10 @@ function tamCard(App, s) {
   const cfg = symCfg(App, s.symbol);
   const m0 = s.methods.find((m) => m.id === s.defaultMethod) ?? s.methods[0];
   const m = m0 ? recompute(m0, s, cfg, App.settings, App.data.state) : null;
-  return `<div class="card tam-card ${s.status === 'BEKLE' ? 'bekle' : ''}" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">
-    <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><span class="big">${SHORT[s.symbol]} · ${s.strategy}</span>${s.status === 'BEKLE' ? badge(s) : ''}${m?.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}</div>
+  return `<div class="card tam-card ${dirCls(s.dir)}" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">
+    <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><span class="big">${SHORT[s.symbol]} · ${s.strategy}</span>${badge(s)}${m?.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}</div>
     <div class="muted" style="margin:6px 0">${esc(s.sub)}</div>
-    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` · TP2 <b>${m.rr2.toFixed(2)}</b>` : ''}</span><span>${s.strategy === 'F' ? 'BTC' : 'Lot'} <b>${m.lot.toFixed(s.strategy === 'F' ? 4 : 2)}</b></span></div>` : ''}
+    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` · TP2 <b>${m.rr2.toFixed(2)}</b>` : ''}</span><span>Lot <b>${m.lotOk ? m.lot.toFixed(2) : '—'}</b></span></div>${m.lotOk ? '' : `<div class="warnline">⚙️ ${esc(m.lotNote)}</div>`}` : ''}
   </div>`;
 }
 export function nextNews(App, n) {
@@ -199,7 +199,7 @@ function setupCard(App, s) {
   const dist = (x) => `${price(Math.abs(x - m.entry), d)} · ${pct(x, m.entry)}`;
   const rrWarn = s.status === 'TAM' && m.rr < (App.data.state?.params?.risk?.minRR ?? 2) ? `<div class="warnline">⚠️ Ayarlarındaki tamponla RR ${m.rr.toFixed(2)} &lt; 2</div>` : '';
   const preview = s.status !== 'TAM' ? '<span class="tag">ÖNİZLEME</span>' : '';
-  return `<div class="card setup-card">
+  return `<div class="card setup-card ${dirCls(s.dir)}">
     <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><div><b>${s.strategy} · ${esc(s.sub)}</b> ${preview} ${m.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}<div class="muted small">${s.status === 'EKSIK' ? 'Tamamlanırsa olası giriş-stop-hedef' : s.signalAt ? `Sinyal ${tr(s.signalAt)} TR` : ''}</div></div>${s.stars ? `<span class="stars" title="${esc((s.tags ?? []).join(', '))}">${'★'.repeat(s.stars)}${'☆'.repeat(Math.max(0, 4 - s.stars))}</span>` : ''}</div>
     ${s.methods.length > 1 ? `<div class="seg" style="margin-top:10px">${s.methods.map((x) => `<button class="seg-b ${x.id === m.id ? 'on' : ''}" data-method="${x.id}" title="${esc(x.note ?? '')}">${esc(x.label)}${x.id === s.defaultMethod ? ' •' : ''}</button>`).join('')}</div>` : `<div class="muted small" style="margin-top:8px">${esc(m.label)}</div>`}
     <div class="levels">
@@ -209,7 +209,8 @@ function setupCard(App, s) {
       ${m.tp2 !== undefined ? `<span class="k" style="color:var(--info)">TP2</span><span class="v">${priceTxt(App, s.symbol, m.tp2)}</span><span class="d">${dist(m.tp2)}</span>` : ''}
       ${m.tp3 !== undefined ? `<span class="k" style="color:var(--info)">TP3</span><span class="v">${priceTxt(App, s.symbol, m.tp3)}</span><span class="d">${dist(m.tp3)}</span>` : ''}
     </div>
-    <div class="kv"><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` / ${m.rr2.toFixed(2)}` : ''}${m.rr3 !== undefined ? ` / ${m.rr3.toFixed(2)}` : ''}</span><span>Risk <b>$${m.riskUsd.toFixed(0)}</b></span>${s.strategy === 'F' ? `<span>Miktar <b>${m.lot.toFixed(4)} BTC</b></span><span>Kaldıraç <b>${m.leverage.toFixed(2)}x</b></span>` : `<span>Lot <b>${m.lot.toFixed(2)}</b></span>`}</div>
+    <div class="kv"><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` / ${m.rr2.toFixed(2)}` : ''}${m.rr3 !== undefined ? ` / ${m.rr3.toFixed(2)}` : ''}</span><span>Risk <b>$${m.riskUsd.toFixed(0)}</b></span><span>Lot <b>${m.lotOk ? m.lot.toFixed(2) : '—'}</b>${m.lotOk ? ` <span class="muted small">(${esc(m.ins.brokerSymbol)})</span>` : ''}</span>${s.strategy === 'F' && m.lotOk ? `<span>Kaldıraç <b>${m.leverage.toFixed(2)}x</b></span>` : ''}</div>
+    ${m.lotNote ? `<div class="warnline">⚙️ ${esc(m.lotNote)}${m.lotOk ? '' : ' <a href="#/ayarlar">Ayarlar</a>'}</div>` : ''}
     ${m.capNote ? `<div class="warnline">⚠️ ${esc(m.capNote)}</div>` : ''}
     ${m.note ? `<div class="muted small" style="margin-top:6px">${esc(m.note)}</div>` : ''}
     ${s.strategy === 'F' || s.strategy === 'G' ? '' : rrWarn}
@@ -275,7 +276,7 @@ export function setupText(App, s, forClaude) {
     `Zaman: ${trny(s.evaluatedAt)}${s.symbol === 'US100' ? ' · seviyeler QQQ fiyatıdır' : ''}`,
   ];
   if (forClaude || s.status !== 'TAM') { lines.push('Şartlar:'); for (const c of s.conditions) lines.push(`${COND_ICON[c.status]} ${c.label} — ${c.detail}`); }
-  if (m) lines.push(`Kart: ${dirTxt(s.dir)} · ${m.label} · Giriş ${price(m.entry, d)} · Stop ${price(m.stop, d)} · TP1 ${price(m.tp1, d)}${m.tp2 !== undefined ? ` · TP2 ${price(m.tp2, d)}` : ''}${m.tp3 !== undefined ? ` · TP3 ${price(m.tp3, d)}` : ''} · RR ${m.rr.toFixed(2)}${m.rr3 !== undefined ? `/${m.rr3.toFixed(2)}` : ''} · ${s.strategy === 'F' ? `${m.lot.toFixed(4)} BTC (${m.leverage.toFixed(2)}x)` : `Lot ${m.lot.toFixed(2)}`}${m.tag ? ` · ${m.tag}` : ''}`);
+  if (m) lines.push(`Kart: ${dirTxt(s.dir)} · ${m.label} · Giriş ${price(m.entry, d)} · Stop ${price(m.stop, d)} · TP1 ${price(m.tp1, d)}${m.tp2 !== undefined ? ` · TP2 ${price(m.tp2, d)}` : ''}${m.tp3 !== undefined ? ` · TP3 ${price(m.tp3, d)}` : ''} · RR ${m.rr.toFixed(2)}${m.rr3 !== undefined ? `/${m.rr3.toFixed(2)}` : ''} · ${m.lotOk ? `Lot ${m.lot.toFixed(2)} (${m.ins.brokerSymbol})${s.strategy === 'F' ? ` · ${m.leverage.toFixed(2)}x` : ''}` : 'Lot: AYAR GEREKLİ'}${m.tag ? ` · ${m.tag}` : ''}`);
   if (s.status === 'YOK' && s.none) lines.push(`Neden yok: ${s.none.why}`, `Ne bekleniyor: ${s.none.waiting}`);
   if (s.invalidation) lines.push(`Geçersiz: ${s.invalidation}`);
   if (s.extra) lines.push(`Ek teyit: ${s.extra.summary} (${s.extra.items.map((i) => `${i.name} ${i.sign === 1 ? '+' : i.sign === -1 ? '−' : '0'}`).join(', ')})`);
@@ -291,7 +292,7 @@ function wireCard(App, el, s) {
   el.querySelector('[data-act="entered"]')?.addEventListener('click', async () => {
     const cfg = symCfg(App, s.symbol);
     const m = recompute(methodOf(App, s), s, cfg, App.settings, App.data.state);
-    const t = { id: `${Date.now()}`, t: Date.now(), strategy: s.strategy, symbol: s.symbol, dir: s.dir, sub: s.sub, method: m.label, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, rr: +m.rr.toFixed(2), lot: +m.lot.toFixed(2), riskUsd: +m.riskUsd.toFixed(2), note: '', result: null, r: null, setupId: s.id };
+    const t = { id: `${Date.now()}`, t: Date.now(), strategy: s.strategy, symbol: s.symbol, dir: s.dir, sub: s.sub, method: m.label, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2 ?? null, rr: +m.rr.toFixed(2), lot: m.lotOk ? +m.lot.toFixed(2) : null, riskUsd: +m.riskUsd.toFixed(2), note: '', result: null, r: null, setupId: s.id };
     await trades.put(t);
     toast('Günlüğe kaydedildi');
     App.go(`#/gunluk/${t.id}`);

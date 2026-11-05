@@ -50,7 +50,15 @@ if (td && !credits.exhausted) {
   const plan = planFetch(conf, now, credits, (sym, iv) => { const st = iv === '1min' ? data[sym].m1 : data[sym].m5; return st[st.length - 1]?.t; }, warnings);
   const needBootstrap = plan.some((p) => p.size === S.bootstrap5m && p.interval === '5min' && p.bootstrap);
   console.log(`Plan: ${plan.map((p) => `${p.sym}/${p.interval}×${p.size}`).join(', ') || '—'} · kalan kredi ${credits.hardStop - credits.used}`);
+  const fx = readJSON<Record<string, { rate: number; t: number }>>('fx.json', {});
   for (const p of plan) {
+    if (p.sym.startsWith('FX:')) { // hesap para birimi kuru
+      const pair = p.sym.slice(3);
+      const r = await td.series(p.sym, pair, '1day', p.size);
+      const last = r.candles[r.candles.length - 1];
+      if (last) { fx[pair] = { rate: last.c, t: now }; writeJSON('fx.json', fx); } else if (r.error) errors.push(`${pair}: ${r.error}`);
+      continue;
+    }
     const cfg = conf.symbols[p.sym];
     const r = await td.series(p.sym, cfg.td, p.interval, p.size);
     if (r.error && /available starting with|upgrad|plan/i.test(r.error)) {
@@ -74,7 +82,7 @@ if (td && !credits.exhausted) {
   if (needBootstrap && !errors.some((e) => e.includes('5min'))) credits.bootstrapDate = today;
   for (const sym of Object.keys(data)) { writeCandles(sym, '5min', data[sym].m5); writeCandles(sym, '1min', data[sym].m1); writeCandles(sym, '1day', data[sym].d1); if (data[sym].h1?.length) writeCandles(sym, '1h', data[sym].h1!); }
 }
-if (credits.used >= credits.hardStop) { credits.exhausted = true; warnings.push('Günlük kredi sınırı (790) doldu — tarama UTC 00:00\'a kadar durdu'); }
+if (credits.used >= credits.hardStop) { credits.exhausted = true; warnings.push(`Günlük kredi sınırı (${credits.hardStop}) doldu — tarama UTC 00:00 (03:00 TR) sonrası yeniden başlar`); }
 
 // --- Hesap ---
 const news = readJSON<NewsFile | null>('news.json', null);

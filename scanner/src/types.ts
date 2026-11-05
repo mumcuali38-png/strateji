@@ -120,4 +120,6 @@ export interface SymbolCfg {
   strategies: StrategyId[];
   crypto: boolean;
   proxy?: boolean;
+  /** Enstrüman tablosu (EK §1.2): 1 lotta `unitSize` fiyat hareketinin değeri `valuePerUnit` $ */
+  brokerSymbol?: string; unitSize?: number; unitLabel?: string; valuePerUnit?: number; lotStep?: number; minLot?: number;
 }
