@@ -15,7 +15,7 @@ export function buildState(conf: Config, now: number, res: Results, ctxs: Record
     strategies[s] = {};
     for (const [sym, list] of Object.entries(bySym)) {
       strategies[s][sym] = list.slice(0, 5);
-      tam += list.filter((x) => x.status === 'TAM').length;
+      tam += list.filter((x) => x.status === 'TAM' || x.status === 'BEKLE').length;
       ready += list.filter((x) => x.status === 'EKSIK' && x.remaining === 1).length;
     }
   }
@@ -30,11 +30,11 @@ export function buildState(conf: Config, now: number, res: Results, ctxs: Record
     };
   }
   return {
-    version: VERSION, generatedAt: now, lastScan: now,
+    version: VERSION, generatedAt: now, lastScan: now, fScan: now,
     window: extra.window,
     credits: { date: credits.date, used: credits.used, hardStop: credits.hardStop, limit: conf.params.scan.creditDailyLimit, exhausted: !!credits.exhausted, lastHeaders: credits.lastHeaders, days: credits.days },
     vapidPublic: process.env.VAPID_PUBLIC || null,
-    params: { risk: conf.params.risk, us100PerQqq: conf.params.us100PerQqq, news: conf.params.news },
+    params: { risk: conf.params.risk, us100PerQqq: conf.params.us100PerQqq, news: conf.params.news, F: { maxLeverage: conf.params.F.maxLeverage, ltf: conf.params.F.ltf } },
     newsMeta: news ? { fetchedAt: news.fetchedAt, ffFetchedAt: news.ffFetchedAt, stale: news.stale, fmp: news.fmp } : null,
     summary: { tam, ready },
     symbols, strategies: strategies as Record<StrategyId, Record<string, Setup[]>>,

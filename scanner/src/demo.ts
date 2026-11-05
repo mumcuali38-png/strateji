@@ -13,6 +13,9 @@ import { writeJSON, writeCandles } from './store.ts';
 import { freshCredits } from './twelvedata.ts';
 import { DAY, HOUR, MIN } from './time.ts';
 import type { NewsFile } from './types.ts';
+import { runF } from './f/run.ts';
+import { aggregateUTC } from './f/data.ts';
+import { scenario, to15 } from './f/synthetic.ts';
 
 const conf = loadConfig();
 const now = process.argv[2] ? Date.parse(process.argv[2]) : Date.now();
@@ -37,6 +40,11 @@ const news: NewsFile = {
 };
 writeJSON('news.json', news, true);
 const { results, ctxs, errors } = runEngine(conf, now, data, news.events);
+// F: sentetik Wyckoff birikimi (test senaryosu) — gerçek veri DEĞİL
+const fsc = scenario();
+const fd = { h1: fsc.h1, m15: to15(fsc.h1), m5: to15(fsc.h1), h4: aggregateUTC(fsc.h1, 4 * HOUR), d1: aggregateUTC(fsc.h1, 24 * HOUR), source: 'binance' as const };
+const fr = await runF(conf, fsc.now, [], async () => ({ data: fd, errors: [] }));
+results.F = { BTCUSD: fr.setups };
 const credits = freshCredits(null, now, conf.params); credits.used = 512;
 const state = buildState(conf, now, results, ctxs, credits, news, { errors, warnings: ['DEMO VERİSİ — sentetik mumlar'], fetched: [], window: { active: true, oneMin: false, weekday: true } });
 writeJSON('state.json', state);

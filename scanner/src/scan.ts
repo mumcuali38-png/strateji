@@ -7,6 +7,7 @@ import { buildChart, buildState } from './state.ts';
 import { sendAll } from './push.ts';
 import { computeMessages } from './notify.ts';
 import { planFetch } from './plan.ts';
+import { runF } from './f/run.ts';
 import { updateHistory, type HistEvent } from './history.ts';
 import { MIN, TF_MS, inTrRange, trDow, trMinutes, utcDateStr } from './time.ts';
 import type { Candle, NewsFile, Setup } from './types.ts';
@@ -79,6 +80,9 @@ const prior = hist.filter((h) => h.kind === 'TAM').map((h) => ({ strategy: h.str
 const evalData = weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
 if (!weekday) warnings.push('Hafta sonu: sadece BTC/ETH taranıyor');
 const { results, ctxs, errors: engErr } = runEngine(conf, now, evalData, news?.events ?? [], prior);
+const fRun = await runF(conf, now, news?.events ?? []);
+results.F = { BTCUSD: fRun.setups };
+if (fRun.errors.length) errors.push(`F veri: ${fRun.errors.join(' · ')}`);
 errors.push(...engErr.filter((e) => !Object.keys(credits.unavailable ?? {}).some((u) => e.startsWith(`${u}:`))));
 for (const u of Object.keys(credits.unavailable ?? {})) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
 const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());
@@ -92,7 +96,7 @@ pr.log.forEach((l) => console.log(l));
 if (pr.failed) warnings.push(`${pr.failed} bildirim gönderilemedi`);
 
 // --- Geçmiş ---
-const candlesOf = (sym: string): Candle[] => data[sym]?.m5 ?? [];
+const candlesOf = (sym: string, strategy?: string): Candle[] => (strategy === 'F' ? fRun.m5 : data[sym]?.m5 ?? []);
 const h = updateHistory(hist, all, now, P.history.days, candlesOf, P.history.evalMaxBars5m);
 hist = h.hist;
 

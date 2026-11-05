@@ -2,8 +2,9 @@ export interface Candle { t: number; o: number; h: number; l: number; c: number;
 export type TF = '1m' | '3m' | '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
 export type Dir = 1 | -1;
 export type CondStatus = 'ok' | 'fail' | 'wait';
-export type Status = 'TAM' | 'EKSIK' | 'YOK';
-export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E';
+/** BEKLE = TAM ama zaman/ortam bloğu var (sadece F: "TAM – BEKLE") */
+export type Status = 'TAM' | 'BEKLE' | 'EKSIK' | 'YOK';
+export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
 export interface Condition {
   id: string;
@@ -24,10 +25,14 @@ export interface EntryMethod {
   stop: number;
   tp1: number;
   tp2?: number;
+  tp3?: number;
   rr: number;
   rr2?: number;
+  rr3?: number;
   note?: string;
   tag?: string;
+  /** Stop yapıya göre kesin (F): uygulama tampon/spread eklemez */
+  fixedStop?: boolean;
 }
 
 export interface Overlay {
@@ -72,6 +77,10 @@ export interface Setup {
   evaluatedAt: number;
   zoneId: string;
   info?: Record<string, unknown>;
+  /** Grafik dosyası anahtarı (varsayılan: sembol). F: BTCUSD_F */
+  chartKey?: string;
+  /** Tek seferlik olay bildirimleri (anahtar başına bir kez). requires: bu anahtar daha önce bildirildiyse gönder */
+  notices?: { key: string; title: string; body: string; requires?: string }[];
 }
 
 export interface NewsEvent {

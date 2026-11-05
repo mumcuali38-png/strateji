@@ -12,7 +12,12 @@ export function computeMessages(conf: Config, all: Setup[], prev: { strategies?:
   for (const [k, t] of Object.entries(notified)) if (now - t > 3 * 86400_000) delete notified[k];
   const msgs: Msg[] = [];
   for (const s of all) {
-    if (s.status === 'TAM' && !(s.key in notified)) { msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
+    for (const nt of s.notices ?? []) {
+      if (nt.key in notified || (nt.requires && !(nt.requires in notified))) continue;
+      msgs.push({ kind: 'info', title: nt.title, body: nt.body, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: nt.key, strategy: s.strategy, symbol: s.symbol });
+      notified[nt.key] = now;
+    }
+    if ((s.status === 'TAM' || s.status === 'BEKLE') && !(s.key in notified)) { msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
     else if (s.status === 'EKSIK' && s.remaining === 1 && !(s.key in notified)) { msgs.push(readyMsg(s)); notified[s.key] = now; }
   }
   const byId = new Map(all.map((s) => [s.id, s]));

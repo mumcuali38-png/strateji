@@ -12,7 +12,7 @@ export interface Prefs {
   balance?: number; riskPct?: number; contracts?: Record<string, number>;
 }
 export interface Sub { endpoint: string; keys: { p256dh: string; auth: string }; prefs?: Prefs; label?: string }
-export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup }
+export interface Msg { kind: 'tam' | 'ready' | 'news' | 'cancel' | 'test' | 'info'; title: string; body: string; url: string; tag: string; strategy?: StrategyId; symbol?: string; setup?: Setup }
 
 export const SHORT: Record<string, string> = { XAUUSD: 'XAU', XAGUSD: 'XAG', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
 
@@ -35,6 +35,10 @@ export function lotFor(conf: Config, s: Setup, prefs?: Prefs): number | null {
   let dist = Math.abs(m.entry - m.stop);
   if (cfg.proxy) dist *= conf.params.us100PerQqq; // US100 CFD: QQQ mesafesi US100 puanına çevrilir
   if (!(dist > 0)) return null;
+  if (s.strategy === 'F') { // miktar BTC, kaldıraç en fazla 3x
+    const q = (bal * risk / 100) / dist;
+    return Math.min(q, (conf.params.F.maxLeverage * bal) / m.entry);
+  }
   return (bal * risk / 100) / (dist * contract);
 }
 
@@ -43,6 +47,16 @@ export function tamMsg(conf: Config, s: Setup, prefs?: Prefs): Msg {
   const f = (x: number | undefined) => (x === undefined ? '—' : x.toFixed(conf.symbols[s.symbol].decimals));
   const lot = lotFor(conf, s, prefs);
   const dir = s.dir === 1 ? 'LONG' : 'SHORT';
+  if (s.strategy === 'F') {
+    const bekle = s.status === 'BEKLE';
+    const tag = m?.tag ? ` · ${m.tag}` : '';
+    return {
+      kind: 'tam', strategy: s.strategy, symbol: s.symbol, setup: s,
+      title: bekle ? `🟠 F · BTC ${dir} TAM – BEKLE` : `🟢 F · BTC ${dir} TAM${tag}`,
+      body: `F: BTC ${dir} ${bekle ? 'TAM – BEKLE (' + (s.missing ?? '').replace(/^BLOK: /, '') + ')' : 'TAM'}${tag} – giriş ${f(m?.entry)}, stop ${f(m?.stop)}, T1/T2/T3 ${f(m?.tp1)}/${f(m?.tp2)}/${f(m?.tp3)}, RR ${m ? (m.rr3 ?? m.rr2 ?? m.rr).toFixed(1) : '—'}${lot !== null ? ` · ${lot.toFixed(4)} BTC` : ''}`,
+      url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key,
+    };
+  }
   return {
     kind: 'tam', strategy: s.strategy, symbol: s.symbol, setup: s,
     title: `🟢 TAM · ${SHORT[s.symbol]} ${s.strategy} ${dir}`,
@@ -52,6 +66,7 @@ export function tamMsg(conf: Config, s: Setup, prefs?: Prefs): Msg {
 }
 export function readyMsg(s: Setup): Msg {
   const w = s.conditions.find((c) => c.status === 'wait');
+  if (s.strategy === 'F') return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: '🟡 F · BTC 1 şart kaldı', body: `F: BTC 1 şart kaldı: ${w ? `${w.label} — ${w.detail}` : '—'}`, url: `./#/F/BTCUSD/${encodeURIComponent(s.id)}`, tag: s.key };
   return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: `🟡 Hazırlan · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy}: sadece ${w ? `${w.label} — ${w.detail}` : 'son şart'} bekleniyor`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key };
 }
 export function cancelMsg(s: Setup, why: string): Msg {

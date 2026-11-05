@@ -42,6 +42,13 @@ export interface Params {
   };
   history: { days: number; evalMaxBars5m: number };
   general: { maxSignalAgeHours: number; maxEntryDistR: number };
+  F: {
+    ltf: '15m' | '5m'; springLookback1h: number; chochMaxHours: number; phaseCBars: number; lpsSosBars: number;
+    trLookback: number; trMinBars: number; trMinAtr: number; trMaxAtr: number; trInsidePct: number; priorTrendBars: number; priorTrendAtr: number;
+    staleBars: number; deleteBars: number; springMaxDepthAtr: number; rvLow: number; rvHigh: number; cpStrong: number;
+    stopAtr: number; minRR3: number; minRR2: number; lpsMinRR: number; trMiddlePct: number; zoneDistAtr4h: number;
+    bestWindowUTC: [string, string]; fundingUTC: string[]; fundingBlockMin: number; liqAtrMult: number; liqBarAtr: number; liqWaitBars: number; maxLeverage: number; maxDataAgeMin: number;
+  };
   us100PerQqq: number;
 }
 

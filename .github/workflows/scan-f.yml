@@ -1,0 +1,44 @@
+name: scan-f
+# Kurulum F (BTC Wyckoff, Binance verisi — Twelve Data kredisi harcamaz).
+# Ana tarama penceresi (07:00–16:55 UTC) dışında 15 dk'da bir: gece + hafta sonu dahil.
+# Dakikalar 1H/15m kapanışından hemen sonra; news (:07) ve scan (*/5) ile çakışmaz.
+on:
+  schedule:
+    - cron: '1,16,31,46 0-6,17-23 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Ana tarama penceresi içinde de çalıştır'
+        type: boolean
+        default: true
+permissions:
+  contents: write
+concurrency:
+  group: data-branch
+  cancel-in-progress: false
+jobs:
+  scan-f:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DATA_DIR: ${{ github.workspace }}/data-out
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: scanner/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: scanner
+      - run: bash scripts/data-branch.sh pull
+      - name: F taraması
+        working-directory: scanner
+        env:
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: npm run scan-f
+      - run: bash scripts/data-branch.sh push "F taraması"

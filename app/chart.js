@@ -56,6 +56,9 @@ export function mountChart(root, { chartData, setup, sessions, layers, onLayers,
     upColor: css('--long'), downColor: css('--short'), borderVisible: false, wickUpColor: css('--long'), wickDownColor: css('--short'),
     priceFormat: { type: 'price', precision: dec, minMove: Math.pow(10, -dec) },
   });
+  // Hacim çubukları (F): RV ≥ 1.5 olanlar vurgulu
+  const vol = chartData.volume ? chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false }) : null;
+  if (vol) chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
   const ema = chart.addLineSeries({ color: css('--eksik'), lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
   const canvas = document.createElement('canvas');
   canvas.className = 'chart-overlay';
@@ -75,6 +78,14 @@ export function mountChart(root, { chartData, setup, sessions, layers, onLayers,
     cur = x;
     bars = chartData.tfs[x];
     series.setData(bars.map((b) => ({ time: toT(b[0]), open: b[1], high: b[2], low: b[3], close: b[4] })));
+    if (vol) {
+      const v = bars.map((b) => b[5] ?? 0);
+      vol.setData(bars.map((b, i) => {
+        let sum = 0; for (let k = Math.max(0, i - 20); k < i; k++) sum += v[k];
+        const rv = i >= 20 && sum > 0 ? (v[i] * 20) / sum : 0;
+        return { time: toT(b[0]), value: v[i], color: rv >= 1.5 ? rgba(css('--eksik'), 0.9) : rgba(css('--muted'), 0.35) };
+      }));
+    }
     if (layers.ema && chartData.ema50_4h?.length) {
       const first = bars[0][0];
       const pts = chartData.ema50_4h.filter((p) => p[0] >= first - 4 * HOUR);
@@ -121,7 +132,7 @@ export function mountChart(root, { chartData, setup, sessions, layers, onLayers,
     const paneW = w - ps, paneH = h - ts.height();
     g.save(); g.beginPath(); g.rect(0, 0, paneW, paneH); g.clip();
     const X = (ms) => ts.logicalToCoordinate(idxOf(ms));
-    if (layers.kz && sessions?.killzones && bars.length && ['1m', '3m', '5m', '15m', '1h'].includes(cur)) {
+    if (layers.kz && setup?.strategy !== 'F' && sessions?.killzones && bars.length && ['1m', '3m', '5m', '15m', '1h'].includes(cur)) {
       const first = bars[0][0], last = bars[bars.length - 1][0];
       for (let d = nyDayStart(first); d <= last; d += DAY) {
         for (const k of sessions.killzones) {

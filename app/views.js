@@ -6,7 +6,7 @@ import { chart as loadChart } from './data.js';
 import { copy, modal, toast } from './ui.js';
 import { trades } from './store.js';
 
-const ORDER = { TAM: 0, EKSIK: 1, YOK: 2 };
+const ORDER = { TAM: 0, BEKLE: 1, EKSIK: 2, YOK: 3 };
 export const rank = (a, b) => (ORDER[a.status] - ORDER[b.status]) || (a.remaining - b.remaining) || ((b.stars ?? 0) - (a.stars ?? 0));
 
 export function setupsOf(App, s, sym) { return (App.data.state?.strategies?.[s]?.[sym] ?? []).map((x) => App.effective(x)); }
@@ -19,7 +19,7 @@ export function allSetups(App) {
 export function tabBest(App, tab) {
   let best = null, tam = 0;
   for (const s of tab.strategies) for (const sym of tab.symbols) {
-    for (const x of setupsOf(App, s, sym)) { if (x.status === 'TAM') tam++; if (!best || rank(x, best) < 0) best = x; }
+    for (const x of setupsOf(App, s, sym)) { if (x.status === 'TAM' || x.status === 'BEKLE') tam++; if (!best || rank(x, best) < 0) best = x; }
   }
   return { best, tam };
 }
@@ -37,23 +37,23 @@ export function renderOverview(App, el) {
   const st = App.data.state;
   if (!st) { el.innerHTML = noData(App); return; }
   const all = allSetups(App);
-  const tams = all.filter((x) => x.status === 'TAM').sort(rank);
+  const tams = all.filter((x) => x.status === 'TAM' || x.status === 'BEKLE').sort(rank);
   const near = all.filter((x) => x.status === 'EKSIK' && x.remaining === 1).length;
   const symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'US100', 'XAGUSD', 'BTCUSD', 'ETHUSD'];
   const nowHtml = tams.length
     ? `<div class="now-strip">${tams.map((s) => tamCard(App, s)).join('')}</div>`
     : `<div class="card now-empty">Şu an TAM setup yok · ${near ? `<span style="color:var(--eksik)">${near} setup 1 şart uzakta</span>` : 'yakın setup yok'}</div>`;
-  const rows = ['A', 'B', 'C', 'D', 'E'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
     const applicable = (App.conf.symbols?.[sym]?.strategies ?? []).includes(s);
     if (!applicable) return '<td><div class="cell na">·</div></td>';
     const b = bestOf(App, s, sym);
     const news = st.symbols?.[sym]?.newsRisk?.active;
     if (!b) return `<td><div class="cell yok ${news ? 'news' : ''}" data-go="#/${s}/${sym}">—</div></td>`;
     const cls = STATUS[b.status].cls;
-    const txt = b.status === 'TAM' ? '🟢 TAM' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
+    const txt = b.status === 'TAM' ? '🟢 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
     return `<td><div class="cell ${cls} ${news ? 'news' : ''}" data-go="#/${s}/${sym}/${encodeURIComponent(b.id)}" title="${esc(b.sub)}">${txt}</div></td>`;
   }).join('')}</tr>`).join('');
-  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
+  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
   el.innerHTML = `
     <div class="h1">Şu an</div>${nowHtml}
     <div class="card"><h2>Durum ızgarası</h2>
@@ -70,10 +70,10 @@ function tamCard(App, s) {
   const cfg = symCfg(App, s.symbol);
   const m0 = s.methods.find((m) => m.id === s.defaultMethod) ?? s.methods[0];
   const m = m0 ? recompute(m0, s, cfg, App.settings, App.data.state) : null;
-  return `<div class="card tam-card" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">
-    <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><span class="big">${SHORT[s.symbol]} · ${s.strategy}</span>${m?.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}</div>
+  return `<div class="card tam-card ${s.status === 'BEKLE' ? 'bekle' : ''}" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">
+    <div class="row"><span class="dir ${s.dir === 1 ? 'long' : 'short'}">${dirTxt(s.dir)}</span><span class="big">${SHORT[s.symbol]} · ${s.strategy}</span>${s.status === 'BEKLE' ? badge(s) : ''}${m?.tag ? `<span class="tag aggr">${m.tag}</span>` : ''}</div>
     <div class="muted" style="margin:6px 0">${esc(s.sub)}</div>
-    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` · TP2 <b>${m.rr2.toFixed(2)}</b>` : ''}</span><span>Lot <b>${m.lot.toFixed(2)}</b></span></div>` : ''}
+    ${m ? `<div class="kv"><span>Giriş <b>${price(m.entry, cfg.decimals)}</b></span><span>SL <b>${price(m.stop, cfg.decimals)}</b></span><span>TP <b>${price(m.tp1, cfg.decimals)}</b></span><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` · TP2 <b>${m.rr2.toFixed(2)}</b>` : ''}</span><span>${s.strategy === 'F' ? 'BTC' : 'Lot'} <b>${m.lot.toFixed(s.strategy === 'F' ? 4 : 2)}</b></span></div>` : ''}
   </div>`;
 }
 export function nextNews(App, n) {
@@ -145,7 +145,7 @@ export function renderStrategy(App, el, tabId, params) {
   if (App.flashIds.has(sel.id)) el.querySelector('.setup-card, .nonebox')?.classList.add('flash');
   const chartEl = el.querySelector('#chart');
   chartEl.innerHTML = '<div class="empty">Grafik yükleniyor…</div>';
-  loadChart(sym).then((cd) => {
+  loadChart(sel.chartKey ?? sym).then((cd) => {
     if (!chartEl.isConnected) return;
     App.chartCtl?.destroy?.();
     App.chartCtl = mountChart(chartEl, { chartData: cd, setup: sel, sessions: App.conf.sessions, layers: App.settings.layers, onLayers: () => App.save(), tf: App.settings.chartTf || undefined, onTf: () => {}, asOf: st.lastScan });
@@ -206,15 +206,32 @@ function setupCard(App, s) {
       <span class="k" style="color:var(--short)">Stop</span><span class="v">${priceTxt(App, s.symbol, m.stop)}</span><span class="d">${dist(m.stop)}</span>
       <span class="k" style="color:var(--info)">TP1</span><span class="v">${priceTxt(App, s.symbol, m.tp1)}</span><span class="d">${dist(m.tp1)}</span>
       ${m.tp2 !== undefined ? `<span class="k" style="color:var(--info)">TP2</span><span class="v">${priceTxt(App, s.symbol, m.tp2)}</span><span class="d">${dist(m.tp2)}</span>` : ''}
+      ${m.tp3 !== undefined ? `<span class="k" style="color:var(--info)">TP3</span><span class="v">${priceTxt(App, s.symbol, m.tp3)}</span><span class="d">${dist(m.tp3)}</span>` : ''}
     </div>
-    <div class="kv"><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` / ${m.rr2.toFixed(2)}` : ''}</span><span>Risk <b>$${m.riskUsd.toFixed(0)}</b></span><span>Lot <b>${m.lot.toFixed(2)}</b></span></div>
+    <div class="kv"><span>RR <b>${m.rr.toFixed(2)}</b>${m.rr2 !== undefined ? ` / ${m.rr2.toFixed(2)}` : ''}${m.rr3 !== undefined ? ` / ${m.rr3.toFixed(2)}` : ''}</span><span>Risk <b>$${m.riskUsd.toFixed(0)}</b></span>${s.strategy === 'F' ? `<span>Miktar <b>${m.lot.toFixed(4)} BTC</b></span><span>Kaldıraç <b>${m.leverage.toFixed(2)}x</b></span>` : `<span>Lot <b>${m.lot.toFixed(2)}</b></span>`}</div>
+    ${m.capNote ? `<div class="warnline">⚠️ ${esc(m.capNote)}</div>` : ''}
     ${m.note ? `<div class="muted small" style="margin-top:6px">${esc(m.note)}</div>` : ''}
-    ${rrWarn}
+    ${s.strategy === 'F' ? '' : rrWarn}
+    ${fBox(s)}
     ${s.invalidation ? `<div class="inval">Geçersiz olur: ${esc(s.invalidation)}</div>` : ''}
     ${(s.warnings ?? []).map((w) => `<div class="warnline">⚠️ ${esc(w)}</div>`).join('')}
     ${s.missing ? `<div class="warnline">⏳ Eksik: ${esc(s.missing)}</div>` : ''}
     ${extraHtml(s)}
     <div class="btns"><button class="btn primary big" data-act="entered">✔ İşleme girdim</button><button class="btn big" data-act="copy">⧉ Kopyala</button><button class="btn big" data-act="claude">🤖 Claude'a gönder</button></div>
+  </div>`;
+}
+/** F: faz, kalite, saat bilgisi (sonraki funding, hafta sonu, en iyi pencere) */
+function fBox(s) {
+  const f = s.info?.f;
+  if (s.strategy !== 'F' || !f) return '';
+  const c = f.clock ?? {};
+  return `<div class="fbox">
+    <b>Faz</b><span>${esc(f.tr?.phase ?? '—')}${f.tr?.stale ? ' · TR eski' : ''}</span>
+    <b>HTF bölge</b><span>${f.htf_zone ? `${esc(f.htf_zone.tf.toUpperCase())} ${esc(f.htf_zone.type)} ${f.htf_zone.low.toFixed(1)}–${f.htf_zone.high.toFixed(1)} · ${esc(f.htf_zone.quality ?? '')}` : '—'}</span>
+    <b>Olaylar</b><span>${['SC', 'AR', 'ST'].filter((k) => f.tr?.events?.[k]).join(' · ') || '—'}</span>
+    <b>Funding</b><span>sıradaki ${c.nextFunding ? tr(c.nextFunding) + ' TR' : '—'}</span>
+    <b>Saat</b><span>${c.saturday ? 'Cumartesi — yeni giriş yok' : c.sunday ? 'Pazar — teyit gerekir' : 'Hafta içi'} · ${c.inBestWindow ? 'en iyi pencerede' : 'pencere dışı (15:30–19:00 TR)'}</span>
+    <b>Kaynak</b><span>${esc(f.source ?? '—')} (BTCUSDT) · ${tr(Date.parse(f.evaluated_at_utc))} TR</span>
   </div>`;
 }
 function extraHtml(s) {
@@ -234,7 +251,7 @@ export function setupText(App, s, forClaude) {
     `Zaman: ${trny(s.evaluatedAt)}${s.symbol === 'US100' ? ' · seviyeler QQQ fiyatıdır' : ''}`,
   ];
   if (forClaude || s.status !== 'TAM') { lines.push('Şartlar:'); for (const c of s.conditions) lines.push(`${COND_ICON[c.status]} ${c.label} — ${c.detail}`); }
-  if (m) lines.push(`Kart: ${dirTxt(s.dir)} · ${m.label} · Giriş ${price(m.entry, d)} · Stop ${price(m.stop, d)} · TP1 ${price(m.tp1, d)}${m.tp2 !== undefined ? ` · TP2 ${price(m.tp2, d)}` : ''} · RR ${m.rr.toFixed(2)} · Lot ${m.lot.toFixed(2)}${m.tag ? ` · ${m.tag}` : ''}`);
+  if (m) lines.push(`Kart: ${dirTxt(s.dir)} · ${m.label} · Giriş ${price(m.entry, d)} · Stop ${price(m.stop, d)} · TP1 ${price(m.tp1, d)}${m.tp2 !== undefined ? ` · TP2 ${price(m.tp2, d)}` : ''}${m.tp3 !== undefined ? ` · TP3 ${price(m.tp3, d)}` : ''} · RR ${m.rr.toFixed(2)}${m.rr3 !== undefined ? `/${m.rr3.toFixed(2)}` : ''} · ${s.strategy === 'F' ? `${m.lot.toFixed(4)} BTC (${m.leverage.toFixed(2)}x)` : `Lot ${m.lot.toFixed(2)}`}${m.tag ? ` · ${m.tag}` : ''}`);
   if (s.status === 'YOK' && s.none) lines.push(`Neden yok: ${s.none.why}`, `Ne bekleniyor: ${s.none.waiting}`);
   if (s.invalidation) lines.push(`Geçersiz: ${s.invalidation}`);
   if (s.extra) lines.push(`Ek teyit: ${s.extra.summary} (${s.extra.items.map((i) => `${i.name} ${i.sign === 1 ? '+' : i.sign === -1 ? '−' : '0'}`).join(', ')})`);
