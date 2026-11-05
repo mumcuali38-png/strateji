@@ -17,7 +17,8 @@ export function runEngine(conf: Config, now: number, data: Record<string, SymDat
   const errors: string[] = [];
   for (const [sym, cfg] of Object.entries(conf.symbols)) {
     const d = data[sym];
-    if (!d || d.m5.length < 50) { errors.push(`${sym}: yetersiz veri (${d?.m5.length ?? 0} adet 5m mum)`); continue; }
+    if (!d) continue;
+    if (d.m5.length < 50) { errors.push(`${sym}: yetersiz veri (${d?.m5.length ?? 0} adet 5m mum)`); continue; }
     const ctx = new Ctx(sym, conf, now, d, news);
     ctxs[sym] = ctx;
     for (const s of cfg.strategies) {

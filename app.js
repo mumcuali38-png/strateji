@@ -62,7 +62,7 @@ function scanWindowOpen(now) {
   if (!sc) return true;
   const dow = new Date(now + 3 * HOUR).getUTCDay();
   const m = trMinutes(now);
-  return sc.weekdays.includes(dow) && m >= parseHM(sc.windowTR[0]) && m < parseHM(sc.windowTR[1]);
+  return (sc.weekdays.includes(dow) || sc.cryptoWeekend) && m >= parseHM(sc.windowTR[0]) && m < parseHM(sc.windowTR[1]);
 }
 
 /* ---------- Şeritler ---------- */
@@ -77,7 +77,7 @@ function banners() {
   }
   if (data.offline) out.push(`<div class="banner offline">Çevrimdışı · son veri ${data.state ? tr(data.state.lastScan) : '—'}</div>`);
   if (data.state?.credits?.exhausted) out.push('<div class="banner warn">Kredi bitti — tarama UTC 00:00 (03:00 TR) sonrası yeniden başlar. Son veriler gösteriliyor.</div>');
-  if (data.state && !scanWindowOpen(now)) out.push(`<div class="banner info">Tarama penceresi dışında · Tarama ${App.conf.params?.scan?.windowTR?.[0] ?? '10:00'}'da başlar (Pzt–Cum) · son günün özeti gösteriliyor</div>`);
+  if (data.state && !scanWindowOpen(now)) out.push(`<div class="banner info">Tarama penceresi dışında · Tarama ${App.conf.params?.scan?.windowTR?.[0] ?? '10:00'}'da başlar (Pzt–Cum${App.conf.params?.scan?.cryptoWeekend ? '; hafta sonu BTC/ETH' : ''}) · son günün özeti gösteriliyor</div>`);
   if (data.news && (now - (data.news.ffFetchedAt ?? data.news.fetchedAt) > 2 * HOUR || data.news.stale)) out.push('<div class="banner warn">Takvim eski — haber kontrolünü takvim sitesinden de yapın</div>');
   const errs = data.state?.errors ?? [];
   if (errs.length) out.push(`<div class="banner warn" title="${esc(errs.join(' | '))}">⚠ Veri/API hatası: ${esc(errs[0])}${errs.length > 1 ? ` (+${errs.length - 1})` : ''} — sorun sürerse Actions loglarına bakın</div>`);

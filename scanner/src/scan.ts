@@ -75,7 +75,10 @@ if (credits.used >= credits.hardStop) { credits.exhausted = true; warnings.push(
 const news = readJSON<NewsFile | null>('news.json', null);
 let hist = readJSON<HistEvent[]>('history.json', []);
 const prior = hist.filter((h) => h.kind === 'TAM').map((h) => ({ strategy: h.strategy, symbol: h.symbol, id: h.id, t: h.signalAt ?? h.t }));
-const { results, ctxs, errors: engErr } = runEngine(conf, now, data, news?.events ?? [], prior);
+// Hafta sonu (kripto açık): sadece BTC/ETH değerlendirilir; diğerlerinin Cuma verisiyle eski sinyal üretmesi engellenir
+const evalData = weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
+if (!weekday) warnings.push('Hafta sonu: sadece BTC/ETH taranıyor');
+const { results, ctxs, errors: engErr } = runEngine(conf, now, evalData, news?.events ?? [], prior);
 errors.push(...engErr.filter((e) => !Object.keys(credits.unavailable ?? {}).some((u) => e.startsWith(`${u}:`))));
 for (const u of Object.keys(credits.unavailable ?? {})) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
 const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());

@@ -28,7 +28,7 @@
     "oneMinuteTR": ["17:25", "19:00"],
     "qqqTR": ["16:30", "20:00"],
     "weekdays": [1, 2, 3, 4, 5],
-    "cryptoWeekend": false,
+    "cryptoWeekend": true,
     "intervalMin": 5,
     "creditDailyLimit": 800,
     "creditHardStop": 790,

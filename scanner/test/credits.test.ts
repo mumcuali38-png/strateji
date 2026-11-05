@@ -57,3 +57,20 @@ test('Planda olmayan sembol (XAG) istenmez; pencere öncesi elle taramada ETH at
   assert.ok(!syms.includes('XAGUSD'));
   assert.ok(syms.includes('ETHUSD'), syms.join(','));
 });
+
+test('Hafta sonu kripto: sadece BTC/ETH, ~240 kredi', () => {
+  const cfg = conf();
+  cfg.params.scan.cryptoWeekend = true;
+  const day = Date.UTC(2026, 10, 7); // Cumartesi
+  const credits = freshCredits(null, day + 7 * 3600_000, cfg.params);
+  const last: Record<string, number> = {};
+  let total = 0; const syms = new Set<string>();
+  for (let t = day + 7 * 3600_000; t < day + 17 * 3600_000; t += 5 * MIN) {
+    const plan = planFetch(cfg, t, credits, (s, iv) => last[`${s}${iv}`]);
+    for (const p of plan) { last[`${p.sym}${p.interval === '1day' ? '' : p.interval}`] = t; syms.add(p.sym); }
+    credits.used += plan.length; total += plan.length;
+    if (plan.some((p) => p.bootstrap)) credits.bootstrapDate = new Date(t).toISOString().slice(0, 10);
+  }
+  assert.deepEqual([...syms].sort(), ['BTCUSD', 'ETHUSD']);
+  assert.ok(total <= 245, `hafta sonu ${total} kredi`);
+});
