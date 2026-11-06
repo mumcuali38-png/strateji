@@ -12,7 +12,7 @@ import { renderLive, syncTrades } from './app/live.js';
 import { renderDirection } from './app/direction.js';
 import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
-import { renderStar } from './app/star.js';
+import { renderStar, starReminder } from './app/star.js';
 import { renderStarDetail } from './app/star-detail.js';
 
 const App = {
@@ -211,7 +211,7 @@ function pullToRefresh() {
   window.addEventListener('hashchange', render);
   window.addEventListener('online', () => reload());
   window.addEventListener('offline', () => { data.offline = true; render(); });
-  setInterval(() => { topbar(); tickDeadlines(); }, 15000);
+  setInterval(() => { topbar(); tickDeadlines(); starReminder(App); }, 15000);
   // Tarama her 5 dakikanın ~20. saniyesinde yazar. O anda GitHub API'den (anında güncel) okunur;
   // diğer zamanlarda raw adres (sınırsız ama ~5 dk önbellekli). API: 5 dk'da en fazla 3 istek.
   let slot = 0, tries = 0, lastTry = 0;

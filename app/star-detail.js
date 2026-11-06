@@ -10,7 +10,7 @@ import { copy, modal, toast } from './ui.js';
 import { trades, skipped } from './store.js';
 import { mountChart } from './chart.js';
 import { chart as loadChart } from './data.js';
-import { starName, starRatio, STAR_IDS } from './star.js';
+import { starName, starRatio, STAR_IDS, starConfirm, setStarConfirm } from './star.js';
 
 const ST = {
   TAM: ['tam', '🔵 TAM'], TAM_BEKLE: ['bekle', '🟠 TAM – BEKLE (teyit 1/2)'], EKSIK: ['eksik', '🟡 EKSİK'], YOK: ['yok', '⚪ YOK'],
@@ -88,11 +88,12 @@ function orderHtml(App, id, sym, row) {
       <span class="k">Emir</span><span class="v mono">${esc(side)}</span><span class="d">${row.position?.entryT ? 'girildi (sanal)' : 'piyasa'}</span>
       <span class="k">Giriş</span><span class="v">~${cfd(o.ref_price)}</span><span class="d"></span>
       <span class="k" style="color:var(--short)">SL</span><span class="v">${cfd(o.stop)}</span><span class="d">${id === 'M2' || id === 'T4S' || id === 'TD' ? `${App.conf.star.setups[id].p.stopAtr} ATR` : ''}</span>
-      ${o.t1 ? `<span class="k" style="color:var(--info)">T1</span><span class="v">${cfd(o.t1)}</span><span class="d">1,5R · %50 kapat, stop girişe</span>` : '<span class="k">Hedef</span><span class="v">yok</span><span class="d">kâr alma yok</span>'}
+      ${o.t1 ? `<span class="k" style="color:var(--info)">T1 LIMIT</span><span class="v">${cfd(o.t1)}</span><span class="d">1,5R · %50 (stop emriyle birlikte gir)</span>` : '<span class="k">Hedef</span><span class="v">yok</span><span class="d">kâr alma yok</span>'}
       <span class="k">Çıkış</span><span class="v" style="font-size:.9rem;white-space:normal">${esc(exitTxt)}</span><span class="d"></span>
       <span class="k">Lot</span><span class="v">${L.lot ?? '—'}</span><span class="d">${parts.length === 2 ? `${parts[0]} (T1) + ${parts[1]}` : esc(L.note || '')}</span>
       <span class="k">Risk</span><span class="v">${L.riskReal ? `$${L.riskReal.toFixed(0)}` : '—'}</span><span class="d">%${L.riskPct}</span>
     </div>
+    ${o.t1 ? '<div class="muted small">Aynı mum içinde hem stop hem T1 görülürse stop önce sayılır (testteki muhafazakâr varsayım — "aynı mum — stop önceliği").</div>' : ''}
     ${warns.map((w) => `<div class="warnline">⚠️ ${w}</div>`).join('')}
     <div class="btns">
       <button class="btn big primary" data-sact="copy">⧉ Kopyala</button>
@@ -115,6 +116,8 @@ function positionHtml(App, id, row) {
     <span class="k">Stop</span><span class="v">${f(p.stop)}</span><span class="d">${p.stopAtBe ? '<b>BE</b>' : ''}</span>
     ${p.t1 ? `<span class="k">T1</span><span class="v">${f(p.t1)}</span><span class="d">${p.t1Done ? '✅' : '⏳'}</span>` : ''}
     <span class="k">Anlık R</span><span class="v ${p.rNow > 0 ? 'pos' : p.rNow < 0 ? 'neg' : ''}">${p.rNow === null ? '—' : `${p.rNow > 0 ? '+' : ''}${p.rNow.toFixed(2)}R`}</span><span class="d"></span>
+    ${p.t1 ? `<span class="k">Onay</span><span class="v" style="font-size:.9rem;white-space:normal">${starConfirm(App, p.id).t1order ? '✅ T1 limit emri girildi' : '<button class="btn" data-conf="t1order">T1 limit emri girildi mi? → Evet</button>'}</span><span class="d"></span>` : ''}
+    ${p.t1Done ? `<span class="k">Stop → giriş</span><span class="v" style="font-size:.9rem;white-space:normal">${starConfirm(App, p.id).be ? '✅ stop girişe çekildi' : `<button class="btn primary" data-conf="be">Stopu ${f(p.entry)} yaptım</button>`}</span><span class="d">${starConfirm(App, p.id).be ? '' : '<b style="color:var(--short)">zorunlu onay</b>'}</span>` : ''}
     <span class="k">Çıkış seviyesi</span><span class="v">${f(p.exitLevel)}</span><span class="d">${p.exitPending ? '<b style="color:var(--short)">son kapanışta çıkış VAR — kalanı kapat</b>' : 'son kapanışta çıkış yok'}</span></div></div>`;
 }
 
@@ -154,6 +157,7 @@ export function renderStarDetail(App, el, id, sym) {
     App.chartCtl?.destroy?.();
     App.chartCtl = mountChart(ch, { chartData: cd, setup: { tfs: [cfg.tf], chartTf: cfg.tf, overlays, dir: p?.dir ?? row.dir }, sessions: App.conf.sessions, layers: App.settings.layers, onLayers: () => App.save(), tf: cfg.tf, onTf: () => {}, asOf: st.lastScan });
   });
+  el.querySelectorAll('[data-conf]').forEach((b) => b.addEventListener('click', () => { setStarConfirm(App, row.position.id, b.dataset.conf); toast('Onaylandı'); App.render(); }));
   // Emir kartı
   const card = el.querySelector('[data-star-order]');
   if (!card) return;

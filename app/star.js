@@ -112,6 +112,7 @@ export function renderStar(App, el) {
   el.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="h1" style="margin:0">⭐ Portföy</div>
     <div class="muted small">Son ⭐ tarama ${tr(st.lastScan)} ${age > 15 * 60000 ? `<b style="color:var(--eksik)">(${dur(age)} önce)</b>` : '✓'} · ⭐ kredi bugün ${st.credits?.star ?? 0}</div></div>
     ${st.news ? `<div class="banner news" style="border-radius:10px;margin-bottom:10px">⚠ HABER RİSKİ: ${esc(st.news.title)} ${tr(st.news.t)} TR (${st.news.minutes} dk) — ⭐ girişleri engellenmez, sadece uyarı</div>` : ''}
+    ${confirmBanner(App)}
     ${weekStrip(App, st)}
     <div class="star-grid">${STAR_IDS.map((id) => setupCard(App, id, st)).join('')}</div>
     ${cal.html}
@@ -154,4 +155,28 @@ export function bindStarSettings(App, el) {
     App.save(); toast(`${sym} oranı ${(cfd / etf).toFixed(4)} kaydedildi`); App.render();
   }));
   el.querySelector('[data-confirm-instr-star]')?.addEventListener('click', () => { App.settings.instrConfirmedStar = Date.now(); App.save(); toast('⭐ enstrüman değerleri doğrulandı'); App.render(); });
+}
+
+/** T4.3 / T4.4 / TD.4: kullanıcı onayları (cihazda) — T1 limit emri girildi mi, T1 sonrası stop girişe çekildi mi */
+export function starConfirm(App, id) { return App.settings.starConfirm?.[id] ?? {}; }
+export function setStarConfirm(App, id, k) {
+  App.settings.starConfirm = { ...(App.settings.starConfirm ?? {}), [id]: { ...starConfirm(App, id), [k]: Date.now() } };
+  App.save();
+}
+/** Bekleyen zorunlu onaylar: T1 gerçekleşti ama "stop girişe" onaylanmadı */
+export function pendingBe(App) {
+  return (App.data.star?.portfolio?.open ?? []).filter((x) => x.t1Done && !starConfirm(App, x.id).be);
+}
+let lastRemind = 0;
+/** Onaylanmazsa her 5 dk hatırlatma (uygulama açıkken) */
+export function starReminder(App) {
+  const p = pendingBe(App);
+  if (!p.length || Date.now() - lastRemind < 5 * 60000) return;
+  lastRemind = Date.now();
+  const x = p[0];
+  toast(`⚠ ${App.conf.star?.setups?.[x.setup]?.name ?? x.setup} ${x.sym}: T1 alındı — stopu girişe (${x.entry}) çek ve onayla`, 6000);
+}
+function confirmBanner(App) {
+  const p = pendingBe(App);
+  return p.map((x) => `<div class="lockline" style="margin-bottom:8px" data-go="#/star/${x.setup}/${x.sym}">⚠ ${esc(App.conf.star?.setups?.[x.setup]?.name ?? x.setup)} ${esc(x.sym)}: T1 alındı — stopu girişe (${esc(String(x.entry))}) çek · onay bekleniyor</div>`).join('');
 }

@@ -10,7 +10,7 @@ import { evalTrend, trackPos, type Bar, type StarPos, type TrendParams, type Tre
 import type { StarSeries } from './run.ts';
 
 /** Etkin trend kurulumları (adım adım eklenir) */
-export const TREND_IDS: StarId[] = ['M2'];
+export const TREND_IDS: StarId[] = ['M2', 'T4S'];
 
 export function trendParams(sc: StarConfig, id: StarId): TrendParams {
   const s = sc.setups[id], p = s.p;
@@ -167,7 +167,7 @@ export function portfolio(positions: StarPos[], weekStartT: number, riskPct: num
   const riskOn = open.filter((x) => !x.stopAtBe);
   return {
     weekR: +weekR.toFixed(2), openRiskPct: +(riskOn.length * riskPct).toFixed(2), riskPerTrade: riskPct,
-    open: open.map((x) => ({ id: x.id, setup: x.setup, sym: x.sym, dir: x.dir, rNow: x.rNow, riskOn: !x.stopAtBe, entry: x.entry ?? x.ref, stop: x.stop, t: x.notifiedAt })),
+    open: open.map((x) => ({ id: x.id, setup: x.setup, sym: x.sym, dir: x.dir, rNow: x.rNow, riskOn: !x.stopAtBe, entry: x.entry ?? x.ref, stop: x.stop, t1: x.t1, t1Done: x.t1Done, t: x.notifiedAt })),
     closed: closed.filter((x) => now - x.closedT! <= 90 * DAY).map((x) => ({ id: x.id, setup: x.setup, sym: x.sym, dir: x.dir, r: +x.r!.toFixed(2), t: x.closedT, reason: x.reason, entry: x.entry, exit: x.exit })),
     calendar,
   };

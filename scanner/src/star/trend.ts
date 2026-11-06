@@ -4,7 +4,6 @@
 // Pozisyon testteki gibi sanal izlenir (giriş = sinyalden sonraki ilk 1H açılışı); her taramada kapanmış mumlardan yeniden hesaplanır (repaint yok).
 import type { Candle, StarId } from '../types.ts';
 import type { StarCls } from './config.ts';
-import { barEnd } from './sessions.ts';
 import { donchian, atr as atrSeries, type Regime } from './ind.ts';
 import { doubleScan, kacti, signalId, type Pending } from './guard.ts';
 
@@ -52,10 +51,23 @@ export function trackPos(pos: StarPos, cls: StarCls, h1: Candle[], bars: Bar[], 
   const result = (exit: number) => (P.t1Done ? frac * (p.t1R ?? 0) + (1 - frac) * (d * (exit - entry)) / R : (d * (exit - entry)) / R);
   const close = (t: number, px: number, reason: string, k: PosEvent['k']) => { P.open = false; P.closedT = t; P.exit = px; P.reason = reason; P.r = result(px); P.events.push({ k, t, price: px, r: P.r }); };
   const ex = donchian(bars, p.exitN);
-  const endIdx = new Map(bars.map((b, i) => [b.end, i]));
-  for (const b of h1) {
-    if (b.t < first.t) continue;
-    if (P.exitPending !== null) { close(b.t, b.o, `${p.tf.toUpperCase()} kapanış Donchian ${p.exitN} kırıldı`, 'CIKIS'); break; }
+  // Kurulumun zaman diliminde (testteki gibi) mum mum ilerle: kapanmış TF mumları + açık TF mumu için 1H'ten kısmi mum.
+  // Aynı mum içinde stop ve T1 → stop önceliği (muhafazakâr test varsayımı).
+  type Step = { t: number; o: number; h: number; l: number; c: number; gi: number | null };
+  const steps: Step[] = [];
+  bars.forEach((g, gi) => { if (g.end > first.t) steps.push({ t: Math.max(g.t, first.t), o: g.t >= first.t ? g.o : first.o, h: g.h, l: g.l, c: g.c, gi }); });
+  // Giriş mumu TF mumunun ortasında başladıysa (TF=1h dışı, nadir) o mum giriş sonrası 1H'lerden kurulur
+  if (steps.length && bars[steps[0].gi!].t < first.t) {
+    const g = bars[steps[0].gi!];
+    const ins = h1.filter((b) => b.t >= first.t && b.t < g.end);
+    if (ins.length) Object.assign(steps[0], { h: Math.max(...ins.map((b) => b.h)), l: Math.min(...ins.map((b) => b.l)) });
+  }
+  const lastEnd = bars.length ? bars[bars.length - 1].end : -Infinity;
+  const tail = h1.filter((b) => b.t >= Math.max(lastEnd, first.t));
+  if (tail.length) steps.push({ t: tail[0].t, o: tail[0].o, h: Math.max(...tail.map((b) => b.h)), l: Math.min(...tail.map((b) => b.l)), c: tail[tail.length - 1].c, gi: null });
+  const tfW = p.tf === '1d' ? 'günlük' : p.tf.toUpperCase();
+  for (const b of steps) {
+    if (P.exitPending !== null) { close(b.t, b.o, `${tfW} kapanış Donchian ${p.exitN} kırıldı`, 'CIKIS'); break; }
     const hitStop = d === 1 ? b.l <= P.stop : b.h >= P.stop;
     const hitT1 = P.t1 !== null && !P.t1Done && (d === 1 ? b.h >= P.t1 : b.l <= P.t1);
     if (hitStop) {
@@ -64,13 +76,11 @@ export function trackPos(pos: StarPos, cls: StarCls, h1: Candle[], bars: Bar[], 
       break;
     }
     if (hitT1) { P.t1Done = true; P.stopAtBe = true; P.stop = entry; P.events.push({ k: 'T1', t: b.t, price: P.t1! }); }
-    const end = barEnd(cls, b.t, etf);
-    const gi = endIdx.get(end);
-    if (gi !== undefined && fin(ex.dn[gi])) {
-      const g = bars[gi];
-      const out = d === 1 ? g.c < ex.dn[gi] : g.c > ex.up[gi];
+    if (b.gi !== null && fin(ex.dn[b.gi])) {
+      const g = bars[b.gi];
+      const out = d === 1 ? g.c < ex.dn[b.gi] : g.c > ex.up[b.gi];
       if (out) {
-        if (p.exitAt === 'close') { close(g.end, g.c, `${p.tf === '1d' ? 'günlük' : p.tf.toUpperCase()} kapanış Donchian ${p.exitN} kırıldı`, 'CIKIS'); break; }
+        if (p.exitAt === 'close') { close(g.end, g.c, `${tfW} kapanış Donchian ${p.exitN} kırıldı`, 'CIKIS'); break; }
         P.exitPending = g.end;
       }
     }
@@ -150,7 +160,9 @@ export function evalTrend(o: {
     conds.push({ id: 'koruma', label: 'Hatalı sinyal koruması', status: 'wait', detail: 'teyit 2/2 · anlık fiyat son kapanıştan çok uzak (kötü tick?) — sonraki tarama bekleniyor' });
     return row('TAM_BEKLE', dir, 'kötü tick şüphesi', { signalId: sid, scanSeq: 2, order, blockedBy: 'KOTU_TICK' });
   }
-  const t1Gone = p.kactiT1Frac !== undefined && t1 !== null && o.price !== null && dir * (o.price - g.c) > p.kactiT1Frac * Math.abs(t1 - g.c);
+  // T4.2: T1'e (sinyal kapanışından 1,5R) %50'den fazla yaklaştıysa da KAÇTI
+  const t1c = p.t1R ? g.c + dir * p.t1R * p.stopAtr * lv.atr : null;
+  const t1Gone = p.kactiT1Frac !== undefined && t1c !== null && o.price !== null && dir * (o.price - g.c) > p.kactiT1Frac * Math.abs(t1c - g.c);
   if (kacti(dir, g.c, o.price, p.kactiAtr * lv.atr) || t1Gone) {
     conds.push({ id: 'koruma', label: 'Hatalı sinyal koruması', status: 'fail', detail: `KAÇTI — fiyat ${f(o.price!, dec)} sinyal kapanışından ${(dir * (o.price! - g.c) / lv.atr).toFixed(2)} ATR ilerledi (eşik ${p.kactiAtr} ATR${p.kactiT1Frac ? `, T1'e %${p.kactiT1Frac * 100}` : ''}) — sonraki kapanış beklenir` });
     return row('EKSIK', dir, 'KAÇTI — sonraki kapanış', { signalId: sid, scanSeq: 2, finalCheck: 'KACTI', blockedBy: 'KACTI' });

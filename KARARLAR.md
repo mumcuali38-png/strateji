@@ -289,3 +289,10 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - **M2.3:** Sinyal mumu 1 saatten eskiyse (ör. ETF açılışında dünkü mum) sinyal üretilmez.
 - **Senaryo 2 (rejim −1 iken LONG kırılım):** LONG sinyal yok; durum §7'ye göre EKSİK (SHORT kırılım bekleniyor) ya da rejim 0'da YOK.
 - **Senaryo 6:** Twelve Data her istekte `timezone=UTC`; gelecekte görünen mum (saat kayması) gelirse veri yok sayılır ve hata yazılır.
+
+## ⭐T4-S — 3. adım (06.11.2026)
+
+- **Pozisyon takibi kurulumun zaman diliminde:** T4-S (4H) ve TD (günlük) testleri "aynı mumda stop ve T1 → stop önceliği"ni TF mumunda uyguladığı için sanal takip artık TF mumlarıyla yapılır (M2'de 1H — değişiklik yok). Açık TF mumu 1H'lerden kısmi mum olarak izlenir (T1 / stop anlık bildirilir); mum kapanınca test kuralıyla yeniden hesaplanır. Ender durumda kısmi mumda T1 görülüp aynı 4H mum içinde sonradan stop gelirse sonuç testteki gibi −1R'ye döner.
+- **T4.2 KAÇTI:** fiyat > 0,5 × ATR14_4H ilerlediyse veya sinyal kapanışından hesaplanan T1'e (1,5R) mesafenin %50'sini geçtiyse.
+- **T4.3 / T4.4 onayları cihazda:** "T1 limit emri girildi mi?" ve "Stopu girişe çektim" onayları Ayarlar'da (localStorage) tutulur; tarayıcı (Actions) bu onayları göremez. T1 bildirimi push ile bir kez gider; onaylanmazsa uygulama açıkken her 5 dk hatırlatma + Portföy'de kırmızı şerit.
+- **Toplam R:** T1 alındıysa 0,5 × 1,5 + 0,5 × (çıkış − giriş)/R; T1 sonrası girişte stop → +0,75R.
