@@ -242,3 +242,11 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Erken başlatma:** pencere dışında çalışan `scan-f` işi, bir sonraki pencereye ≤ 150 dk kaldıysa ve sırada ya da çalışan ana tarama yoksa `scan.yml`'yi `wait=true` ile tetikler. Bu iş pencere açılana kadar bekler, beklerken 15 dk'da bir F taraması yapar, tam açılışta (08:00 / 10:00 TR) taramaya başlar. İş süresi sınırı 360 dk; bekleme süresi döngüden düşülür.
 - **Kendini devam ettirme:** döngü süre sınırına geldiğinde pencere hâlâ açıksa `scan.yml`'yi kendisi yeniden tetikler. Aynı concurrency grubunda sıraya girer ve hemen ardından başlar; zamanlanmış tetik beklenmez.
 - **Kredi göstergesi:** günün ilk taramasından önce dünkü sayı yerine 0 gösterilir (sayaç UTC 00:00 = 03:00 TR'de sıfırlanır).
+
+## Kalabalık oranı: OANDA pozisyon defteri (06.11.2026)
+
+- Myfxbook ve eToro Türkiye'den açılamadığı için forex kalabalık (perakende long/short) oranının ikinci kaynağı **OANDA v20 REST API** oldu: `GET /v3/instruments/{EUR_USD|GBP_USD|XAU_USD|XAG_USD|NAS100_USD}/positionBook`.
+- Kovalardaki `longCountPercent` ve `shortCountPercent` toplanır, long % = L / (L + S). Bulunmayan enstrüman atlanır.
+- Anahtar `OANDA_TOKEN` (ücretsiz demo hesap, practice sunucusu; canlı hesap için `OANDA_ENV=live`). Saatlik önbellek.
+- Myfxbook varsa öncelik onda, yoksa OANDA kullanılır. Hem Trader'lar "Kalabalık" satırı hem Piyasa Yönü "Pozisyonlanma" (perakende kısmı) bundan beslenir.
+- Hesapsız "sentiment" siteleri kullanılmadı: resmi API'leri yok, kaynakları ve yöntemleri belirsiz, değerleri birbiriyle çelişiyor.

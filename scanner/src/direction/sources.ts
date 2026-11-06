@@ -71,6 +71,33 @@ export async function cotNets(): Promise<Record<string, number[]>> {
   }
   return out;
 }
+/**
+ * OANDA pozisyon defteri (resmi v20 REST API): OANDA müşterilerinin açık pozisyonlarının fiyat kovalarına
+ * göre long/short yüzdesi; kovalar toplanınca toplam long %. OANDA_TOKEN secret'ı yoksa null.
+ * Demo (practice) hesabın anahtarı varsayılan; canlı hesap için OANDA_ENV=live.
+ */
+export const OANDA_INSTR: Record<string, string> = { EURUSD: 'EUR_USD', GBPUSD: 'GBP_USD', XAUUSD: 'XAU_USD', XAGUSD: 'XAG_USD', US100: 'NAS100_USD' };
+export function positionBookLongPct(buckets: { longCountPercent: string | number; shortCountPercent: string | number }[]): number | null {
+  let L = 0, S = 0;
+  for (const b of buckets) { L += Number(b.longCountPercent) || 0; S += Number(b.shortCountPercent) || 0; }
+  return L + S > 0 ? +((L / (L + S)) * 100).toFixed(1) : null;
+}
+export async function oandaLongPct(): Promise<Record<string, number> | null> {
+  const token = process.env.OANDA_TOKEN;
+  if (!token) return null;
+  const host = process.env.OANDA_ENV === 'live' ? 'https://api-fxtrade.oanda.com' : 'https://api-fxpractice.oanda.com';
+  const out: Record<string, number> = {};
+  const errs: string[] = [];
+  for (const [sym, inst] of Object.entries(OANDA_INSTR)) {
+    try {
+      const j = await (await get(`${host}/v3/instruments/${inst}/positionBook`, { headers: { authorization: `Bearer ${token}`, 'accept-datetime-format': 'UNIX' } })).json() as { positionBook?: { buckets?: { longCountPercent: string; shortCountPercent: string }[] } };
+      const p = positionBookLongPct(j.positionBook?.buckets ?? []);
+      if (p !== null) out[sym] = p;
+    } catch (e) { errs.push(`${inst}: ${(e as Error).message}`); }
+  }
+  if (!Object.keys(out).length) throw new Error(errs.join(' · ') || 'pozisyon defteri boş');
+  return out;
+}
 /** Myfxbook topluluk görünümü (perakende long %). MYFXBOOK_EMAIL / MYFXBOOK_PASSWORD secret'ı yoksa null. */
 export async function myfxbookLongPct(): Promise<Record<string, number> | null> {
   const e = process.env.MYFXBOOK_EMAIL, p = process.env.MYFXBOOK_PASSWORD;

@@ -45,6 +45,7 @@ export async function runDirection(conf: Config, now: number, opts: { setups: Se
   const ext: Ext = {
     cot: await cached(cache, 'cot', DAY, now, src.cotNets, status),
     myfx: await cached(cache, 'myfxbook', HOUR, now, src.myfxbookLongPct, status),
+    oanda: await cached(cache, 'oanda', HOUR, now, src.oandaLongPct, status),
     fng: await cached(cache, 'fng', 6 * HOUR, now, src.fearGreed, status),
     stable: await cached(cache, 'stablecoin', 12 * HOUR, now, src.stablecoin7d, status),
     etfBTC: await cached(cache, 'etf_btc', 12 * HOUR, now, () => src.etfFlow5d('btc'), status),
@@ -74,7 +75,7 @@ export async function runDirection(conf: Config, now: number, opts: { setups: Se
 }
 
 export interface Ext {
-  cot: Record<string, number[]> | null; myfx: Record<string, number> | null; fng: number | null; stable: number | null;
+  cot: Record<string, number[]> | null; myfx: Record<string, number> | null; oanda?: Record<string, number> | null; fng: number | null; stable: number | null;
   etfBTC: number | null; etfETH: number | null; derivBTC: src.Deriv | null; derivETH: src.Deriv | null;
   kl: Record<string, { h1: Candle[]; h4: Candle[]; d1: Candle[] }>;
 }
@@ -108,7 +109,9 @@ export function computeDirection(conf: Config, now: number, setups: Setup[], new
     const O = ours(sym);
     const macro = sym === 'US100' ? sc.mix([[0.6, bond], [0.4, usd === null ? null : -usd]]) : sym === 'XAUUSD' ? sc.mix([[0.6, usd === null ? null : -usd], [0.4, bond]]) : usd === null ? null : -usd;
     const cot = ext.cot?.[sym] ? sc.cotScore(ext.cot[sym]) : { s: null as sc.S };
-    const lp = ext.myfx?.[sym === 'US100' ? 'NAS100' : sym];
+    // Perakende long %: Myfxbook varsa o, yoksa OANDA pozisyon defteri
+    const lpM = ext.myfx?.[sym === 'US100' ? 'NAS100' : sym], lpO = ext.oanda?.[sym];
+    const lp = lpM ?? lpO, lpSrc = lpM !== undefined ? 'Myfxbook' : 'OANDA';
     const retail = lp !== undefined && Number.isFinite(lp) ? sc.retailScore(lp) : null;
     const pos = sc.mix([[0.6, cot.s], [0.4, retail]]);
     const ev = recent.map((e) => { const a = sc.parseNum(e.actual), f = sc.parseNum(e.forecast); const d = sc.eventDir(e.title), p = sc.pairEffect(sym, e.currency); return a === null || f === null || !d || !p ? null : { e, v: Math.sign(a - f) * d * p }; }).filter((x): x is { e: NewsEvent; v: number } => !!x);
@@ -119,7 +122,7 @@ export function computeDirection(conf: Config, now: number, setups: Setup[], new
       { id: 'momentum', name: 'Momentum', w: 10, s: M, note: `RSI14 + MACD(4H): ${sTxt(M)}` },
       { id: 'kurulum', name: 'Bizim kurulumlar', w: 15, s: O, note: O === 0 ? 'Aktif yönlü kurulum yok' : `Aktif kurulumlar ${O > 0 ? 'long' : 'short'} ağırlıklı` },
       { id: 'makro', name: 'Makro / Dolar', w: 15, s: macro, note: `UUP (dolar) trendi ${sTxt(usd)} · IEF (tahvil) trendi ${sTxt(bond)}` },
-      { id: 'pozisyon', name: 'Pozisyonlanma', w: 10, s: pos, note: `COT 4 hafta z=${f2((cot as { z?: number }).z)}${retail === null ? ' · Myfxbook yok' : ` · perakende long %${f2(lp, 0)}`}` },
+      { id: 'pozisyon', name: 'Pozisyonlanma', w: 10, s: pos, note: `COT 4 hafta z=${f2((cot as { z?: number }).z)}${retail === null ? ' · perakende verisi yok' : ` · perakende long %${f2(lp, 0)} (${lpSrc})`}` },
       { id: 'haber', name: 'Haber sürprizi', w: 5, s: surprise, note: sym === 'US100' ? 'US100 için uygulanmaz' : ev.length ? ev.map((x) => `${x.e.currency} ${x.e.title} ${x.e.actual} (bek. ${x.e.forecast})`).join(' · ') : 'Son 24 saatte sonuçlanan kırmızı veri yok' },
     ] as sc.Comp[]).filter((c) => !(sym === 'US100' && c.id === 'haber'))); // US100: haber sürprizi uygulanmaz, ağırlığı dağıtılır
   });

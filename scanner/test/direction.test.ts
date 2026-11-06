@@ -58,3 +58,9 @@ test('Farside tablo ayrıştırma ve etiket değişimi bildirimi (günde en fazl
   assert.equal(capDirection(msgs, notified, 0).length, 3);
   assert.equal(capDirection(msgs, notified, 0).length, 0);
 });
+
+test('OANDA pozisyon defteri: kovaların toplamı → long %', async () => {
+  const { positionBookLongPct } = await import('../src/direction/sources.ts');
+  assert.equal(positionBookLongPct([{ longCountPercent: '0.30', shortCountPercent: '0.10' }, { longCountPercent: '0.40', shortCountPercent: '0.20' }]), 70);
+  assert.equal(positionBookLongPct([]), null);
+});

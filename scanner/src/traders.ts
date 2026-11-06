@@ -29,6 +29,8 @@ export interface TradersFile {
   pairs: Record<string, { traders: TraderPos[]; long: number; short: number; candidates: number; error?: string }>;
   crowd: Record<string, number | null>; cot: Record<string, { net: number; change4w: number; z?: number } | null>;
   /** OKX (BTC/ETH): büyük trader'ların pozisyon L/S oranı ve tüm hesapların L/S oranı → long % */
+  /** Kalabalık verisinin kaynağı (Myfxbook / OANDA) */
+  crowdSource?: string | null;
   okx?: Record<string, { topLongPct: number | null; allLongPct: number | null; topLS: number | null; allLS: number | null } | null>;
 }
 
@@ -61,10 +63,11 @@ export async function runTraders(conf: Config, now: number, setups: Setup[], not
   const f: TraderFilters = { ...DEFAULT_FILTERS, ...((conf.params as unknown as { traders?: Partial<TraderFilters> }).traders ?? {}) };
   const dcache = readJSON<{ v: Record<string, unknown> }>('direction-cache.json', { v: {} });
   const myfx = (dcache.v.myfxbook ?? null) as Record<string, number> | null;
+  const oanda = (dcache.v.oanda ?? null) as Record<string, number> | null;
   const cotRaw = (dcache.v.cot ?? null) as Record<string, number[]> | null;
   const crowd: TradersFile['crowd'] = {}, cot: TradersFile['cot'] = {};
   for (const p of PAIRS) {
-    crowd[p] = myfx?.[p === 'US100' ? 'NAS100' : p] ?? null;
+    crowd[p] = myfx?.[p === 'US100' ? 'NAS100' : p] ?? oanda?.[p] ?? null;
     const n = cotRaw?.[p];
     cot[p] = n && n.length > 5 ? { net: n.at(-1)!, change4w: n.at(-1)! - n.at(-5)!, z: cotScore(n).z } : null;
   }
@@ -74,10 +77,11 @@ export async function runTraders(conf: Config, now: number, setups: Setup[], not
     const d = dcache.v[k] as { topLS?: number; globalLS?: number } | undefined;
     okx[p] = d ? { topLS: d.topLS ?? null, allLS: d.globalLS ?? null, topLongPct: lsToPct(d.topLS), allLongPct: lsToPct(d.globalLS) } : null;
   }
-  const file: TradersFile = { updatedAt: now, status: 'ok', source: 'eToro Public API', filters: f, pairs: {}, crowd, cot, okx };
+  const crowdSource = myfx ? 'Myfxbook' : oanda ? 'OANDA pozisyon defteri' : null;
+  const file: TradersFile = { updatedAt: now, status: 'ok', source: 'eToro Public API', filters: f, pairs: {}, crowd, cot, okx, crowdSource };
   for (const p of PAIRS) file.pairs[p] = { traders: [], long: 0, short: 0, candidates: 0 };
   const key = process.env.ETORO_API_KEY, user = process.env.ETORO_USER_KEY;
-  if (!key || !user) { file.status = 'no_keys'; file.source = 'eToro anahtarı yok — Myfxbook + COT + OKX (BTC/ETH)'; writeJSON('traders.json', file); return { file, msgs: disagreement(setups, file, notified, now) }; }
+  if (!key || !user) { file.status = 'no_keys'; file.source = `eToro anahtarı yok — ${crowdSource ?? 'kalabalık verisi yok'} + COT + OKX (BTC/ETH)`; writeJSON('traders.json', file); return { file, msgs: disagreement(setups, file, notified, now) }; }
   const api = new Etoro(key, user);
   const cache = readJSON<{ ids?: Record<string, number>; idsAt?: number; picks?: Record<string, { u: string; y: SearchItem }[]>; picksAt?: number }>('traders-cache.json', {});
   try {
