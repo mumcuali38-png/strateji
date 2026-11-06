@@ -121,6 +121,70 @@ function positionHtml(App, id, row) {
     <span class="k">Çıkış seviyesi</span><span class="v">${f(p.exitLevel)}</span><span class="d">${p.exitPending ? '<b style="color:var(--short)">son kapanışta çıkış VAR — kalanı kapat</b>' : 'son kapanışta çıkış yok'}</span></div></div>`;
 }
 
+const OCO = new Set(['N7', 'IB']);
+/** N7.5 / IB.4: spread (CFD) > R'nin %5'i → giriş önerilmez */
+function spreadCheck(App, sym, R) {
+  const cfg = symCfg(App, sym), ins = instrOf(sym, cfg, App.settings);
+  const etf = App.conf.star?.instruments?.[sym]?.cls === 'etf';
+  const ratio = etf ? starRatio(App, sym).ratio : 1;
+  if (!(ratio > 0) || !(R > 0)) return { ok: null, text: 'spread kontrolü için oran yok' };
+  const pct = (ins.spread / (R * ratio)) * 100;
+  const max = (App.conf.star?.setups?.N7?.p?.spreadMaxR ?? 0.05) * 100;
+  return { ok: pct <= max, text: `spread ${ins.spread} = R'nin %${pct.toFixed(1)}'i (sınır %${max})` };
+}
+function ocoOrderHtml(App, id, sym, row) {
+  const o = row.order;
+  if (!o) return '';
+  const ins = App.data.star?.instruments?.[sym] ?? {}, dec = ins.decimals ?? 2, etf = ins.cls === 'etf';
+  const rat = etf ? starRatio(App, sym) : null;
+  const tR = App.conf.star.setups[id].p.targetR;
+  const v = (x) => (etf ? (rat?.ratio ? `${price(x * rat.ratio, 2)} <span class="muted small">(ETF ${price(x, dec)})</span>` : `<span class="muted small">ETF</span> ${price(x, dec)}`) : price(x, dec));
+  const c = (x) => (etf && rat?.ratio ? (x * rat.ratio).toFixed(2) : x.toFixed(dec));
+  const L = starLot(App, sym, o.H, o.L); // lot planlanan seviyeyle (boşlukta risk %0,5'i biraz aşabilir)
+  const sp = spreadCheck(App, sym, o.R);
+  const left = o.sessEnd - Date.now();
+  const mt5On = getAdapter(App.settings).status() === 'CONNECTED';
+  const text = `${starName(App, id)} ${sym} OCO · BUY STOP ${c(o.H)} SL ${c(o.L)} TP ${c(o.H + tR * o.R)} · SELL STOP ${c(o.L)} SL ${c(o.H)} TP ${c(o.L - tR * o.R)} · LOT ${L.lot ?? '—'} · seans sonu ${tr(o.sessEnd)} TR (iptal / kapat)`;
+  const warns = [];
+  if (sp.ok === false) warns.push(`<b style="color:var(--short)">Spread yüksek — giriş önerilmez</b> (${esc(sp.text)})`);
+  if (o.manualKacti) warns.push(`KAÇTI — fiyat seviyeyi ${App.conf.star.setups[id].p.kactiR}R'den fazla geçti; elle giriş yok (kovalama yok)`);
+  if (rat?.old) warns.push(esc(rat.text));
+  if (row.news) warns.push(`HABER RİSKİ — ${esc(row.news.title)} ${tr(row.news.t)} TR (testte haber filtresi yoktu)`);
+  if ((App.starSlip?.avg ?? 0) > 0.05) warns.push(`Avantaj ince — kayma ortalaması ${App.starSlip.avg.toFixed(3)}R > 0,05R (son ${App.starSlip.n} ⭐ işlem) · broker/spread kontrol`);
+  return `<div class="order" data-star-order data-text="${esc(text)}">
+    <div class="row" style="justify-content:space-between"><b>OCO emir kartı · ${esc(starName(App, id))} · ${esc(ins.label ?? sym)}</b><span class="muted small">MAGIC ${MAGIC[id] ?? '—'}</span></div>
+    <div class="ogrid">
+      <span class="k" style="color:var(--long)">▲ BUY STOP</span><span class="v">${v(o.H)}</span><span class="d">SL ${c(o.L)} · TP ${c(o.H + tR * o.R)}</span>
+      <span class="k" style="color:var(--short)">▼ SELL STOP</span><span class="v">${v(o.L)}</span><span class="d">SL ${c(o.H)} · TP ${c(o.L - tR * o.R)}</span>
+      <span class="k">OCO</span><span class="v" style="font-size:.9rem">biri dolunca diğeri iptal</span><span class="d"></span>
+      <span class="k">Seans sonu</span><span class="v">${tr(o.sessEnd)} TR</span><span class="d">${left > 0 ? `${dur(left)} kaldı` : 'bitti'} · dolmazsa iptal, dolduysa kapat</span>
+      <span class="k">Lot</span><span class="v">${L.lot ?? '—'}</span><span class="d">${esc(L.note || 'planlanan seviyeyle')}</span>
+      <span class="k">Risk</span><span class="v">${L.riskReal ? `$${L.riskReal.toFixed(0)}` : '—'}</span><span class="d">%${L.riskPct} · ${esc(sp.text)}</span>
+    </div>
+    <div class="muted small">Boşlukla açılışta giriş açılış fiyatından olur; stop/hedef gerçek girişe göre (R büyür, risk %${L.riskPct}'i biraz aşabilir). Giriş mumunda hedef sayılmaz. Trailing / BE / yarı kâr yok.</div>
+    ${warns.map((w) => `<div class="warnline">⚠️ ${w}</div>`).join('')}
+    <div class="btns">
+      <button class="btn big primary" data-sact="copy">⧉ Kopyala</button>
+      <button class="btn big mt5 ${mt5On ? '' : 'off'}" data-sact="mt5" aria-disabled="${!mt5On}">📤 MT5'e Gönder</button>
+      <button class="btn big" data-sact="entered">✔ Doldu / Girdim</button>
+      <button class="btn big" data-sact="skip">✖ Girmedim</button>
+    </div></div>`;
+}
+function ocoPositionHtml(App, id, sym, row) {
+  const p = row.position, dec = App.data.star?.instruments?.[sym]?.decimals ?? 2, f = (x) => price(x, dec);
+  if (!p?.open) {
+    const c = row.lastClosed;
+    return c ? `<div class="card"><h3>Son ${esc(starName(App, id))}</h3><div>${c.dir ? dirHtml(c.dir) : ''} ${esc(c.reason ?? '')} ${c.r === null || c.r === undefined ? '' : `· <b class="num ${c.r > 0 ? 'pos' : 'neg'}">${c.r > 0 ? '+' : ''}${c.r.toFixed(2)}R</b>`}</div></div>` : '';
+  }
+  const left = p.sessEnd - Date.now();
+  return `<div class="card live ${p.dir === 1 ? 'dl' : 'ds'}"><h3>Açık pozisyon (sanal) ${dirHtml(p.dir)}</h3><div class="ogrid">
+    <span class="k">Giriş</span><span class="v">${f(p.entry)}</span><span class="d">${tr(p.entryT)} TR${p.gap ? ' · açılış boşluğu' : ''}</span>
+    <span class="k">Stop</span><span class="v">${f(p.stop)}</span><span class="d"></span>
+    <span class="k">Hedef</span><span class="v">${f(p.t1)}</span><span class="d">1,5R</span>
+    <span class="k">Anlık R</span><span class="v ${p.rNow > 0 ? 'pos' : p.rNow < 0 ? 'neg' : ''}">${p.rNow === null || p.rNow === undefined ? '—' : `${p.rNow > 0 ? '+' : ''}${p.rNow.toFixed(2)}R`}</span><span class="d"></span>
+    <span class="k">Seans sonu</span><span class="v">${tr(p.sessEnd)} TR</span><span class="d">${left > 0 ? `${dur(left)} kaldı — sonunda kapat` : 'bitti'}</span></div></div>`;
+}
+
 export function renderStarDetail(App, el, id, sym) {
   const st = App.data.star, cfg = App.conf.star?.setups?.[id];
   if (!st || !cfg) { el.innerHTML = '<div class="card">⭐ veri yok</div>'; return; }
@@ -133,7 +197,8 @@ export function renderStarDetail(App, el, id, sym) {
     el.innerHTML = `<div class="chips">${setChips}</div><div class="card" style="margin-top:10px">${esc(starName(App, id))} henüz devrede değil (sıradaki adımlarda eklenecek).</div>`;
     return;
   }
-  const show = row.status === 'TAM' || row.status === 'TAM_BEKLE' || (row.position?.open && !row.position.entryT) || (row.position?.open && row.position.exitPending);
+  const oco = OCO.has(id);
+  const show = oco ? row.order && ['BEKLIYOR', 'DOLDU'].includes(row.order.state) : row.status === 'TAM' || row.status === 'TAM_BEKLE' || (row.position?.open && !row.position.entryT) || (row.position?.open && row.position.exitPending);
   const wtiBlock = ins.cls === 'etf' && starRatio(App, sym).block;
   el.innerHTML = `<div class="chips">${setChips}</div><div class="chips" style="margin-top:6px">${chips}</div>
     <div class="row" style="justify-content:space-between;margin:10px 0"><div class="h1" style="margin:0">${esc(starName(App, id))} · ${esc(ins.label ?? sym)} ${dirHtml(row.position?.dir ?? row.dir)}</div>${wtiBlock ? '<span class="badge yok">⏳ oran eski (WTI)</span>' : rowBadge(row)}</div>
@@ -141,8 +206,9 @@ export function renderStarDetail(App, el, id, sym) {
     <div class="card"><h3>Şartlar</h3><table class="tbl">${(row.conditions ?? []).map((c, i) => `<tr><td style="width:28px">${COND_ICON[c.status]}</td><td><b>${i + 1}. ${esc(c.label)}</b><div class="muted small">${esc(c.detail)}</div></td></tr>`).join('')}</table>
       ${row.status === 'EKSIK' && row.levels?.level ? `<div class="muted small" style="margin-top:6px">Kırılım seviyesi: <b class="num">${price(row.levels.level, ins.decimals)}</b>, fiyata uzaklık: <b class="num">${row.levels.distAtr?.toFixed(2) ?? '—'} ATR</b></div>` : ''}
       ${row.sameDir?.length ? `<div class="muted small" style="margin-top:6px">ℹ️ Aynı yönde açık: ${row.sameDir.map(esc).join(', ')} (engellemez)</div>` : ''}</div>
-    ${show && !wtiBlock ? orderHtml(App, id, sym, row) : ''}
-    ${positionHtml(App, id, { ...row, position: row.position ? { ...row.position, sym } : null })}
+    ${oco && row.candidate ? `<div class="card muted small">Bugün: ${esc(row.candidate.text)}${row.candidate.cand ? ' — <b>aday</b> (seans bitince belli olacak)' : ''}</div>` : ''}
+    ${show && !wtiBlock ? (oco ? ocoOrderHtml(App, id, sym, row) : orderHtml(App, id, sym, row)) : ''}
+    ${oco ? ocoPositionHtml(App, id, sym, row) : positionHtml(App, id, { ...row, position: row.position ? { ...row.position, sym } : null })}
     <details class="card"><summary class="muted small">Çıktı (JSON, şartname §8)</summary><pre class="code small">${esc(JSON.stringify(row.json, null, 1))}</pre></details>
     </div></div>`;
   // Grafik
@@ -150,13 +216,15 @@ export function renderStarDetail(App, el, id, sym) {
   const p = row.position, o = row.order;
   const overlays = [];
   const add = (v, style, label) => { if (Number.isFinite(v)) overlays.push({ kind: 'line', style, label, price: v }); };
-  if (p?.open) { add(p.entry ?? p.ref, 'entry', 'Giriş'); add(p.stop, 'stop', p.stopAtBe ? 'Stop (BE)' : 'Stop'); add(p.t1, 'tp', 'T1'); }
+  if (oco && o) { add(o.H, 'level', 'al-stop (H)'); add(o.L, 'level', 'sat-stop (L)'); add(o.H + o.R * 1.5, 'tp', 'hedef ▲'); add(o.L - o.R * 1.5, 'tp', 'hedef ▼'); if (p?.open) add(p.entry, 'entry', 'Giriş'); }
+  else if (p?.open) { add(p.entry ?? p.ref, 'entry', 'Giriş'); add(p.stop, 'stop', p.stopAtBe ? 'Stop (BE)' : 'Stop'); add(p.t1, 'tp', 'T1'); }
   else if (o) { add(o.ref_price, 'entry', 'Giriş ~'); add(o.stop, 'stop', 'Stop'); add(o.t1, 'tp', 'T1'); }
   loadChart(`star/${id}_${sym}`).then((cd) => {
     if (!ch.isConnected) return;
     App.chartCtl?.destroy?.();
-    App.chartCtl = mountChart(ch, { chartData: cd, setup: { tfs: [cfg.tf], chartTf: cfg.tf, overlays, dir: p?.dir ?? row.dir }, sessions: App.conf.sessions, layers: App.settings.layers, onLayers: () => App.save(), tf: cfg.tf, onTf: () => {}, asOf: st.lastScan });
+    App.chartCtl = mountChart(ch, { chartData: cd, setup: { tfs: [oco ? '1h' : cfg.tf], chartTf: oco ? '1h' : cfg.tf, overlays, dir: p?.dir ?? row.dir }, sessions: App.conf.sessions, layers: App.settings.layers, onLayers: () => App.save(), tf: cfg.tf, onTf: () => {}, asOf: st.lastScan });
   });
+  if (oco) return bindOco(App, el, id, sym, row);
   el.querySelectorAll('[data-conf]').forEach((b) => b.addEventListener('click', () => { setStarConfirm(App, row.position.id, b.dataset.conf); toast('Onaylandı'); App.render(); }));
   // Emir kartı
   const card = el.querySelector('[data-star-order]');
@@ -189,6 +257,48 @@ export function renderStarDetail(App, el, id, sym) {
           entry: e, stop, tp1: t1, tp2: null, rr: t1 ? 1.5 : 0, lot, riskUsd: +(L.riskReal ?? L.riskUsd ?? 0).toFixed(2), slipR, spread, ratio: L.ratio,
           note: '', result: null, r: null, exitReason: null, events: [] });
         close(); toast(`Günlüğe kaydedildi · kayma ${slipR ?? '—'}R`); App.go('#/gunluk');
+      });
+    });
+  });
+}
+
+function bindOco(App, el, id, sym, row) {
+  const card = el.querySelector('[data-star-order]');
+  if (!card) return;
+  const o = row.order, ins = App.data.star?.instruments?.[sym] ?? {}, dec = ins.decimals ?? 2;
+  card.querySelector('[data-sact="copy"]').addEventListener('click', () => copy(card.dataset.text));
+  card.querySelector('[data-sact="mt5"]').addEventListener('click', () => toast(MT5_OFF_MSG, 3500));
+  card.querySelector('[data-sact="skip"]').addEventListener('click', () => {
+    skipped.put({ signal_id: o.id, t: Date.now(), reason: 'DIGER', reasonText: 'Girmedim', note: '', strategy: id, symbol: sym, dir: 0, entry: o.H, stop: o.L, tp1: null, tp2: null, signalAt: o.dayT, lastEntry: o.sessEnd, virtual_result_r: null, warnings: [] });
+    App.skipped = skipped.map(); toast('Kaydedildi'); App.render();
+  });
+  card.querySelector('[data-sact="entered"]').addEventListener('click', () => {
+    const d0 = row.position?.dir ?? row.dir ?? 1;
+    const L = starLot(App, sym, o.H, o.L);
+    modal(`<h3>Doldu — ${esc(starName(App, id))} ${esc(ins.label ?? sym)}</h3>
+      <div class="form"><div class="field"><label>Yön</label><select id="fd"><option value="1" ${d0 === 1 ? 'selected' : ''}>▲ LONG (al-stop ${o.H.toFixed(dec)})</option><option value="-1" ${d0 === -1 ? 'selected' : ''}>▼ SHORT (sat-stop ${o.L.toFixed(dec)})</option></select></div>
+      <div class="field"><label>Gerçek giriş fiyatı${ins.cls === 'etf' ? ' (ETF cinsinden)' : ''}</label><input id="fe" type="number" step="any" style="min-height:48px"></div>
+      <div class="field"><label>Lot</label><input id="fl" type="number" step="any" value="${L.lot ?? ''}" style="min-height:48px"></div>
+      <div class="field"><label>Spread (fiyat)</label><input id="fs" type="number" step="any" placeholder="opsiyonel" style="min-height:48px"></div></div>
+      <label class="chk"><input type="checkbox" id="fc" ${row.order?.sim?.state === 'CIFT' ? 'checked' : ''}> Aynı 1H mumda iki seviye kırıldı (test dışı — çift kırılım)</label>
+      <div class="btns"><button class="btn primary big" data-ok>Kaydet</button></div>`, (sh, close) => {
+      const fd = sh.querySelector('#fd'), fe = sh.querySelector('#fe');
+      const fill = () => { fe.value = (Number(fd.value) === 1 ? o.H : o.L).toFixed(dec); };
+      fill(); fd.addEventListener('change', fill);
+      sh.querySelector('[data-ok]').addEventListener('click', async () => {
+        const dir = Number(fd.value), e = Number(fe.value);
+        if (!(e > 0)) return toast('Giriş fiyatı gir');
+        const plan = dir === 1 ? o.H : o.L, stop = dir === 1 ? o.L : o.H;
+        const slipR = +((dir * (e - plan)) / o.R).toFixed(3); // N7.4: gerçek − planlanan (R), aleyhte pozitif
+        const lot = sh.querySelector('#fl').value === '' ? null : Number(sh.querySelector('#fl').value);
+        const spread = sh.querySelector('#fs').value === '' ? null : Number(sh.querySelector('#fs').value);
+        const Rr = Math.abs(e - stop);
+        await trades.put({ id: `${Date.now()}`, t: Date.now(), strategy: id, star: true, symbol: sym, dir, sub: App.conf.star.setups[id].title, method: 'stop (OCO)', signal_id: o.id, setupId: o.id,
+          signalBar: o.dayT, suggested: { entry: plan, stop, tp1: plan + dir * 1.5 * o.R, lot: L.lot, type: 'stop' }, plannedEntry: plan,
+          entry: e, stop, tp1: e + dir * 1.5 * Rr, tp2: null, rr: 1.5, lot, riskUsd: +(L.riskReal ?? L.riskUsd ?? 0).toFixed(2), slipR, spread, ratio: L.ratio,
+          tags: sh.querySelector('#fc').checked ? ['test dışı (çift kırılım)'] : [], sessEnd: o.sessEnd,
+          note: '', result: null, r: null, exitReason: null, events: [] });
+        close(); toast(`Günlüğe kaydedildi · kayma ${slipR}R`); App.go('#/gunluk');
       });
     });
   });

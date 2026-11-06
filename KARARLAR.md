@@ -305,3 +305,15 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - **Çıkış:** 24 saat piyasalarda günlük kapanış fiyatından ("teyitten sonra hemen"), ETF'lerde ertesi açılışta. Aynı gün stop ve T1 → stop önceliği (günlük mumda).
 - **TD.3:** açık pozisyonda her Cuma sessiz "hafta sonu taşınıyor" bilgisi; ayrıntı ekranında açık gün sayısı. Oran tazeliği ortak §7.10 ile (Ayarlar > ⭐).
 - **TD.4:** T1 / BE onayları T4-S ile aynı.
+
+## ⭐N7 — 5. adım (06.11.2026)
+
+- **OCO motoru** (`scanner/src/star/oco.ts`) N7 ve IB ortak; emir kayıtları `star-state.json` → `oco`, sanal sonuç her taramada kapanmış 1H mumlarından yeniden hesaplanır.
+- **Ertesi seans:** sinyal gününden sonraki ilk geçerli seans (24 saat: Cuma sinyali → Pazar 18:00 başlayan Pazartesi seansı; ETF: ertesi borsa günü). Emirler seans sonunda (expires) iptal / pozisyon kapanır.
+- **Çift kırılım yorumu:** "aynı 1H mumda iki seviye" = mum seviyelerin ARASINDA açılıp ikisini de geçtiyse → testte işlem yok ("test dışı (çift kırılım)"). Mum seviyenin ötesinde (boşlukla) açıldıysa o taraf açılışta dolmuş sayılır; aynı mumda karşı uç stoptur → −1R (senaryo 3 bu şekilde tutarlı: stop = karşı seviye).
+- **Giriş mumunda stop geçerli, hedef sayılmaz;** sonraki mumlarda aynı mumda stop ve hedef → stop önceliği (muhafazakâr).
+- **Seans sonu:** son 1H mumunun kapanışından çıkış; seans bitimine 10 dk kala "seans sonu — pozisyonu kapat" bildirimi (5 dk tarama).
+- **İzleme kredisi:** bekleyen emir / açık pozisyon varken o enstrüman seans boyunca saatlik 1H çekilir (yalnızca günlük kullanılan US500/WTI/AUDUSD için ek); anlık dolum tespiti XAU/QQQ/kripto'da ücretsiz, diğerlerinde bütçe izin verirse 15 dk'da bir fiyat.
+- **N7.3 KAÇTI (elle giriş):** fiyat seviyeyi > 0,25R geçtiyse kartta "KAÇTI — elle giriş yok".
+- **N7.5 spread:** uygulamada kullanıcının enstrüman tablosundaki spread'i ile (ETF'de oranla CFD'ye çevrilmiş R); tarayıcı JSON'da config spread'i ile `spread_ok`.
+- **N7.4 / §10 kayma:** "Doldu / Girdim" ile gerçek giriş girilir; kayma (R) = yön × (gerçek − planlanan) / R. Son 20 ⭐ işlemin ortalaması > 0,05R → N7 ve IB kartlarında sarı "avantaj ince" uyarısı.

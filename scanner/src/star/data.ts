@@ -32,7 +32,8 @@ export function needTf(sc: StarConfig, sym: string): '1h' | '4h' | '1d' {
  * 1500 mumluk tam yüklemedir (aynı 1 kredi). Öncelik: teyit için yeniden çekim / açık pozisyon → kapanış (credits.priority sırası)
  * → ilk derin yükleme (5000, 24 saat piyasalarda 2 sayfa). `budget` aşılmaz; sığmayanlar ertelenir (uyarı).
  */
-export function planStar(sc: StarConfig, now: number, mem: Record<string, FetchMem>, lastBar: (sym: string) => Candle | undefined, firstBar: (sym: string) => Candle | undefined, budget: number, opts: { urgent?: string[]; warnings?: string[] } = {}): PlanStarItem[] {
+export function planStar(sc: StarConfig, now: number, mem: Record<string, FetchMem>, lastBar: (sym: string) => Candle | undefined, firstBar: (sym: string) => Candle | undefined, budget: number, opts: { urgent?: string[]; warnings?: string[]; watch?: string[] } = {}): PlanStarItem[] {
+  const watch = new Set(opts.watch ?? []); // bekleyen OCO emri / açık pozisyon: seans boyunca saatlik 1H
   const K = sc.credits, etf = sc.common.etfSessionNY;
   const urgent = new Set(opts.urgent ?? []);
   const syms = [...K.priority].filter((s) => sc.instruments[s]?.source === 'td').sort((a, b) => Number(urgent.has(b)) - Number(urgent.has(a)));
@@ -42,13 +43,13 @@ export function planStar(sc: StarConfig, now: number, mem: Record<string, FetchM
     const ins = sc.instruments[sym], m = mem[sym] ?? {};
     const last = lastBar(sym);
     const lastEnd = last ? barEnd(ins.cls, last.t, etf) : -Infinity;
-    const due = lastDueClose(ins.cls, needTf(sc, sym), now, sc.common) ?? -Infinity;
+    const due = lastDueClose(ins.cls, watch.has(sym) ? '1h' : needTf(sc, sym), now, sc.common) ?? -Infinity;
     const behind = due > lastEnd;
     const retryOk = now - (m.lastTry ?? 0) >= K.retryMin * MIN;
     const size = Math.min(K.deepOutput, Math.max(K.h1Output, gapBars(ins, lastEnd, now)));
     if (!m.deepDone) { out.push({ sym, kind: 'deep', size: K.deepOutput, why: 'ilk derin yükleme', ...((m.deepPages ?? 0) > 0 && firstBar(sym) ? { endDate: tdDate(firstBar(sym)!.t - HOUR) } : {}) }); continue; }
     if (urgent.has(sym)) { out.push({ sym, kind: 'refetch', size: m.fullDate !== today ? Math.max(size, K.fullOutput) : size, why: 'çift tarama teyidi / açık pozisyon' }); continue; }
-    if (behind && retryOk) out.push(m.fullDate !== today ? { sym, kind: 'full', size: Math.max(size, K.fullOutput), why: 'kapanış + günlük tam yükleme' } : { sym, kind: 'hourly', size, why: `${needTf(sc, sym)} kapanışı` });
+    if (behind && retryOk) out.push(m.fullDate !== today ? { sym, kind: 'full', size: Math.max(size, K.fullOutput), why: 'kapanış + günlük tam yükleme' } : { sym, kind: 'hourly', size, why: `${watch.has(sym) ? '1h (emir/pozisyon izleme)' : needTf(sc, sym)} kapanışı` });
   }
   // Derin yükleme en sona (sinyal taramasını aç bırakmasın)
   const order = { refetch: 0, hourly: 1, full: 1, deep: 3 } as const;

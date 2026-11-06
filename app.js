@@ -160,6 +160,9 @@ async function computeLimits() {
   const balUsd = (Number(s.balance) || 0) * (fxToUsd(s, App.data.state) ?? 0);
   App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result), openRiskPct: openRiskPct(allTrades, balUsd), openCount: allTrades.filter((t) => !t.result).length };
   App.skipped = skipped.map();
+  // §10 / N7.4: son 20 ⭐ işlemin kayma ortalaması (R) > 0,05 → N7 / IB kartlarında sarı uyarı
+  const sl = allTrades.filter((t) => t.star && Number.isFinite(t.slipR)).sort((a, b) => b.t - a.t).slice(0, 20);
+  App.starSlip = { n: sl.length, avg: sl.length ? sl.reduce((a, t) => a + t.slipR, 0) / sl.length : 0 };
   if (!(maxN > 0) && !(maxL > 0)) return;
   const today = trDayStart(Date.now());
   const list = allTrades.filter((t) => t.t >= today);

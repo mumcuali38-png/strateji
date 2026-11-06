@@ -43,6 +43,14 @@ const dataBadge = (x) => { const [c, t] = DATA_TXT[x?.status] ?? DATA_TXT.VERI_Y
 const rTxt = (r) => (r === null || r === undefined || !Number.isFinite(r) ? '—' : `${r > 0 ? '+' : ''}${r.toFixed(1)}R`);
 const rCls = (r) => (r > 0 ? 'pos' : r < 0 ? 'neg' : '');
 
+function ocoCell(id, row) {
+  const j = row?.json ?? {};
+  const y = id === 'N7' ? j.nr7 : j.inside_day;
+  const ok = row?.conditions?.find((c) => c.id === 'sinyal')?.status === 'ok';
+  const lbl = id === 'N7' ? 'dün NR7' : 'dün iç gün';
+  const c = row?.candidate;
+  return `<span class="small">${lbl} ${y ? (ok ? '✅' : '—') : '⏳'}</span>${c ? `<div class="muted small">${id === 'N7' && c.ratio !== null && c.ratio !== undefined ? `bugün %${Math.round(c.ratio * 100)}` : c.cand ? 'bugün aday' : ''}</div>` : ''}`;
+}
 function weekStrip(App, st) {
   const p = st?.portfolio ?? {};
   const warnAt = App.conf.star?.common?.openRiskWarnPct ?? 3;
@@ -65,13 +73,14 @@ function setupCard(App, id, st) {
     const active = out.active;
     return `<tr ${active ? `data-go="#/star/${id}/${sym}" style="cursor:pointer"` : ''}>
       <td><b>${esc(ins?.label ?? sym)}</b>${rat ? `<div class="muted small" style="${rat.old ? 'color:var(--eksik)' : ''}">${esc(rat.text)}</div>` : ''}</td>
-      <td>${cfg.regime ? regimeBadge(ins?.regime) : '<span class="muted small">rejim yok</span>'}</td>
+      <td>${cfg.regime ? regimeBadge(ins?.regime) : ocoCell(id, row)}</td>
       <td>${(row.position?.dir ?? row.dir) === 1 ? '<span class="dirchip l2">▲ LONG</span>' : (row.position?.dir ?? row.dir) === -1 ? '<span class="dirchip s2">▼ SHORT</span>' : '<span class="muted">—</span>'}</td>
       <td>${active ? rowBadge(row) : ins?.status && ins.status !== 'OK' ? dataBadge(ins) : '<span class="badge yok">⚪ sıradaki adımda</span>'}</td>
       <td class="num ${rCls(row.position?.rNow)}">${row.position?.open ? rTxt(row.position.rNow) : '—'}</td></tr>`;
   }).join('');
-  return `<div class="card star-card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(starName(App, id))} <span class="muted small">· ${esc(cfg.title ?? '')}</span></h2><span class="muted small">${esc(cfg.tf === '1d' ? 'Günlük' : cfg.tf?.toUpperCase() ?? '')}</span></div>
-    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Enstrüman</th><th>Rejim</th><th>Yön</th><th>Durum</th><th>Açık R</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const slip = (id === 'N7' || id === 'IB') && (App.starSlip?.avg ?? 0) > 0.05 ? `<div class="warnline">⚠️ Avantaj ince — kayma ort. ${App.starSlip.avg.toFixed(3)}R > 0,05R · broker/spread kontrol</div>` : '';
+  return `<div class="card star-card">${slip}<div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(starName(App, id))} <span class="muted small">· ${esc(cfg.title ?? '')}</span></h2><span class="muted small">${esc(cfg.tf === '1d' ? 'Günlük' : cfg.tf?.toUpperCase() ?? '')}</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Enstrüman</th><th>${cfg.regime ? 'Rejim' : id === 'N7' ? 'NR7' : 'İç gün'}</th><th>Yön</th><th>Durum</th><th>Açık R</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 /** Aylık takvim: gün gün ⭐ R (strateji günü). Yeşil = kâr, kırmızı = zarar; değer yazıyla da gösterilir. */

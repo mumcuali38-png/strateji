@@ -12,6 +12,8 @@ import { freshness, missingBars, newsRisk, removeBadTicks, type Pending } from '
 import { atr, regime, type Regime } from './ind.ts';
 import { existingReserve, starBudget } from './budget.ts';
 import { TREND_IDS, portfolio, runTrend, type SigLog, type StarMsg } from './setups.ts';
+import { OCO_IDS, runOco } from './setups-oco.ts';
+import type { OcoOrder } from './oco.ts';
 import type { StarPos } from './trend.ts';
 
 export interface StarMem {
@@ -28,8 +30,12 @@ export interface StarMem {
   signals: SigLog[];
   /** Son Twelve Data anlık fiyat çağrısı (sembol → zaman) */
   priceAt: Record<string, number>;
+  /** N7 / IB OCO emir kayıtları */
+  oco: OcoOrder[];
+  /** Bekleyen emir / açık pozisyon: seans boyunca saatlik 1H çekilecek enstrümanlar */
+  watch: string[];
 }
-export const emptyMem = (): StarMem => ({ fetch: {}, pending: {}, urgent: [], credit: { date: '', used: 0 }, positions: [], signals: [], priceAt: {} });
+export const emptyMem = (): StarMem => ({ fetch: {}, pending: {}, urgent: [], credit: { date: '', used: 0 }, positions: [], signals: [], priceAt: {}, oco: [], watch: [] });
 
 /** Bir enstrümanın hesaplanmış serileri — kurulum modülleri bunu kullanır */
 export interface StarSeries {
@@ -102,7 +108,7 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
     reserve = existingReserve(conf, now, o.credits);
     const b = starBudget(o.credits, reserve);
     const urgent = mem.urgent.filter((s) => sc.instruments[s]?.source === 'td');
-    const plan = planStar(sc, now, mem.fetch, (s) => store[s][store[s].length - 1], (s) => store[s][0], b.signal + Math.min(urgent.length, b.position - b.signal), { urgent, warnings: o.warnings });
+    const plan = planStar(sc, now, mem.fetch, (s) => store[s][store[s].length - 1], (s) => store[s][0], b.signal + Math.min(urgent.length, b.position - b.signal), { urgent, warnings: o.warnings, watch: mem.watch });
     const before = o.credits.used;
     fetched.push(...await runStarFetch(sc, o.td, plan, store, mem.fetch, now, o.errors));
     mem.credit.used += o.credits.used - before;
@@ -139,7 +145,7 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
   }
   const nr = newsRisk(o.news, now, sc.common);
   const newsLabel = nr.risk ? { title: nr.event!.title, t: nr.event!.t, minutes: nr.minutes } : null;
-  const setups: Record<string, { name: string; title: string; symbols: string[]; rows: Record<string, unknown>; active: boolean }> = Object.fromEntries(STAR_IDS.map((id: StarId) => [id, { name: sc.setups[id].name, title: sc.setups[id].title, symbols: sc.setups[id].symbols, rows: {}, active: TREND_IDS.includes(id) }]));
+  const setups: Record<string, { name: string; title: string; symbols: string[]; rows: Record<string, unknown>; active: boolean }> = Object.fromEntries(STAR_IDS.map((id: StarId) => [id, { name: sc.setups[id].name, title: sc.setups[id].title, symbols: sc.setups[id].symbols, rows: {}, active: TREND_IDS.includes(id) || OCO_IDS.includes(id) }]));
 
   // Anlık fiyat (§5 C, §7.8): kripto → Binance; XAU/QQQ → A–H'nin 5m akışı (≤ 10 dk, ücretsiz);
   // diğer → Twelve Data price (1 kredi): son kontrolde her zaman, açık pozisyonda 15 dk'da bir ve sadece bütçe izin verirse.
@@ -168,6 +174,14 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
     const r = await runTrend(id, { sc, now, series, positions: mem.positions, pending: mem.pending, signals: mem.signals, livePrice, urgent, newsLabel });
     setups[id].rows = r.rows; msgs.push(...r.msgs); Object.assign(charts, r.charts);
   }
+  const watch = new Set<string>();
+  for (const id of OCO_IDS) {
+    const r = await runOco(id, { sc, now, series, orders: mem.oco, positions: mem.positions, pending: mem.pending, signals: mem.signals, livePrice, urgent, watch, newsLabel, symCfg: (x) => conf.symbols[x] ?? sc.newSymbols[x] });
+    setups[id].rows = r.rows; msgs.push(...r.msgs); Object.assign(charts, r.charts);
+    setups[id].active = true;
+  }
+  mem.watch = [...watch];
+  mem.oco = mem.oco.filter((x) => now - x.sessEnd <= 30 * DAY);
   mem.urgent = [...urgent];
   // M2.4 / §6: aynı enstrümanda aynı yönde başka ⭐ pozisyon → bilgi (engellemez)
   for (const [id, x] of Object.entries(setups)) for (const [sym, row] of Object.entries(x.rows) as [string, { dir?: number | null; position?: StarPos | null; sameDir?: string[] }][]) {
