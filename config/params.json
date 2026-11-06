@@ -29,6 +29,7 @@
     "preWindowSymbols": ["XAUUSD"],
     "oneMinuteTR": ["17:25", "19:00"],
     "qqqTR": ["16:30", "20:00"],
+    "qqqSessionNY": ["09:30", "15:45"],
     "weekdays": [1, 2, 3, 4, 5],
     "cryptoWeekend": true,
     "intervalMin": 5,
@@ -38,7 +39,7 @@
     "incrementalOutput": 6,
     "maxIncrementalOutput": 600,
     "bootstrap5m": 2500,
-    "bootstrap1d": 300,
+    "bootstrap1d": 700,
     "bootstrap1dSymbols": ["XAUUSD", "EURUSD", "GBPUSD", "US100"],
     "fxPairs": ["USD/TRY"],
     "directionDaily": ["UUP", "IEF"],
@@ -64,6 +65,14 @@
     "bufferPct": 0.0005, "roundStep": 10, "roundDist": 3, "minRR1": 1, "minRR2": 2, "newsExitMin": 15, "smt": false
   },
   "general": { "maxSignalAgeHours": 6, "maxEntryDistR": 3 },
+  "H": {
+    "symbols": ["XAUUSD", "US100", "BTCUSD"],
+    "adxIn": 25, "adxOut": 22, "adxNone": 20, "adxStrong": 30, "emaHystAtr": 0.1, "ret60": 60, "warmD1": 600, "warm4h": 150,
+    "maxK": 2, "rsiMin": 40, "maxDepth": 0.786, "stopAtr1h": 0.5, "maxStopAtr4h": 1.5, "minRR2": 2, "triggerValid15m": 4,
+    "trigger": "micro", "hgValid1h": 3, "hgOffAtr": 0.05, "trailAtr": 3, "newsBlockMin": 30, "newsBarMin": 15,
+    "volShock": 2, "badTickAtr": 5, "jumpPct": { "XAUUSD": 0.3, "US100": 0.3, "BTCUSD": 1 }, "cooldown1h": 2,
+    "usSession": ["09:45", "15:30"], "fundingBlockMin": 15, "maxDataAgeBars": 2, "confirmMinSec": 200, "finalCheckR": 0.25
+  },
   "history": { "days": 30, "evalMaxBars5m": 288 },
   "traders": { "minMonths": 12, "maxDDPct": 20, "minTrades": 100, "last3mPositive": true, "maxRisk": 6, "minPairTrades90d": 10, "perPair": 10 },
   "us100PerQqq": 41.0

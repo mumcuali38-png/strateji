@@ -60,6 +60,8 @@ export function mountChart(root, { chartData, setup, sessions, layers, onLayers,
   const vol = chartData.volume ? chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false }) : null;
   if (vol) chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
   const ema = chart.addLineSeries({ color: css('--eksik'), lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+  // Ek göstergeler (örn. H: EMA20/EMA50 1H) — chartData.lines: [{ name, tf, color, pts: [[t, v]] }]
+  const extra = (chartData.lines ?? []).map((l) => ({ l, s: chart.addLineSeries({ color: css(l.color || '--info'), lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, title: l.name }) }));
   const canvas = document.createElement('canvas');
   canvas.className = 'chart-overlay';
   box.appendChild(canvas);
@@ -93,6 +95,13 @@ export function mountChart(root, { chartData, setup, sessions, layers, onLayers,
       for (const b of bars) { let v = null; for (let i = pts.length - 1; i >= 0; i--) if (pts[i][0] + 4 * HOUR <= b[0] + 1) { v = pts[i][1]; break; } if (v !== null) data.push({ time: toT(b[0]), value: v }); }
       ema.setData(data);
     } else ema.setData([]);
+    for (const { l, s } of extra) {
+      if (!layers.ema) { s.setData([]); continue; }
+      const pts = l.pts, out = [];
+      let j = 0;
+      for (const b of bars) { while (j + 1 < pts.length && pts[j + 1][0] <= b[0]) j++; if (pts[j] && pts[j][0] <= b[0]) out.push({ time: toT(b[0]), value: pts[j][1] }); }
+      s.setData(out);
+    }
     for (const l of lines) series.removePriceLine(l);
     lines = [];
     for (const o of setup?.overlays ?? []) {

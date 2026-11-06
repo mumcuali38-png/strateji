@@ -11,7 +11,7 @@
  *   positions(): Promise<Position[]>
  * }
  */
-export const MAGIC = { A: 1001, B: 1002, C: 1003, D: 1004, E: 1005, F: 1006, G: 1007 };
+export const MAGIC = { A: 1001, B: 1002, C: 1003, D: 1004, E: 1005, F: 1006, G: 1007, H: 1008 };
 export const MT5_OFF_MSG = 'MT5 bağlantısı henüz aktif değil. Seviyeleri Kopyala ile alabilirsin.';
 
 const disabled = { ok: false, error: 'DISABLED', message: MT5_OFF_MSG };

@@ -31,7 +31,7 @@ export const STATUS = {
 };
 export const COND_ICON = { ok: '✅', fail: '❌', wait: '⏳' };
 /** Stratejinin tam şart tablosu uzunluğu (YOK'ta bazı stratejiler ilk başarısız şartta değerlendirmeyi keser) */
-const TOTAL_COND = { A: 9, B: 10, C: 10, D1: 7, D2: 7, E: 10, F: 9, G: 10 };
+const TOTAL_COND = { A: 9, B: 10, C: 10, D1: 7, D2: 7, E: 10, F: 9, G: 10, H: 11 };
 /** YOK'ta sağlanmayan şart sayısı = tam tablo − sağlanan şartlar (değerlendirilmeyenler de sağlanmamış sayılır) */
 export function unmet(s) {
   const c = s?.conditions ?? [];

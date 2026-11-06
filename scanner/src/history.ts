@@ -5,7 +5,7 @@ import { trackEvent, type Track } from './track.ts';
 export interface HistEvent {
   id: string; key: string; t: number; strategy: StrategyId; symbol: string; dir: Dir; kind: 'TAM' | 'HAZIR';
   sub: string; signalAt?: number; lastEntry?: number;
-  method?: { id: string; label: string; type: 'market' | 'limit'; entry: number; stop: number; tp1: number; tp2?: number; rr: number };
+  method?: { id: string; label: string; type: 'market' | 'limit'; entry: number; stop: number; tp1: number; tp2?: number; rr: number; trailAtr?: number };
   conditions: Pick<Condition, 'label' | 'status' | 'detail'>[];
   overlays: Overlay[];
   /** İşlem takibi (TP1 %50 + BE yönetimiyle), EK §3.6 */
@@ -18,7 +18,7 @@ export function toEvent(s: Setup, kind: 'TAM' | 'HAZIR', now: number): HistEvent
   const m = s.methods.find((x) => x.id === s.defaultMethod) ?? s.methods[0];
   return {
     id: s.id, key: s.key, t: now, strategy: s.strategy, symbol: s.symbol, dir: s.dir, kind, sub: s.sub, signalAt: s.signalAt, lastEntry: s.lastEntry,
-    method: m ? { id: m.id, label: m.label, type: m.type, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2, rr: m.rr } : undefined,
+    method: m ? { id: m.id, label: m.label, type: m.type, entry: m.entry, stop: m.stop, tp1: m.tp1, tp2: m.tp2, rr: m.rr, ...(m.trailAtr ? { trailAtr: m.trailAtr } : {}) } : undefined,
     conditions: s.conditions.map((c) => ({ label: c.label, status: c.status, detail: c.detail })),
     overlays: s.overlays.slice(0, 12),
   };

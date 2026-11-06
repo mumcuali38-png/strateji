@@ -113,15 +113,15 @@ function nav(route) {
 function parseRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   const p0 = parts[0] || 'ozet';
-  if (['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
-  if (['AB', 'C', 'D', 'E', 'F', 'G'].includes(p0)) return { top: p0 };
+  if (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
+  if (['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: p0 };
   return { top: p0, sub: parts[1] };
 }
 async function render() {
   const route = parseRoute();
   topbar(); banners(); nav(route);
   const el = document.getElementById('main');
-  if (!['AB', 'C', 'D', 'E', 'F', 'G'].includes(route.top)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
+  if (!['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(route.top)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);

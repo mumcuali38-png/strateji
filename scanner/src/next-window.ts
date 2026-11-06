@@ -4,13 +4,13 @@
  * Pencereler: hafta içi ön pencere 08:00 TR (XAU), ana pencere 10:00–20:00 TR; hafta sonu kripto açıksa 10:00–20:00.
  */
 import { loadConfig, type Config } from './config.ts';
-import { DAY, MIN, trDayStart, trDow, parseHM, inTrRange } from './time.ts';
+import { DAY, MIN, trDayStart, trDow, parseHM, inTrRange, nySession } from './time.ts';
 
 export function minutesToWindow(conf: Config, now: number): number {
   const S = conf.params.scan;
   const open = (t: number) => {
     const wd = S.weekdays.includes(trDow(t));
-    return ((wd || S.cryptoWeekend) && inTrRange(t, S.windowTR[0], S.windowTR[1])) || (wd && inTrRange(t, S.preWindowTR[0], S.preWindowTR[1]));
+    return ((wd || S.cryptoWeekend) && inTrRange(t, S.windowTR[0], S.windowTR[1])) || (wd && inTrRange(t, S.preWindowTR[0], S.preWindowTR[1])) || (wd && nySession(t, ...(S.qqqSessionNY ?? ['09:30', '15:45']) as [string, string]).open);
   };
   if (open(now)) return 0;
   for (let d = 0; d < 8; d++) {

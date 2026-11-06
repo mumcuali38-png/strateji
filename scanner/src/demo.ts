@@ -62,6 +62,19 @@ for (const [sym, ctx] of Object.entries(ctxs)) writeJSON(`charts/${sym}.json`, b
 const all = Object.values(results).flatMap((b) => Object.values(b).flat());
 const h = updateHistory([], all, now - 3 * HOUR, 30, (s) => data[s].m5, 288);
 writeJSON('history.json', h.hist);
+// Kurulum H (demo: sentetik BTC trend devam senaryosu, iki taramalı teyit sonrası TAM)
+{
+  const { hScenario } = await import('../test/support/h-scenario.ts');
+  const { evalH } = await import('./h/setup.ts');
+  const { hChart } = await import('./h/run.ts');
+  const inp = hScenario(now);
+  const a = evalH(conf, inp, now - 5 * MIN, [], {}, all);
+  const b = evalH(conf, inp, now, [], a.mem, all);
+  const st0 = JSON.parse(JSON.stringify(state));
+  st0.strategies.H = { BTCUSD: [b.setup] };
+  writeJSON('state.json', st0);
+  writeJSON('charts/BTCUSD_H.json', hChart(inp, now));
+}
 // Piyasa Yönü (demo: çevrimdışı örnek dış veriler; mumlar sentetik)
 {
   const { aggregateUTC } = await import('./f/data.ts');

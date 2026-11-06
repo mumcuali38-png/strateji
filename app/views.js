@@ -45,7 +45,7 @@ export function renderOverview(App, el) {
   const nowHtml = tams.length
     ? `<div class="now-strip">${tams.map((s) => tamCard(App, s)).join('')}</div>`
     : `<div class="card now-empty">Şu an TAM setup yok · ${near ? `<span style="color:var(--eksik)">${near} setup 1 şart uzakta</span>` : 'yakın setup yok'}</div>`;
-  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
+  const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((s) => `<tr><th class="s">${STRATS[s].short}<div class="muted small">${esc(STRATS[s].name.split('· ')[1] ?? '')}</div></th>${symbols.map((sym) => {
     const applicable = (App.conf.symbols?.[sym]?.strategies ?? []).includes(s);
     if (!applicable) return '<td><div class="cell na">·</div></td>';
     const b = bestOf(App, s, sym);
@@ -55,7 +55,7 @@ export function renderOverview(App, el) {
     const txt = b.status === 'TAM' ? '🔵 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : unmet(b).total ? `⚪ ${unmet(b).total}` : '⚪';
     return `<td><div class="cell ${cls} ${news ? 'news' : ''}" data-go="#/${s}/${sym}/${encodeURIComponent(b.id)}" title="${esc(b.sub)}">${txt}</div></td>`;
   }).join('')}</tr>`).join('');
-  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
+  const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
   el.innerHTML = `
     <div class="h1">Şu an</div>${nowHtml}
     <div class="card"><h2>Durum ızgarası</h2>
@@ -216,7 +216,7 @@ function setupCard(App, s) {
     ${m.capNote ? `<div class="warnline">⚠️ ${esc(m.capNote)}</div>` : ''}
     ${m.note ? `<div class="muted small" style="margin-top:6px">${esc(m.note)}</div>` : ''}
     ${s.strategy === 'F' || s.strategy === 'G' ? '' : rrWarn}
-    ${fBox(s)}${gBox(s)}
+    ${fBox(s)}${gBox(s)}${hBox(App, s)}
     ${s.invalidation ? `<div class="inval">Geçersiz olur: ${esc(s.invalidation)}</div>` : ''}
     ${(s.warnings ?? []).map((w) => `<div class="warnline">⚠️ ${esc(w)}</div>`).join('')}
     ${s.missing ? `<div class="warnline">⏳ Eksik: ${esc(s.missing)}</div>` : ''}
@@ -239,6 +239,25 @@ function fBox(s) {
   </div>`;
 }
 /** G: günün seviyeleri, bias bileşenleri ve zaman çubuğu (TR) */
+/** H: trend / geri çekilme / tetik / koruma satırları (EK H §13) */
+function hBox(App, s) {
+  const h = s.info?.h;
+  if (s.strategy !== 'H' || !h || !h.trend) return '';
+  const d = App.conf.symbols?.[s.symbol]?.decimals ?? 2;
+  const p = (x) => (Number.isFinite(x) ? Number(x).toFixed(d) : '—');
+  const pb = h.pullback ?? {}, tg = h.trigger ?? {}, pr = h.protection ?? {};
+  const left = tg.validUntil && !h.filled ? Math.max(0, tg.validUntil - Date.now()) : null;
+  const us = h.us100;
+  const ratioWarn = us && Number(App.settings.us100Price) > 0 && Math.abs(us.us100 - Number(App.settings.us100Price)) / Number(App.settings.us100Price) > 0.01;
+  return `<div class="fbox">
+    <b>Trend</b><span>Günlük ✅ · 4H ✅ · ADX ${Number.isFinite(h.trend.adx) ? h.trend.adx.toFixed(1) : '—'} ${h.trend.rising ? '↑' : '↓'}</span>
+    <b>Geri çekilme</b><span>${pb.k ? `${pb.k}. · derinlik %${(pb.depth * 100).toFixed(0)} · RSI min ${Number(pb.rsiMin).toFixed(1)}${pb.ote ? ' · OTE' : ''} · H0 ${p(pb.H0)} / L0 ${p(pb.L0)}` : '—'}</span>
+    <b>Tetik</b><span>${tg.lh !== undefined ? `${tg.type === 'HOLY_GRAIL' ? 'Holy Grail' : '15m kırılım'} ${p(tg.lh)} · ${h.filled ? 'limit DOLDU' : left !== null ? `geçerli <span class="num">${dur(left)}</span>` : '—'}` : '—'}</span>
+    <b>Koruma</b><span>${pr.confirming ? 'Teyit 1/2' : 'Teyit 2/2'} · veri taze${pr.blocks?.length ? ' · ' + pr.blocks.map(esc).join(' · ') : ''}${pr.conflict?.length ? ' · <b>ÇAKIŞMA</b>' : ''}</span>
+    <b>Kalite</b><span>${esc(h.qualityText ?? 'normal')}${h.flags?.length ? ' · ' + h.flags.map(esc).join(', ') : ''}</span>
+    ${us ? `<b>US100</b><span>QQQ ${p(us.qqq)} × ${Number(us.ratio).toFixed(2)} ≈ ${Number(us.us100).toFixed(0)}${ratioWarn ? ' · <b style="color:var(--eksik)">10.13 oran güncelle</b> (Ayarlar → US100 fiyatı ile %1+ fark)' : ''}</span>` : ''}
+  </div>`;
+}
 function gBox(s) {
   const g = s.info?.g;
   if (s.strategy !== 'G' || !g?.levels) return '';

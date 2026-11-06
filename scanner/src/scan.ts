@@ -6,13 +6,14 @@ import { runEngine, type SymData } from './engine.ts';
 import { buildChart, buildState } from './state.ts';
 import { sendAll } from './push.ts';
 import { computeMessages } from './notify.ts';
+import { runH, H_SYMBOLS } from './h/run.ts';
 import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
 import { runTraders, shouldRunTraders, type TradersFile } from './traders.ts';
 import { openSignalIds, trackMessages } from './track.ts';
 import { planFetch } from './plan.ts';
 import { runF } from './f/run.ts';
 import { updateHistory, type HistEvent } from './history.ts';
-import { MIN, TF_MS, inTrRange, trDow, trMinutes, utcDateStr } from './time.ts';
+import { MIN, TF_MS, inTrRange, trDow, trMinutes, utcDateStr, nySession } from './time.ts';
 import type { Candle, NewsFile, Setup } from './types.ts';
 
 const conf = loadConfig();
@@ -28,7 +29,10 @@ const inWindow = inTrRange(now, S.windowTR[0], S.windowTR[1]);
 const weekendCrypto = !weekday && S.cryptoWeekend;
 // Ön pencere (hafta içi 08:00–10:00 TR): sadece XAU (Kurulum G — Asya seviyeleri ve süpürme penceresi kaçmasın)
 const inPre = weekday && !inWindow && inTrRange(now, S.preWindowTR[0], S.preWindowTR[1]);
-const active = ((weekday || weekendCrypto) && inWindow) || inPre;
+// Uzatılmış pencere (hafta içi 20:00 TR sonrası, NY seansı açıkken): sadece US100 (Kurulum H) + BTC (Binance)
+const qqqSess = nySession(now, ...(S.qqqSessionNY ?? ['09:30', '15:45']) as [string, string]);
+const inExt = weekday && !inWindow && !inPre && qqqSess.open;
+const active = ((weekday || weekendCrypto) && inWindow) || inPre || inExt;
 console.log(`Tarama ${new Date(now).toISOString()} · TR ${String(Math.floor(trMinutes(now) / 60)).padStart(2, '0')}:${String(trMinutes(now) % 60).padStart(2, '0')} · pencere ${inPre ? 'ÖN PENCERE (XAU)' : active ? 'AÇIK' : 'kapalı'}${force ? ' · FORCE' : ''}`);
 
 if (pushTest) {
@@ -99,7 +103,8 @@ const news = readJSON<NewsFile | null>('news.json', null);
 let hist = readJSON<HistEvent[]>('history.json', []);
 const prior = hist.filter((h) => h.kind === 'TAM').map((h) => ({ strategy: h.strategy, symbol: h.symbol, id: h.id, t: h.signalAt ?? h.t }));
 // Hafta sonu (kripto açık): sadece BTC/ETH değerlendirilir; diğerlerinin Cuma verisiyle eski sinyal üretmesi engellenir
-const evalData = inPre ? Object.fromEntries(Object.entries(data).filter(([s]) => S.preWindowSymbols.includes(s))) : weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
+const evalData = inExt ? Object.fromEntries(Object.entries(data).filter(([s]) => s === 'US100')) : inPre ? Object.fromEntries(Object.entries(data).filter(([s]) => S.preWindowSymbols.includes(s))) : weekday ? data : Object.fromEntries(Object.entries(data).filter(([s]) => conf.symbols[s]?.crypto));
+if (inExt) warnings.push('Uzatılmış pencere: NY seansı boyunca sadece US100 (Kurulum H) ve BTC taranıyor');
 if (inPre) warnings.push('Ön pencere (08:00–10:00 TR): sadece XAU taranıyor — diğerleri 10:00\'da');
 if (!weekday) warnings.push('Hafta sonu: sadece BTC/ETH taranıyor');
 const { results, ctxs, errors: engErr } = runEngine(conf, now, evalData, news?.events ?? [], prior);
@@ -108,6 +113,14 @@ results.F = { BTCUSD: fRun.setups };
 if (fRun.errors.length) errors.push(`F veri: ${fRun.errors.join(' · ')}`);
 errors.push(...engErr.filter((e) => !Object.keys(credits.unavailable ?? {}).some((u) => e.startsWith(`${u}:`))));
 for (const u of Object.keys(credits.unavailable ?? {}).filter((x) => conf.symbols[x])) if (!warnings.some((w) => w.includes(conf.symbols[u]?.label ?? u))) warnings.push(`${conf.symbols[u]?.label ?? u} Twelve Data ücretsiz planında yok — taranmıyor`);
+// --- Kurulum H (trend devam; 5 dk tarama + §10 hatalı sinyal koruması) ---
+{
+  const others = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());
+  const hSyms = H_SYMBOLS.filter((s) => s === 'BTCUSD' || evalData[s]);
+  const hRun = await runH(conf, now, { data: evalData, news: news?.events ?? [], others, hist, symbols: hSyms, btcM5: fRun.m5 });
+  results.H = hRun.setups;
+  errors.push(...hRun.errors);
+}
 const all: Setup[] = Object.values(results).flatMap((bySym) => Object.values(bySym).flat());
 
 // --- Bildirimler ---
@@ -116,7 +129,7 @@ const notified = readJSON<Record<string, number>>('notified.json', {});
 const msgs = computeMessages(conf, all, prev, notified, news?.events ?? [], now, openSignalIds(hist));
 
 // --- Geçmiş + işlem takibi ---
-const candlesOf = (sym: string, strategy?: string): Candle[] => (strategy === 'F' ? fRun.m5 : data[sym]?.m5 ?? []);
+const candlesOf = (sym: string, strategy?: string): Candle[] => (strategy === 'F' || (strategy === 'H' && sym === 'BTCUSD') ? fRun.m5 : data[sym]?.m5 ?? []);
 const h = updateHistory(hist, all, now, P.history.days, candlesOf, P.history.evalMaxBars5m);
 hist = h.hist;
 msgs.push(...trackMessages(conf, hist, notified, news?.events ?? [], now));
