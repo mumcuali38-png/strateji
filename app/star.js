@@ -242,3 +242,24 @@ function weeklyReport(App, st) {
 export function bindStar(App, el) {
   el.querySelector('[data-star-durum]')?.addEventListener('click', () => copy(portfolioStatusText(App)));
 }
+
+/** Özet ekranı: ⭐ satırları (kurulum × enstrüman rozetleri) */
+export function starOverview(App) {
+  const sc = App.conf.star, st = App.data.star;
+  if (!sc) return '';
+  if (!st) return '<div class="card"><h2>⭐ Portföy</h2><div class="muted">⭐ tarama verisi henüz yok — ilk ⭐ taramasından sonra burada görünür.</div></div>';
+  const rows = STAR_IDS.map((id) => {
+    const cfg = sc.setups[id], out = st.setups?.[id]?.rows ?? {};
+    const cells = cfg.symbols.map((sym) => {
+      const r = out[sym], lbl = (st.instruments?.[sym]?.label ?? sym).split(' ')[0];
+      const d = r?.position?.dir ?? r?.dir;
+      const dir = d === 1 ? '<span style="color:var(--long)">▲</span> ' : d === -1 ? '<span style="color:var(--short)">▼</span> ' : '';
+      return `<span class="chip" data-go="#/star/${id}/${sym}" style="cursor:pointer">${dir}${esc(lbl)} ${r ? rowBadge(r).replace('class="badge', 'class="badge sm') : '<span class="badge sm yok">—</span>'}</span>`;
+    }).join('');
+    return `<tr><th class="s" style="white-space:nowrap" data-go="#/star/${id}/${cfg.symbols[0]}">${esc(starName(App, id))}<div class="muted small">${esc(cfg.title.split(' (')[0])}</div></th><td><div class="row" style="flex-wrap:wrap;gap:6px">${cells}</div></td></tr>`;
+  }).join('');
+  const p = st.portfolio ?? {};
+  return `<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">⭐ Portföy</h2>
+    <div class="muted small">Bu hafta <b class="num ${rCls(p.weekR)}">${rTxt(p.weekR ?? 0)}</b> · açık ${(p.open ?? []).length} · son ⭐ tarama ${tr(st.lastScan)}</div></div>
+    <div class="tbl-wrap"><table class="tbl">${rows}</table></div></div>`;
+}
