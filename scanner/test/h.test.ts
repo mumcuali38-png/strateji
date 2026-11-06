@@ -194,3 +194,14 @@ test('H eksik mum (§10.7): yaz saatindeki günlük ara (21:00 UTC) ve hafta son
   const holed = ts.filter((t) => t !== Date.UTC(2026, 9, 27, 14));
   assert.equal(missingBars('XAUUSD', mkH(holed)), 1);
 });
+
+test('H §10.5 ile §10.7 çakışmaz: kötü tick olarak çıkarılan mum "eksik veri" sayılmaz', () => {
+  const now = Date.UTC(2026, 10, 4, 12, 0);
+  const inp = hScenario(now);
+  const i = inp.h1.length - 40;
+  inp.h1[i] = { ...inp.h1[i], h: inp.h1[i].o + 3000, c: inp.h1[i].o + 2500 };
+  inp.h1[i + 1] = { ...inp.h1[i + 1], o: inp.h1[i].c, c: inp.h1[i].c - 2000, l: inp.h1[i].c - 2100, h: inp.h1[i].c + 10 };
+  const r = evalH(conf(), inp, now, [], {}, []);
+  assert.doesNotMatch(r.setup.conditions[0].detail, /10\.7/);
+  assert.match(r.setup.conditions[0].detail, /10\.5: \d+ kötü tick/);
+});
