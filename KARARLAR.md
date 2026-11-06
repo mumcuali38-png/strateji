@@ -324,3 +324,7 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - IB.6: N7 ile aynı gün sinyal veremez (NR7 olan iç gün IB'den düşer); farklı günlerin sinyalleriyle aynı enstrümanda iki pozisyon izinli (engel yok, kartta "aynı yön" bilgisi).
 - §8 komutları uygulamada metin olarak: "⭐ durum" (Portföy) ve "M2/T4/N7/IB/TD durum" (ayrıntı ekranı) — Durum → şart tablosu → setup/eksik → haber, saatler TR.
 - §10 haftalık rapor: kurulum başına bu haftanın sanal R'si ve testteki haftalık ortalamayla (son 1 yıl R / 52) fark.
+
+## ⭐ canlı ilk tarama düzeltmesi (06.11.2026)
+
+- Twelve Data XAU/USD ve döviz 1H verisinde hafta sonu mumları da geliyor (yok sayılıyor) → 5000 mum ≈ 150 seans günü. 1H depo sınırı 7000'de derin yüklemenin 2. sayfası kırpılıyordu (210 gün; TD için 260 gerekli). Sınır 12000'e çıkarıldı; `deepVersion` ile 24 saat piyasalarda (XAU, USDJPY, AUDUSD) derin yükleme bir kez daha yapılır (≈ 6 kredi).

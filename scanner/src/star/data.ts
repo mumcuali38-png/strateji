@@ -14,7 +14,7 @@ import { setupsOf } from './config.ts';
 export const readStar1h = (sym: string): Candle[] => unpack(readJSON<number[][]>(`star/candles/${sym}_1h.json`, []));
 export const writeStar1h = (sym: string, c: Candle[]): void => writeJSON(`star/candles/${sym}_1h.json`, pack(c));
 
-export interface FetchMem { lastTry?: number; fullDate?: string; deepPages?: number; deepDone?: boolean }
+export interface FetchMem { lastTry?: number; fullDate?: string; deepPages?: number; deepDone?: boolean; deepV?: number }
 export interface PlanStarItem { sym: string; kind: 'refetch' | 'hourly' | 'full' | 'deep'; size: number; endDate?: string; why: string }
 
 /** Twelve Data end_date biçimi (UTC) */
@@ -47,6 +47,8 @@ export function planStar(sc: StarConfig, now: number, mem: Record<string, FetchM
     const behind = due > lastEnd;
     const retryOk = now - (m.lastTry ?? 0) >= K.retryMin * MIN;
     const size = Math.min(K.deepOutput, Math.max(K.h1Output, gapBars(ins, lastEnd, now)));
+    // Derin yükleme sürümü değiştiyse (ör. depo sınırı büyüdü) 24 saat piyasalarda yeniden yapılır
+    if (m.deepDone && (m.deepV ?? 1) !== (K.deepVersion ?? 1) && ins.cls !== 'etf') { m.deepDone = false; m.deepPages = 0; }
     if (!m.deepDone) { out.push({ sym, kind: 'deep', size: K.deepOutput, why: 'ilk derin yükleme', ...((m.deepPages ?? 0) > 0 && firstBar(sym) ? { endDate: tdDate(firstBar(sym)!.t - HOUR) } : {}) }); continue; }
     if (urgent.has(sym)) { out.push({ sym, kind: 'refetch', size: m.fullDate !== today ? Math.max(size, K.fullOutput) : size, why: 'çift tarama teyidi / açık pozisyon' }); continue; }
     if (behind && retryOk) out.push(m.fullDate !== today ? { sym, kind: 'full', size: Math.max(size, K.fullOutput), why: 'kapanış + günlük tam yükleme' } : { sym, kind: 'hourly', size, why: `${watch.has(sym) ? '1h (emir/pozisyon izleme)' : needTf(sc, sym)} kapanışı` });
@@ -81,7 +83,7 @@ export async function runStarFetch(sc: StarConfig, td: TwelveData, plan: PlanSta
     if (p.kind === 'deep') {
       m.deepPages = (m.deepPages ?? 0) + 1;
       const pages = ins.cls === 'etf' ? sc.credits.deepPagesEtf : sc.credits.deepPages24h;
-      if (m.deepPages >= pages || r.candles.length < p.size * 0.9) { m.deepDone = true; m.fullDate = utcDateStr(now); }
+      if (m.deepPages >= pages || r.candles.length < p.size * 0.9) { m.deepDone = true; m.deepV = sc.credits.deepVersion ?? 1; m.fullDate = utcDateStr(now); }
     }
   }
   return fetched;

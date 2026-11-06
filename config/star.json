@@ -19,7 +19,7 @@
   },
   "credits": {
     "h1Output": 3, "fullOutput": 1500, "deepOutput": 5000, "deepPages24h": 2, "deepPagesEtf": 1,
-    "keep1h": 7000, "retryMin": 10, "priceMin": 5, "priceSlowMin": 15, "slowAtPct": 90,
+    "keep1h": 12000, "deepVersion": 2, "retryMin": 10, "priceMin": 5, "priceSlowMin": 15, "slowAtPct": 90,
     "priority": ["XAUUSD", "US100", "USDJPY", "US500", "US30", "XAGUSD", "AUDUSD", "WTI"]
   },
   "instruments": {
