@@ -51,7 +51,9 @@ function topbar() {
   const sc = App.conf.params?.scan ?? { staleWarnMin: 15, staleErrorMin: 30 };
   const inWin = scanWindowOpen(now);
   const cls = !st ? 'err' : !inWin ? 'ok' : age > sc.staleErrorMin * MIN ? 'err' : age > sc.staleWarnMin * MIN ? 'warn' : 'ok';
-  const used = st?.credits?.used ?? 0, stop = st?.credits?.hardStop ?? 760;
+  // Sayaç UTC 00:00'da (03:00 TR) sıfırlanır; günün ilk taramasından önce dünkü sayı gösterilmesin
+  const today = st?.credits?.date === new Date(now).toISOString().slice(0, 10);
+  const used = today ? st?.credits?.used ?? 0 : 0, stop = (today ? st?.credits?.hardStop : null) ?? App.conf.params?.scan?.creditHardStop ?? 760;
   const pctc = Math.min(100, (used / stop) * 100);
   document.getElementById('topbar').innerHTML = `
     <div class="grp"><span class="clock">🕐 ${tr(now)} <span class="muted">TR</span></span><span class="muted num">${ny(now)} NY</span></div>

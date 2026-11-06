@@ -235,3 +235,10 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
   - Veri Piyasa Yönü'nün saatlik önbelleğinden okunur, ek istek yapılmaz.
   - eToro trader'ı yoksa uyum satırı ve uyumsuzluk bildirimi (≥ %70 ters yön) BTC/ETH için bu büyük trader oranını kullanır.
   - Uyum satırında %60 ve üzeri "uyumlu", %40 ve altı "uyumsuz" sayılır.
+
+## Tarama başlangıcı — GitHub zamanlama gecikmesi (06.11.2026)
+
+- **Sorun:** GitHub'ın zamanlanmış tetikleri bu depoda saatte bire kadar gecikiyor. 06.11'de 08:00 TR ön penceresi tetiklenmedi: gece F ve haber işleri ~saatte bir çalıştı, ana tarama hiç başlamadı.
+- **Erken başlatma:** pencere dışında çalışan `scan-f` işi, bir sonraki pencereye ≤ 150 dk kaldıysa ve sırada ya da çalışan ana tarama yoksa `scan.yml`'yi `wait=true` ile tetikler. Bu iş pencere açılana kadar bekler, beklerken 15 dk'da bir F taraması yapar, tam açılışta (08:00 / 10:00 TR) taramaya başlar. İş süresi sınırı 360 dk; bekleme süresi döngüden düşülür.
+- **Kendini devam ettirme:** döngü süre sınırına geldiğinde pencere hâlâ açıksa `scan.yml`'yi kendisi yeniden tetikler. Aynı concurrency grubunda sıraya girer ve hemen ardından başlar; zamanlanmış tetik beklenmez.
+- **Kredi göstergesi:** günün ilk taramasından önce dünkü sayı yerine 0 gösterilir (sayaç UTC 00:00 = 03:00 TR'de sıfırlanır).

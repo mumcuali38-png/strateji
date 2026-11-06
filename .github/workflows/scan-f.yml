@@ -14,6 +14,7 @@ on:
         default: true
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: data-branch
   cancel-in-progress: false
@@ -46,4 +47,13 @@ jobs:
           ETORO_USER_KEY: ${{ secrets.ETORO_USER_KEY }}
           FORCE: ${{ inputs.force && '1' || '0' }}
         run: npm run scan-f
+      - name: Ana taramayı zamanında başlat (GitHub zamanlaması gecikebiliyor)
+        working-directory: scanner
+        run: |
+          m=$(npx --no-install tsx src/next-window.ts)
+          echo "Sonraki tarama penceresi: $m dk"
+          if [ "$m" -gt 0 ] && [ "$m" -le 150 ]; then
+            n=$(gh run list --workflow scan.yml --limit 20 --json status -q '[.[] | select(.status != "completed")] | length')
+            if [ "$n" = 0 ]; then gh workflow run scan.yml --ref "$GITHUB_REF_NAME" -f force=false -f wait=true && echo "Ana tarama tetiklendi — açılışı bekleyecek"; else echo "Ana tarama zaten sırada/çalışıyor"; fi
+          fi
       - run: bash scripts/data-branch.sh push "F taraması"
