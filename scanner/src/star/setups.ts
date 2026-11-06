@@ -10,7 +10,7 @@ import { evalTrend, trackPos, type Bar, type StarPos, type TrendParams, type Tre
 import type { StarSeries } from './run.ts';
 
 /** Etkin trend kurulumları (adım adım eklenir) */
-export const TREND_IDS: StarId[] = ['M2', 'T4S'];
+export const TREND_IDS: StarId[] = ['M2', 'T4S', 'TD'];
 
 export function trendParams(sc: StarConfig, id: StarId): TrendParams {
   const s = sc.setups[id], p = s.p;
@@ -18,6 +18,7 @@ export function trendParams(sc: StarConfig, id: StarId): TrendParams {
     id, name: s.name, tf: s.tf, entryN: p.entryN, exitN: p.exitN, stopAtr: p.stopAtr, kactiAtr: p.kactiAtr,
     t1R: p.t1R, t1Fraction: p.t1Fraction, kactiT1Frac: p.kactiT1Frac, warmBars: p.warmBars ?? p.warmDays ?? 260,
     exitAt: 'nextOpen',
+    ...(id === 'TD' ? { openGapAtr: p.kactiAtr } : {}),
   };
 }
 export const TF_MS = { '1h': HOUR, '4h': 4 * HOUR, '1d': DAY } as const;
@@ -52,6 +53,11 @@ export function trendMessages(p: TrendParams, pos: StarPos, row: TrendRow | null
     if (e.k === 'T1') out.push({ key: `${pos.id}+T1`, title: `💰 ${p.name} · ${S} T1`, body: `${p.name}: T1 — %50 kapat, stop girişe (${fx(pos.entry)})`, url, loud: true, setup: p.id, symbol: pos.sym });
     if (e.k === 'STOP' || e.k === 'BE_STOP') out.push({ key: `${pos.id}+STOP`, title: `⛔ ${p.name} · ${S} STOP`, body: `${p.name}: ${S} ${e.k === 'BE_STOP' ? 'giriş seviyesinde stop' : 'stop'} — R ${(e.r ?? 0).toFixed(2)}`, url, loud: true, setup: p.id, symbol: pos.sym });
     if (e.k === 'CIKIS' && p.exitAt === 'close') out.push({ key: `${pos.id}+CIKIS`, title: `⛔ ${p.name} · ${S} ÇIKIŞ`, body: `${p.name}: ${S} çıkış — ${pos.reason}, R ${(e.r ?? 0).toFixed(2)}`, url, loud: true, setup: p.id, symbol: pos.sym });
+  }
+  for (const e of pos.events) if (e.k === 'KACTI' && fresh(e.t)) out.push({ key: `${pos.id}+KACTI`, title: `⛔ ${p.name} · ${S} KAÇTI`, body: `${p.name}: ${S} ${pos.reason} — emir verme, sinyal iptal`, url, loud: true, setup: p.id, symbol: pos.sym });
+  // TD.3: pozisyon açıkken her Cuma "hafta sonu taşınıyor" bilgisi (engel değil)
+  if (p.id === 'TD' && pos.open && pos.entryT !== null && new Date(now + NY_OFFSET).getUTCDay() === 5) {
+    out.push({ key: `${pos.id}+CUMA+${stratDate(now)}`, title: `ℹ️ ${p.name} · ${S} hafta sonu`, body: `${p.name}: ${S} pozisyonu hafta sonu taşınıyor (bilgi — engel değil). Oran tazeliğini kontrol et.`, url, loud: false, setup: p.id, symbol: pos.sym });
   }
   if (pos.exitPending !== null && fresh(pos.exitPending)) {
     const r = pos.rNow;
@@ -93,6 +99,7 @@ export async function runTrend(id: StarId, d: TrendDeps): Promise<{ rows: Record
         tracked = trackPos({ ...open, liveStopT: now }, s.ins.cls, s.h1, bars, pp, now, lp.price, etf);
       }
       d.positions[pi] = tracked;
+      if (tracked.events.some((e) => e.k === 'KACTI')) { const sl = d.signals.find((x) => x.id === tracked.id); if (sl && sl.status === 'TAM') { sl.status = 'KACTI'; sl.note = tracked.reason ?? undefined; } }
       msgs.push(...trendMessages(pp, tracked, null, dec, now));
       open = tracked.open ? tracked : null;
     }
@@ -136,7 +143,7 @@ export async function runTrend(id: StarId, d: TrendDeps): Promise<{ rows: Record
         [donKey]: { [`du${nE}`]: L.up, [`da${nE}`]: L.dn, [`du${nX}`]: L.exitUp, [`da${nX}`]: L.exitDn },
         [tfKey]: L.atr,
         order: row.order ? { ...row.order, risk_pct: sc.common.riskPct, lots: null } : null,
-        position: pos ? { open: true, entry: pos.entry ?? pos.ref, stop: pos.stop, r_now: pos.rNow, ...(p.t1R ? { t1_done: pos.t1Done, stop_at_be: pos.stopAtBe } : {}) } : { open: false, entry: null, stop: null, r_now: null },
+        position: pos ? { open: true, entry: pos.entry ?? pos.ref, stop: pos.stop, r_now: pos.rNow, ...(p.t1R ? { t1_done: pos.t1Done, stop_at_be: pos.stopAtBe } : {}), ...(id === 'TD' ? { days_open: pos.entryT ? Math.floor((now - pos.entryT) / DAY) : 0 } : {}) } : { open: false, entry: null, stop: null, r_now: null },
         protection: { double_scan_ok: row.scanSeq === 2, fresh: s.fresh, final_check: row.finalCheck, blocked_by: row.blockedBy },
       },
     };

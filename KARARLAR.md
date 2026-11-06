@@ -296,3 +296,12 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - **T4.2 KAÇTI:** fiyat > 0,5 × ATR14_4H ilerlediyse veya sinyal kapanışından hesaplanan T1'e (1,5R) mesafenin %50'sini geçtiyse.
 - **T4.3 / T4.4 onayları cihazda:** "T1 limit emri girildi mi?" ve "Stopu girişe çektim" onayları Ayarlar'da (localStorage) tutulur; tarayıcı (Actions) bu onayları göremez. T1 bildirimi push ile bir kez gider; onaylanmazsa uygulama açıkken her 5 dk hatırlatma + Portföy'de kırmızı şerit.
 - **Toplam R:** T1 alındıysa 0,5 × 1,5 + 0,5 × (çıkış − giriş)/R; T1 sonrası girişte stop → +0,75R.
+
+## ⭐TD — 4. adım (06.11.2026)
+
+- Günlük mum = ⭐ seans günü (24 saat 18:00 → 17:00 strateji saati, ETF borsa günü); 260 seans günü ısınma.
+- **Giriş:** teyit kapanıştan sonra, emir ertesi açılışta (24 saat: 18:00 strateji saati; ETF: borsa açılışı). Sanal giriş = ertesi seansın ilk 1H açılışı.
+- **TD.2:** açılış fiyatı sinyal kapanışından yön lehine > 1 × ATR14_D ise KAÇTI → işlem açılmaz, R sayılmaz, "⛔ KAÇTI" bildirimi (TAM bildirimi akşamdan gitmiş olabilir).
+- **Çıkış:** 24 saat piyasalarda günlük kapanış fiyatından ("teyitten sonra hemen"), ETF'lerde ertesi açılışta. Aynı gün stop ve T1 → stop önceliği (günlük mumda).
+- **TD.3:** açık pozisyonda her Cuma sessiz "hafta sonu taşınıyor" bilgisi; ayrıntı ekranında açık gün sayısı. Oran tazeliği ortak §7.10 ile (Ayarlar > ⭐).
+- **TD.4:** T1 / BE onayları T4-S ile aynı.

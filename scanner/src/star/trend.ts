@@ -15,8 +15,10 @@ export interface TrendParams {
   warmBars: number;
   /** Donchian çıkışı: 'nextOpen' = sonraki 1H açılışı (testte), 'close' = kapanış fiyatı (TD 24 saat: "teyitten sonra hemen") */
   exitAt: 'nextOpen' | 'close';
+  /** TD.2: girişte (ertesi açılış) fiyat sinyal kapanışından yön lehine > openGapAtr × ATR ise KAÇTI — işlem yok */
+  openGapAtr?: number;
 }
-export type PosEvent = { k: 'GIRIS' | 'T1' | 'STOP' | 'CIKIS' | 'BE_STOP'; t: number; price: number; r?: number };
+export type PosEvent = { k: 'GIRIS' | 'T1' | 'STOP' | 'CIKIS' | 'BE_STOP' | 'KACTI'; t: number; price: number; r?: number };
 export interface StarPos {
   id: string; setup: StarId; sym: string; dir: 1 | -1;
   signalT: number; signalEnd: number; signalClose: number; atr: number; ref: number; notifiedAt: number;
@@ -46,6 +48,12 @@ export function trackPos(pos: StarPos, cls: StarCls, h1: Candle[], bars: Bar[], 
   const d = pos.dir, entry = first.o, R = p.stopAtr * pos.atr;
   P.entry = entry; P.entryT = first.t; P.R = R; P.stop0 = entry - d * R; P.stop = P.stop0;
   P.t1 = p.t1R ? entry + d * p.t1R * R : null;
+  if (p.openGapAtr !== undefined && d * (entry - pos.signalClose) > p.openGapAtr * pos.atr) {
+    // TD.2 açılış son kontrolü: büyük boşluk → KAÇTI (işlem açılmaz, R sayılmaz)
+    P.open = false; P.closedT = first.t; P.reason = `KAÇTI — açılış ${entry} sinyal kapanışından ${(d * (entry - pos.signalClose) / pos.atr).toFixed(2)} ATR ileride (eşik ${p.openGapAtr} ATR)`;
+    P.events.push({ k: 'KACTI', t: first.t, price: entry });
+    return P;
+  }
   P.events.push({ k: 'GIRIS', t: first.t, price: entry });
   const frac = p.t1Fraction ?? 0;
   const result = (exit: number) => (P.t1Done ? frac * (p.t1R ?? 0) + (1 - frac) * (d * (exit - entry)) / R : (d * (exit - entry)) / R);

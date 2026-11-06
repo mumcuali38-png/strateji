@@ -107,12 +107,12 @@ function positionHtml(App, id, row) {
   const p = row.position;
   if (!p?.open) {
     const c = row.lastClosed;
-    return c ? `<div class="card"><h3>Son ${esc(starName(App, id))} işlemi</h3><div>${dirHtml(c.dir)} ${dateTR(c.closedT)} ${tr(c.closedT)} TR · ${esc(c.reason ?? '')} · <b class="num ${c.r > 0 ? 'pos' : 'neg'}">${c.r > 0 ? '+' : ''}${c.r?.toFixed(2)}R</b></div></div>` : '';
+    return c ? `<div class="card"><h3>Son ${esc(starName(App, id))} işlemi</h3><div>${dirHtml(c.dir)} ${dateTR(c.closedT)} ${tr(c.closedT)} TR · ${esc(c.reason ?? '')} · ${c.r === null || c.r === undefined ? '<b>işlem yok</b>' : `<b class="num ${c.r > 0 ? 'pos' : 'neg'}">${c.r > 0 ? '+' : ''}${c.r.toFixed(2)}R</b>`}</div></div>` : '';
   }
   const dec = App.data.star?.instruments?.[row.position.sym]?.decimals ?? 2;
   const f = (x) => price(x, dec);
   return `<div class="card live ${p.dir === 1 ? 'dl' : 'ds'}"><h3>Açık pozisyon (sanal, testteki gibi) ${dirHtml(p.dir)}</h3>
-    <div class="ogrid"><span class="k">Giriş</span><span class="v">${f(p.entry ?? p.ref)}</span><span class="d">${p.entryT ? `${tr(p.entryT)} TR açılış` : 'sonraki açılış bekleniyor'}</span>
+    <div class="ogrid"><span class="k">Giriş</span><span class="v">${f(p.entry ?? p.ref)}</span><span class="d">${p.entryT ? `${dateTR(p.entryT)} ${tr(p.entryT)} TR açılış${p.setup === 'TD' ? ` · ${Math.floor((Date.now() - p.entryT) / 86400000)} gündür açık` : ''}` : 'sonraki açılış bekleniyor'}</span>
     <span class="k">Stop</span><span class="v">${f(p.stop)}</span><span class="d">${p.stopAtBe ? '<b>BE</b>' : ''}</span>
     ${p.t1 ? `<span class="k">T1</span><span class="v">${f(p.t1)}</span><span class="d">${p.t1Done ? '✅' : '⏳'}</span>` : ''}
     <span class="k">Anlık R</span><span class="v ${p.rNow > 0 ? 'pos' : p.rNow < 0 ? 'neg' : ''}">${p.rNow === null ? '—' : `${p.rNow > 0 ? '+' : ''}${p.rNow.toFixed(2)}R`}</span><span class="d"></span>
