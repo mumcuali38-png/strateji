@@ -317,3 +317,10 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - **N7.3 KAÇTI (elle giriş):** fiyat seviyeyi > 0,25R geçtiyse kartta "KAÇTI — elle giriş yok".
 - **N7.5 spread:** uygulamada kullanıcının enstrüman tablosundaki spread'i ile (ETF'de oranla CFD'ye çevrilmiş R); tarayıcı JSON'da config spread'i ile `spread_ok`.
 - **N7.4 / §10 kayma:** "Doldu / Girdim" ile gerçek giriş girilir; kayma (R) = yön × (gerçek − planlanan) / R. Son 20 ⭐ işlemin ortalaması > 0,05R → N7 ve IB kartlarında sarı "avantaj ince" uyarısı.
+
+## ⭐IB — 6. adım (06.11.2026)
+
+- IB, N7 ile aynı OCO motorunu kullanır; fark sinyal tanımı: iç gün (kesin, fiyat adımına yuvarlanmış — XAU/ETF/BTC 0,01, AUDUSD 0,00001) ve NR7 değil; dün ve bugün geçerli seans günü, NR7 kontrolü için 7 geçerli gün.
+- IB.6: N7 ile aynı gün sinyal veremez (NR7 olan iç gün IB'den düşer); farklı günlerin sinyalleriyle aynı enstrümanda iki pozisyon izinli (engel yok, kartta "aynı yön" bilgisi).
+- §8 komutları uygulamada metin olarak: "⭐ durum" (Portföy) ve "M2/T4/N7/IB/TD durum" (ayrıntı ekranı) — Durum → şart tablosu → setup/eksik → haber, saatler TR.
+- §10 haftalık rapor: kurulum başına bu haftanın sanal R'si ve testteki haftalık ortalamayla (son 1 yıl R / 52) fark.

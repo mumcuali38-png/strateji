@@ -10,7 +10,7 @@ import { copy, modal, toast } from './ui.js';
 import { trades, skipped } from './store.js';
 import { mountChart } from './chart.js';
 import { chart as loadChart } from './data.js';
-import { starName, starRatio, STAR_IDS, starConfirm, setStarConfirm } from './star.js';
+import { starName, starRatio, STAR_IDS, starConfirm, setStarConfirm, setupStatusText } from './star.js';
 
 const ST = {
   TAM: ['tam', '🔵 TAM'], TAM_BEKLE: ['bekle', '🟠 TAM – BEKLE (teyit 1/2)'], EKSIK: ['eksik', '🟡 EKSİK'], YOK: ['yok', '⚪ YOK'],
@@ -201,7 +201,7 @@ export function renderStarDetail(App, el, id, sym) {
   const show = oco ? row.order && ['BEKLIYOR', 'DOLDU'].includes(row.order.state) : row.status === 'TAM' || row.status === 'TAM_BEKLE' || (row.position?.open && !row.position.entryT) || (row.position?.open && row.position.exitPending);
   const wtiBlock = ins.cls === 'etf' && starRatio(App, sym).block;
   el.innerHTML = `<div class="chips">${setChips}</div><div class="chips" style="margin-top:6px">${chips}</div>
-    <div class="row" style="justify-content:space-between;margin:10px 0"><div class="h1" style="margin:0">${esc(starName(App, id))} · ${esc(ins.label ?? sym)} ${dirHtml(row.position?.dir ?? row.dir)}</div>${wtiBlock ? '<span class="badge yok">⏳ oran eski (WTI)</span>' : rowBadge(row)}</div>
+    <div class="row" style="justify-content:space-between;margin:10px 0"><div class="h1" style="margin:0">${esc(starName(App, id))} · ${esc(ins.label ?? sym)} ${dirHtml(row.position?.dir ?? row.dir)} <button class="btn" data-setup-durum style="margin-left:8px">⧉ ${esc(id === 'T4S' ? 'T4' : id)} durum</button></div>${wtiBlock ? '<span class="badge yok">⏳ oran eski (WTI)</span>' : rowBadge(row)}</div>
     <div class="split"><div><div class="card" id="starchart"></div></div><div>
     <div class="card"><h3>Şartlar</h3><table class="tbl">${(row.conditions ?? []).map((c, i) => `<tr><td style="width:28px">${COND_ICON[c.status]}</td><td><b>${i + 1}. ${esc(c.label)}</b><div class="muted small">${esc(c.detail)}</div></td></tr>`).join('')}</table>
       ${row.status === 'EKSIK' && row.levels?.level ? `<div class="muted small" style="margin-top:6px">Kırılım seviyesi: <b class="num">${price(row.levels.level, ins.decimals)}</b>, fiyata uzaklık: <b class="num">${row.levels.distAtr?.toFixed(2) ?? '—'} ATR</b></div>` : ''}
@@ -211,6 +211,7 @@ export function renderStarDetail(App, el, id, sym) {
     ${oco ? ocoPositionHtml(App, id, sym, row) : positionHtml(App, id, { ...row, position: row.position ? { ...row.position, sym } : null })}
     <details class="card"><summary class="muted small">Çıktı (JSON, şartname §8)</summary><pre class="code small">${esc(JSON.stringify(row.json, null, 1))}</pre></details>
     </div></div>`;
+  el.querySelector('[data-setup-durum]')?.addEventListener('click', () => copy(setupStatusText(App, id)));
   // Grafik
   const ch = el.querySelector('#starchart');
   const p = row.position, o = row.order;

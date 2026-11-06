@@ -9,7 +9,7 @@ import type { StarPos } from './trend.ts';
 import type { SigLog, StarMsg } from './setups.ts';
 import type { StarSeries } from './run.ts';
 
-export const OCO_IDS: StarId[] = ['N7'];
+export const OCO_IDS: StarId[] = ['N7', 'IB'];
 const KIND: Partial<Record<StarId, OcoKind>> = { N7: 'NR7', IB: 'IB' };
 const SH: Record<string, string> = { XAUUSD: 'XAU', USDJPY: 'USDJPY', AUDUSD: 'AUDUSD', US100: 'US100', US500: 'US500', US30: 'US30', XAGUSD: 'XAG', WTI: 'WTI', BTCUSD: 'BTC', ETHUSD: 'ETH' };
 const dirW = (d: number) => (d === 1 ? '▲ LONG' : '▼ SHORT');
@@ -76,7 +76,7 @@ export async function runOco(id: StarId, d: OcoDeps): Promise<{ rows: Record<str
       }
       // E: seans bitimine 10 dk kala
       if ((sim.state === 'DOLDU' || (o.liveFill && sim.state === 'BEKLIYOR')) && now >= o.sessEnd - P.sessionEndWarnMin * MIN && now < o.sessEnd) {
-        msgs.push({ key: `${o.id}+SEANS10`, title: `⛔ ${name} · ${S} seans sonu`, body: `${name}: seans sonu — pozisyonu kapat (${fmtTR(o.sessEnd)} TR)`, url, loud: true, setup: id, symbol: sym });
+        msgs.push({ key: `${o.id}+SEANS10`, title: `⛔ ${name} · ${S} seans sonu`, body: `${name}: seans sonu — ${kind === 'IB' ? 'kapat' : 'pozisyonu kapat'} (${fmtTR(o.sessEnd)} TR)`, url, loud: true, setup: id, symbol: sym });
       }
     }
     // --- Sinyal (son kapanmış seans günü) ---

@@ -12,7 +12,7 @@ import { renderLive, syncTrades } from './app/live.js';
 import { renderDirection } from './app/direction.js';
 import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
-import { renderStar, starReminder } from './app/star.js';
+import { renderStar, starReminder, bindStar } from './app/star.js';
 import { renderStarDetail } from './app/star-detail.js';
 
 const App = {
@@ -129,7 +129,7 @@ async function render() {
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
-    else if (route.top === 'star') { if (route.s) renderStarDetail(App, el, route.s, route.sym); else renderStar(App, el); }
+    else if (route.top === 'star') { if (route.s) renderStarDetail(App, el, route.s, route.sym); else { renderStar(App, el); bindStar(App, el); } }
     else if (route.top === 'haber') renderNews(App, el, route.sub);
     else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'yon') renderDirection(App, el, route.sub);

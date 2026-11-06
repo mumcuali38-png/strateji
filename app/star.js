@@ -4,7 +4,7 @@
  * Renk: yeşil ▲ LONG / kırmızı ▼ SHORT (yazı + ok ile birlikte); durumlar mevcut rozetlerle.
  */
 import { esc, price, tr, dateTR, dur, DAY, HOUR } from './fmt.js';
-import { toast } from './ui.js';
+import { toast, copy } from './ui.js';
 import { rowBadge } from './star-detail.js';
 
 export const STAR_IDS = ['M2', 'T4S', 'N7', 'IB', 'TD'];
@@ -118,13 +118,14 @@ export function renderStar(App, el) {
   if (!st) { el.innerHTML = '<div class="h1">⭐ Portföy</div><div class="card">⭐ tarama verisi henüz yok — tarama döngüsü 7/24 çalışır; ilk taramadan sonra burada görünür.</div>'; return; }
   const cal = calendar(st);
   const age = Date.now() - st.lastScan;
-  el.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="h1" style="margin:0">⭐ Portföy</div>
+  el.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="h1" style="margin:0">⭐ Portföy <button class="btn" data-star-durum style="margin-left:8px">⧉ ⭐ durum</button></div>
     <div class="muted small">Son ⭐ tarama ${tr(st.lastScan)} ${age > 15 * 60000 ? `<b style="color:var(--eksik)">(${dur(age)} önce)</b>` : '✓'} · ⭐ kredi bugün ${st.credits?.star ?? 0}</div></div>
     ${st.news ? `<div class="banner news" style="border-radius:10px;margin-bottom:10px">⚠ HABER RİSKİ: ${esc(st.news.title)} ${tr(st.news.t)} TR (${st.news.minutes} dk) — ⭐ girişleri engellenmez, sadece uyarı</div>` : ''}
     ${confirmBanner(App)}
     ${weekStrip(App, st)}
     <div class="star-grid">${STAR_IDS.map((id) => setupCard(App, id, st)).join('')}</div>
     ${cal.html}
+    ${weeklyReport(App, st)}
     ${expectation(App, cal.total)}
     <div class="card muted small">⭐ = kurallar sabit, 3,7 yıllık eğitim + son 1 yıllık ayrı sınavdan geçmiş kurulum. Parametreler kilitli (Ayarlar > ⭐ Kurulumlar'da salt okunur). MT5 butonu tüm emir kartlarında görünür ama pasif.</div>`;
 }
@@ -188,4 +189,56 @@ export function starReminder(App) {
 function confirmBanner(App) {
   const p = pendingBe(App);
   return p.map((x) => `<div class="lockline" style="margin-bottom:8px" data-go="#/star/${x.setup}/${x.sym}">⚠ ${esc(App.conf.star?.setups?.[x.setup]?.name ?? x.setup)} ${esc(x.sym)}: T1 alındı — stopu girişe (${esc(String(x.entry))}) çek · onay bekleniyor</div>`).join('');
+}
+
+const ST_TXT = { TAM: 'TAM', TAM_BEKLE: 'TAM – BEKLE', EKSIK: 'EKSİK', YOK: 'YOK', VERI_GECIKMESI: 'VERİ GECİKMESİ', AKTIF: 'AKTİF' };
+const CI = { ok: '✅', fail: '❌', wait: '⏳' };
+/** §8 "M2 durum" vb.: Durum → şart tablosu → setup veya eksik → haber tablosu. Saatler TR. */
+export function setupStatusText(App, id) {
+  const st = App.data.star, cfg = App.conf.star?.setups?.[id];
+  if (!st || !cfg) return '';
+  const out = [`${starName(App, id)} durum — ${tr(st.lastScan)} TR`];
+  for (const sym of cfg.symbols) {
+    const r = st.setups?.[id]?.rows?.[sym];
+    if (!r) continue;
+    const ins = st.instruments?.[sym] ?? {}, dec = ins.decimals ?? 2, f = (x) => price(x, dec);
+    const pos = r.position;
+    out.push('', `${ins.label ?? sym}: Durum ${pos?.open ? 'AÇIK' : ST_TXT[r.status] ?? r.status}${r.dir ? ` ${r.dir === 1 ? '▲ LONG' : '▼ SHORT'}` : ''}${r.note ? ` (${r.note})` : ''}`);
+    for (const [i, c] of (r.conditions ?? []).entries()) out.push(`  ${CI[c.status]} ${i + 1}. ${c.label} — ${c.detail}`);
+    if (pos?.open) out.push(`  Pozisyon: giriş ${f(pos.entry ?? pos.ref)}, stop ${f(pos.stop)}${pos.t1 ? `, ${id === 'N7' || id === 'IB' ? 'hedef' : 'T1'} ${f(pos.t1)}` : ''}, anlık R ${pos.rNow?.toFixed(2) ?? '—'}`);
+    else if (r.order && (id === 'N7' || id === 'IB')) out.push(`  Setup: al-stop ${f(r.order.H)} / sat-stop ${f(r.order.L)}, hedef ±1,5R, seans sonu ${tr(r.order.sessEnd)} TR`);
+    else if (r.order) out.push(`  Setup: giriş ~${f(r.order.ref_price)}, stop ${f(r.order.stop)}${r.order.t1 ? `, T1 ${f(r.order.t1)} (%50)` : ''}`);
+    else if (r.status === 'EKSIK') { const w = (r.conditions ?? []).find((c) => c.status !== 'ok'); out.push(`  Eksik: ${w ? `${w.label} — ${w.detail}` : r.note}`); }
+  }
+  const ev = (App.data.news?.events ?? []).filter((e) => e.impact === 'High' && e.currency === 'USD' && e.t > Date.now()).sort((a, b) => a.t - b.t).slice(0, 3);
+  out.push('', 'Haber (kırmızı USD):', ...(ev.length ? ev.map((e) => `  ${dateTR(e.t)} ${tr(e.t)} TR — ${e.title}`) : ['  yok']));
+  return out.join('\n');
+}
+/** §8 "⭐ durum" / "Portföy durum": beş kurulumun özeti + bu haftanın R'si */
+export function portfolioStatusText(App) {
+  const st = App.data.star;
+  if (!st) return '';
+  const out = [`⭐ Portföy durum — ${tr(st.lastScan)} TR`, `Bu hafta ⭐ R: ${rTxt(st.portfolio?.weekR ?? 0)} · açık risk %${(st.portfolio?.openRiskPct ?? 0).toFixed(2)} (limit yok)`, ''];
+  for (const id of STAR_IDS) {
+    const rows = st.setups?.[id]?.rows ?? {};
+    const parts = Object.entries(rows).map(([sym, r]) => `${st.instruments?.[sym]?.label?.split(' ')[0] ?? sym} ${r.position?.open ? `AÇIK ${rTxt(r.position.rNow)}` : ST_TXT[r.status] ?? r.status}${r.dir && !r.position?.open ? (r.dir === 1 ? ' ▲' : ' ▼') : ''}`);
+    out.push(`${starName(App, id)}: ${parts.join(' · ') || '—'}`);
+  }
+  return out.join('\n');
+}
+/** §10 haftalık rapor: kurulum başına bu hafta R (sanal, testteki gibi) ve testteki haftalık ortalamayla fark */
+function weeklyReport(App, st) {
+  const e = App.conf.star?.expectation?.perSetupLastYearR ?? {};
+  const ws = st.weekStart ?? 0;
+  const closed = (st.portfolio?.closed ?? []).filter((x) => x.t >= ws);
+  const rows = STAR_IDS.map((id) => {
+    const x = closed.filter((c) => c.setup === id);
+    const r = x.reduce((a, c) => a + c.r, 0), exp = (e[id] ?? 0) / 52;
+    return `<tr><td><b>${esc(starName(App, id))}</b></td><td class="num">${x.length}</td><td class="num ${rCls(r)}">${rTxt(r)}</td><td class="num">${rTxt(exp)}</td><td class="num ${rCls(r - exp)}">${rTxt(r - exp)}</td></tr>`;
+  }).join('');
+  return `<div class="card"><h2>Haftalık rapor (bu hafta)</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kurulum</th><th>İşlem</th><th>R</th><th>Test ort./hafta</th><th>Fark</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="muted small">Sanal sonuçlar (testteki gibi giriş/çıkış). Gerçek işlemlerin ve kayma (R) Günlük'te.</div></div>`;
+}
+export function bindStar(App, el) {
+  el.querySelector('[data-star-durum]')?.addEventListener('click', () => copy(portfolioStatusText(App)));
 }
