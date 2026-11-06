@@ -1,5 +1,5 @@
 import { STRATS, TABS, SHORT } from './config.js';
-import { badge, COND_ICON, dirTxt, dirCls, esc, price, pct, tr, ny, trny, dur, nyDayStart, parseHM, MIN, DAY, STATUS, dayNameTR } from './fmt.js';
+import { badge, unmet, COND_ICON, dirTxt, dirCls, esc, price, pct, tr, ny, trny, dur, nyDayStart, parseHM, MIN, DAY, STATUS, dayNameTR } from './fmt.js';
 import { recompute, us100Ratio } from './calc.js';
 import { mountChart } from './chart.js';
 import { chart as loadChart } from './data.js';
@@ -9,7 +9,7 @@ import { buildOrder, orderCardHtml, SKIP_REASONS } from './order.js';
 import { getAdapter, MT5_OFF_MSG } from './broker.js';
 
 const ORDER = { TAM: 0, BEKLE: 1, EKSIK: 2, YOK: 3 };
-export const rank = (a, b) => (ORDER[a.status] - ORDER[b.status]) || (a.remaining - b.remaining) || ((b.stars ?? 0) - (a.stars ?? 0));
+export const rank = (a, b) => (ORDER[a.status] - ORDER[b.status]) || (a.status === 'YOK' ? unmet(a).total - unmet(b).total : a.remaining - b.remaining) || ((b.stars ?? 0) - (a.stars ?? 0));
 
 export function setupsOf(App, s, sym) { return (App.data.state?.strategies?.[s]?.[sym] ?? []).map((x) => App.effective(x)); }
 export function bestOf(App, s, sym) { return setupsOf(App, s, sym).sort(rank)[0]; }
@@ -52,7 +52,7 @@ export function renderOverview(App, el) {
     const news = st.symbols?.[sym]?.newsRisk?.active;
     if (!b) return `<td><div class="cell yok ${news ? 'news' : ''}" data-go="#/${s}/${sym}">—</div></td>`;
     const cls = STATUS[b.status].cls;
-    const txt = b.status === 'TAM' ? '🔵 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : '⚪';
+    const txt = b.status === 'TAM' ? '🔵 TAM' : b.status === 'BEKLE' ? '🟠 BEKLE' : b.status === 'EKSIK' ? `🟡 ${b.remaining}` : unmet(b).total ? `⚪ ${unmet(b).total}` : '⚪';
     return `<td><div class="cell ${cls} ${news ? 'news' : ''}" data-go="#/${s}/${sym}/${encodeURIComponent(b.id)}" title="${esc(b.sub)}">${txt}</div></td>`;
   }).join('')}</tr>`).join('');
   const sorted = symbols.flatMap((sym) => ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((s) => bestOf(App, s, sym)).filter(Boolean)).sort(rank).slice(0, 8);
@@ -60,7 +60,7 @@ export function renderOverview(App, el) {
     <div class="h1">Şu an</div>${nowHtml}
     <div class="card"><h2>Durum ızgarası</h2>
       <div class="tbl-wrap"><table class="matrix"><thead><tr><th></th>${symbols.map((s) => `<th>${SHORT[s]}${st.symbols?.[s]?.newsRisk?.active ? ' 🔴' : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="muted small">🔵 TAM · 🟠 TAM–BEKLE · 🟡 N = kalan şart · ⚪ YOK · 🔴 haber riski · boş = uygulanmaz · yön: <span style="color:var(--long)">▲ LONG</span> / <span style="color:var(--short)">▼ SHORT</span></div>
+      <div class="muted small">🔵 TAM · 🟠 TAM–BEKLE · 🟡 N = kalan şart · ⚪ N = YOK, sağlanmayan şart · 🔴 haber riski · boş = uygulanmaz · yön: <span style="color:var(--long)">▲ LONG</span> / <span style="color:var(--short)">▼ SHORT</span></div>
     </div>
     <div class="card"><h2>Yakın setuplar</h2><div class="list">${sorted.map((s) => `<div class="li" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">${badge(s)}<div class="grow"><b>${SHORT[s.symbol]} ${s.strategy}</b> · ${esc(s.sub)}<div class="muted small">${esc(s.status === 'YOK' ? s.none?.why ?? '' : s.missing ?? 'Tüm şartlar sağlandı')}</div></div></div>`).join('') || '<div class="empty">Setup yok</div>'}</div></div>
     <div class="grid2" style="margin-top:12px">
@@ -125,8 +125,8 @@ export function renderStrategy(App, el, tabId, params) {
   const list = setupsOf(App, strat, sym).sort(rank);
   const sel = list.find((x) => x.id === params.id) ?? list[0];
   const chips = chipsAreStrats
-    ? tab.strategies.map((s) => { const b = bestOf(App, s, sym); return `<button class="chip ${s === strat ? 'on' : ''}" data-go="#/${s}/${sym}"><span class="dot ${b ? STATUS[b.status].cls : ''}"></span>${esc(STRATS[s].name)}${b?.status === 'EKSIK' ? ` <span class="pill">${b.remaining}</span>` : ''}</button>`; }).join('')
-    : tab.symbols.map((y) => { const b = bestOf(App, strat, y); return `<button class="chip ${y === sym ? 'on' : ''}" data-go="#/${strat}/${y}"><span class="dot ${b ? STATUS[b.status].cls : ''}"></span>${App.conf.symbols?.[y]?.label ?? y}${b?.status === 'EKSIK' ? ` <span class="pill">${b.remaining}</span>` : ''}${st.symbols?.[y]?.newsRisk?.active ? ' 🔴' : ''}</button>`; }).join('');
+    ? tab.strategies.map((s) => { const b = bestOf(App, s, sym); return `<button class="chip ${s === strat ? 'on' : ''}" data-go="#/${s}/${sym}"><span class="dot ${b ? STATUS[b.status].cls : ''}"></span>${esc(STRATS[s].name)}${b?.status === 'EKSIK' ? ` <span class="pill">${b.remaining}</span>` : b?.status === 'YOK' && unmet(b).total ? ` <span class="pill yok">${unmet(b).total}</span>` : ''}</button>`; }).join('')
+    : tab.symbols.map((y) => { const b = bestOf(App, strat, y); return `<button class="chip ${y === sym ? 'on' : ''}" data-go="#/${strat}/${y}"><span class="dot ${b ? STATUS[b.status].cls : ''}"></span>${App.conf.symbols?.[y]?.label ?? y}${b?.status === 'EKSIK' ? ` <span class="pill">${b.remaining}</span>` : b?.status === 'YOK' && unmet(b).total ? ` <span class="pill yok">${unmet(b).total}</span>` : ''}${st.symbols?.[y]?.newsRisk?.active ? ' 🔴' : ''}</button>`; }).join('');
   const cands = list.length > 1 ? `<div class="cands">${list.map((x) => `<button class="cand ${x === sel ? 'on' : ''}" data-go="#/${strat}/${sym}/${encodeURIComponent(x.id)}">${badge(x)}<div class="small" style="margin-top:4px">${esc(x.sub)} · ${dirTxt(x.dir)}</div></button>`).join('')}</div>` : '';
   const sp = st.symbols?.[sym];
   const newsLine = sp?.newsRisk ? `<div class="${sp.newsRisk.active ? 'banner news' : 'muted small'}" style="border-radius:10px;margin-bottom:10px">${sp.newsRisk.active ? '🔴 ' : '📰 '}${esc(sp.newsRisk.text)}</div>` : '';

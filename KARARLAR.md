@@ -242,3 +242,10 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Erken başlatma:** pencere dışında çalışan `scan-f` işi, bir sonraki pencereye ≤ 150 dk kaldıysa ve sırada ya da çalışan ana tarama yoksa `scan.yml`'yi `wait=true` ile tetikler. Bu iş pencere açılana kadar bekler, beklerken 15 dk'da bir F taraması yapar, tam açılışta (08:00 / 10:00 TR) taramaya başlar. İş süresi sınırı 360 dk; bekleme süresi döngüden düşülür.
 - **Kendini devam ettirme:** döngü süre sınırına geldiğinde pencere hâlâ açıksa `scan.yml`'yi kendisi yeniden tetikler. Aynı concurrency grubunda sıraya girer ve hemen ardından başlar; zamanlanmış tetik beklenmez.
 - **Kredi göstergesi:** günün ilk taramasından önce dünkü sayı yerine 0 gösterilir (sayaç UTC 00:00 = 03:00 TR'de sıfırlanır).
+
+## YOK'ta sağlanmayan şart sayısı (06.11.2026)
+
+- Durum mantığı değişmedi: bir şart ❌ ise kurulum YOK (§13). Sadece gösterime sayı eklendi: "⚪ YOK · N şart sağlanmadı", ızgarada "⚪ N", çiplerde gri sayı.
+- N = stratejinin tam şart tablosu − sağlanan şartlar. Tablo uzunlukları: A 9, B 10, C 10, D1 7, D2 7, E 10, F 9, G 10.
+- B, D ve G YOK olunca değerlendirmeyi ilk başarısız şartta kesiyor; değerlendirilmeyen şartlar da sağlanmamış sayılır. Aksi halde B "1 şart" görünüp hedefe yakın sanılırdı.
+- "Yakın setuplar" listesinde YOK'lar bu sayıya göre sıralanır (en yakın üstte).

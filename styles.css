@@ -89,6 +89,7 @@ a { color: var(--info); }
 .badge.news { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
 .pill { display: inline-block; min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--card2); text-align: center; font-size: .8rem; }
 .pill.tam { background: var(--tam); color: #fff; }
+.pill.yok { background: var(--yok-bg); color: var(--muted); }
 .dirchip { display: inline-flex; gap: 4px; align-items: center; font-weight: 800; }
 .dirchip.l2 { color: var(--long-strong); } .dirchip.l1 { color: var(--long-weak); } .dirchip.n { color: var(--neutral); } .dirchip.s1 { color: var(--short-weak); } .dirchip.s2 { color: var(--short-strong); }
 
