@@ -71,6 +71,9 @@ export async function runStarFetch(sc: StarConfig, td: TwelveData, plan: PlanSta
     m.lastTry = now;
     const r = await td.series(`STAR:${p.sym}`, ins.td!, '1h', p.size, p.endDate ? { endDate: p.endDate } : {});
     if (r.error) { errors.push(`⭐ ${p.sym} 1h: ${r.error}`); if (r.error === 'kredi bitti') break; continue; }
+    // Saat kayması koruması: timezone=UTC verilmezse FX saatleri Sidney'e göre gelir → mumlar gelecekte görünür (M2 senaryo 6)
+    const future = r.candles.filter((x) => x.t > now + 5 * MIN);
+    if (future.length) { errors.push(`⭐ ${p.sym} 1h: saat kayması — ${future.length} mum gelecekte (timezone=UTC?) — veri yok sayıldı`); continue; }
     store[p.sym] = mergeCandles(store[p.sym] ?? [], r.candles, sc.credits.keep1h);
     fetched.push(`${p.sym}/1h×${p.size}${p.endDate ? '(sayfa)' : ''}`);
     if (p.size >= sc.credits.fullOutput) m.fullDate = utcDateStr(now);

@@ -5,6 +5,7 @@
  */
 import { esc, price, tr, dateTR, dur, DAY, HOUR } from './fmt.js';
 import { toast } from './ui.js';
+import { rowBadge } from './star-detail.js';
 
 export const STAR_IDS = ['M2', 'T4S', 'N7', 'IB', 'TD'];
 const NY = -5 * HOUR;
@@ -61,12 +62,13 @@ function setupCard(App, id, st) {
     const ins = st?.instruments?.[sym];
     const row = out.rows?.[sym] ?? {};
     const rat = isEtf(App, sym) ? starRatio(App, sym) : null;
-    return `<tr>
+    const active = out.active;
+    return `<tr ${active ? `data-go="#/star/${id}/${sym}" style="cursor:pointer"` : ''}>
       <td><b>${esc(ins?.label ?? sym)}</b>${rat ? `<div class="muted small" style="${rat.old ? 'color:var(--eksik)' : ''}">${esc(rat.text)}</div>` : ''}</td>
       <td>${cfg.regime ? regimeBadge(ins?.regime) : '<span class="muted small">rejim yok</span>'}</td>
-      <td>${row.dir === 1 ? '<span class="dirchip l2">▲ LONG</span>' : row.dir === -1 ? '<span class="dirchip s2">▼ SHORT</span>' : '<span class="muted">—</span>'}</td>
-      <td>${row.statusHtml ?? (ins?.status && ins.status !== 'OK' ? dataBadge(ins) : '<span class="badge yok">⚪ —</span>')}</td>
-      <td class="num ${rCls(row.r)}">${rTxt(row.r)}</td></tr>`;
+      <td>${(row.position?.dir ?? row.dir) === 1 ? '<span class="dirchip l2">▲ LONG</span>' : (row.position?.dir ?? row.dir) === -1 ? '<span class="dirchip s2">▼ SHORT</span>' : '<span class="muted">—</span>'}</td>
+      <td>${active ? rowBadge(row) : ins?.status && ins.status !== 'OK' ? dataBadge(ins) : '<span class="badge yok">⚪ sıradaki adımda</span>'}</td>
+      <td class="num ${rCls(row.position?.rNow)}">${row.position?.open ? rTxt(row.position.rNow) : '—'}</td></tr>`;
   }).join('');
   return `<div class="card star-card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(starName(App, id))} <span class="muted small">· ${esc(cfg.title ?? '')}</span></h2><span class="muted small">${esc(cfg.tf === '1d' ? 'Günlük' : cfg.tf?.toUpperCase() ?? '')}</span></div>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Enstrüman</th><th>Rejim</th><th>Yön</th><th>Durum</th><th>Açık R</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;

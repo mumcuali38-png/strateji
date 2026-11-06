@@ -36,7 +36,7 @@ export async function renderJournal(App, el, openId) {
   const done = list.filter((t) => t.result);
   const wins = done.filter((t) => t.result === 'TP' || (t.r ?? 0) > 0);
   const totR = done.reduce((a, t) => a + (Number(t.r) || 0), 0);
-  const byStrat = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((s) => { const x = done.filter((t) => t.strategy === s); return { s, n: list.filter((t) => t.strategy === s).length, w: x.filter((t) => (t.r ?? 0) > 0).length, d: x.length, r: x.reduce((a, t) => a + (Number(t.r) || 0), 0), rr: x.length ? x.reduce((a, t) => a + (t.rr || 0), 0) / x.length : 0 }; });
+  const byStrat = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'M2', 'T4S', 'N7', 'IB', 'TD'].filter((s) => s.length === 1 || list.some((t) => t.strategy === s)).map((s) => { const x = done.filter((t) => t.strategy === s); return { s, n: list.filter((t) => t.strategy === s).length, w: x.filter((t) => (t.r ?? 0) > 0).length, d: x.length, r: x.reduce((a, t) => a + (Number(t.r) || 0), 0), rr: x.length ? x.reduce((a, t) => a + (t.rr || 0), 0) / x.length : 0 }; });
   const hours = {};
   for (const t of done) { const hh = Math.floor(trMinutes(t.t) / 60); hours[hh] = (hours[hh] ?? 0) + (Number(t.r) || 0); }
   const hk = Object.entries(hours).sort((a, b) => b[1] - a[1]);
@@ -54,7 +54,7 @@ export async function renderJournal(App, el, openId) {
       <div class="card"><h2>İstatistik</h2>
         <div class="kv"><span>İşlem <b>${list.length}</b></span><span>Kapanan <b>${done.length}</b></span><span>Win rate <b>${done.length ? Math.round((wins.length / done.length) * 100) : 0}%</b></span><span>Toplam <b>${totR >= 0 ? '+' : ''}${totR.toFixed(2)}R</b></span></div>
         <h3 style="margin-top:12px">Strateji bazında</h3>
-        <div class="bars">${byStrat.map((x) => `<div class="bar"><span>${x.s} · ${x.n} işlem</span><span class="t"><i style="width:${(x.n / maxN) * 100}%"></i></span><span class="num">${x.d ? Math.round((x.w / x.d) * 100) : 0}% WR</span></div><div class="bar"><span class="muted small">toplam R</span><span class="t"><i class="${x.r < 0 ? 'neg' : ''}" style="width:${(Math.abs(x.r) / maxR) * 100}%"></i></span><span class="num">${x.r >= 0 ? '+' : ''}${x.r.toFixed(1)}R · ort RR ${x.rr.toFixed(1)}</span></div>`).join('')}</div>
+        <div class="bars">${byStrat.map((x) => `<div class="bar"><span>${x.s.length > 1 ? `⭐${x.s}` : x.s} · ${x.n} işlem</span><span class="t"><i style="width:${(x.n / maxN) * 100}%"></i></span><span class="num">${x.d ? Math.round((x.w / x.d) * 100) : 0}% WR</span></div><div class="bar"><span class="muted small">toplam R</span><span class="t"><i class="${x.r < 0 ? 'neg' : ''}" style="width:${(Math.abs(x.r) / maxR) * 100}%"></i></span><span class="num">${x.r >= 0 ? '+' : ''}${x.r.toFixed(1)}R · ort RR ${x.rr.toFixed(1)}</span></div>`).join('')}</div>
       </div>
       <div class="card"><h2>Saat ve sembol</h2>
         <div>En iyi saat dilimi: <b>${hk[0] ? `${hk[0][0]}:00–${+hk[0][0] + 1}:00 TR (${(+hk[0][1]).toFixed(1)}R)` : '—'}</b></div>
@@ -86,7 +86,7 @@ function editTrade(App, t, isNew = false) {
   const f = (k, label, type = 'number', extra = '') => `<div class="field"><label>${label}</label><input name="${k}" type="${type}" step="any" value="${esc(t[k] ?? '')}" ${extra}></div>`;
   modal(`<h2>${isNew ? 'Yeni işlem' : `${SHORT[t.symbol] ?? t.symbol} ${t.strategy} · ${dirTxt(t.dir)}`}</h2>
     <form class="form" id="tf">
-      <div class="field"><label>Strateji</label><select name="strategy">${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((s) => `<option ${s === t.strategy ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Strateji</label><select name="strategy">${['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'M2', 'T4S', 'N7', 'IB', 'TD'].map((s) => `<option ${s === t.strategy ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
       <div class="field"><label>Sembol</label><select name="symbol">${Object.keys(SHORT).map((s) => `<option value="${s}" ${s === t.symbol ? 'selected' : ''}>${SHORT[s]}</option>`).join('')}</select></div>
       <div class="field"><label>Yön</label><select name="dir"><option value="1" ${t.dir === 1 ? 'selected' : ''}>LONG</option><option value="-1" ${t.dir === -1 ? 'selected' : ''}>SHORT</option></select></div>
       ${f('entry', 'Gerçek giriş')}${f('stop', 'Stop')}${f('tp1', 'Hedef')}${f('lot', 'Lot')}

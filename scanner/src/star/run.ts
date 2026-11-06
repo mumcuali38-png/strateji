@@ -11,6 +11,8 @@ import { bars4h, closed1h, lastDueClose, sessionDays, type Grp } from './session
 import { freshness, missingBars, newsRisk, removeBadTicks, type Pending } from './guard.ts';
 import { atr, regime, type Regime } from './ind.ts';
 import { existingReserve, starBudget } from './budget.ts';
+import { TREND_IDS, portfolio, runTrend, type SigLog, type StarMsg } from './setups.ts';
+import type { StarPos } from './trend.ts';
 
 export interface StarMem {
   fetch: Record<string, FetchMem>;
@@ -20,8 +22,14 @@ export interface StarMem {
   urgent: string[];
   /** Bu UTC gününde ⭐'ın harcadığı kredi */
   credit: { date: string; used: number };
+  /** Sanal pozisyonlar (testteki gibi; açık + son 120 gün kapanan) */
+  positions: StarPos[];
+  /** Sinyal kaydı (§7.2: gösterilen sinyal değiştirilmez; KAÇTI/iptal kayıtta kalır) */
+  signals: SigLog[];
+  /** Son Twelve Data anlık fiyat çağrısı (sembol → zaman) */
+  priceAt: Record<string, number>;
 }
-export const emptyMem = (): StarMem => ({ fetch: {}, pending: {}, urgent: [], credit: { date: '', used: 0 } });
+export const emptyMem = (): StarMem => ({ fetch: {}, pending: {}, urgent: [], credit: { date: '', used: 0 }, positions: [], signals: [], priceAt: {} });
 
 /** Bir enstrümanın hesaplanmış serileri — kurulum modülleri bunu kullanır */
 export interface StarSeries {
@@ -72,7 +80,7 @@ export function analyze(sc: StarConfig, sym: string, raw: Candle[], now: number,
   };
 }
 
-export interface StarRunOut { file: Record<string, unknown>; series: Record<string, StarSeries>; mem: StarMem }
+export interface StarRunOut { file: Record<string, unknown>; series: Record<string, StarSeries>; mem: StarMem; msgs: StarMsg[]; charts: Record<string, unknown> }
 
 export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td: TwelveData | null; credits: Credits; news: NewsEvent[]; errors: string[]; warnings: string[]; crypto?: (ins: StarInstrument, store: Candle[], now: number, keep: number) => ReturnType<typeof fetchCrypto1h> }): Promise<StarRunOut> {
   const mem: StarMem = { ...emptyMem(), ...readJSON<Partial<StarMem>>('star-state.json', {}) };
@@ -89,8 +97,9 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
   }
   // Twelve Data
   const fetched: string[] = [];
+  let reserve = 0;
   if (o.td && !o.credits.exhausted) {
-    const reserve = existingReserve(conf, now, o.credits);
+    reserve = existingReserve(conf, now, o.credits);
     const b = starBudget(o.credits, reserve);
     const urgent = mem.urgent.filter((s) => sc.instruments[s]?.source === 'td');
     const plan = planStar(sc, now, mem.fetch, (s) => store[s][store[s].length - 1], (s) => store[s][0], b.signal + Math.min(urgent.length, b.position - b.signal), { urgent, warnings: o.warnings });
@@ -99,7 +108,6 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
     mem.credit.used += o.credits.used - before;
     if (plan.length) console.log(`⭐ plan: ${plan.map((p) => `${p.sym}/${p.kind}×${p.size}`).join(', ')} · ayrılan (A–H) ${reserve}`);
   } else if (!o.td) o.warnings.push('⭐ TWELVE_DATA_KEY yok — kayıtlı veriyle hesaplandı');
-  mem.urgent = [];
   // Kripto
   const prices: Record<string, { p: number | null; src: string }> = {};
   for (const [sym, ins] of Object.entries(sc.instruments)) {
@@ -130,15 +138,56 @@ export async function runStar(conf: Config, sc: StarConfig, now: number, o: { td
     if (s.h1.length && !s.fresh) o.warnings.push(`⭐ ${ins.label}: VERİ GECİKMESİ (${Math.round(s.lagMin / 60)} saat) — bu enstrümanda sinyal yok`);
   }
   const nr = newsRisk(o.news, now, sc.common);
-  const setups: Record<string, unknown> = Object.fromEntries(STAR_IDS.map((id: StarId) => [id, { name: sc.setups[id].name, title: sc.setups[id].title, symbols: sc.setups[id].symbols, rows: {} }]));
+  const newsLabel = nr.risk ? { title: nr.event!.title, t: nr.event!.t, minutes: nr.minutes } : null;
+  const setups: Record<string, { name: string; title: string; symbols: string[]; rows: Record<string, unknown>; active: boolean }> = Object.fromEntries(STAR_IDS.map((id: StarId) => [id, { name: sc.setups[id].name, title: sc.setups[id].title, symbols: sc.setups[id].symbols, rows: {}, active: TREND_IDS.includes(id) }]));
+
+  // Anlık fiyat (§5 C, §7.8): kripto → Binance; XAU/QQQ → A–H'nin 5m akışı (≤ 10 dk, ücretsiz);
+  // diğer → Twelve Data price (1 kredi): son kontrolde her zaman, açık pozisyonda 15 dk'da bir ve sadece bütçe izin verirse.
+  const livePrice = async (sym: string, why: 'final' | 'pos'): Promise<{ price: number | null; src: string; live: boolean }> => {
+    const s = series[sym], ins = sc.instruments[sym];
+    if (ins.source === 'binance') return { price: s.price, src: s.priceSource, live: s.price !== null };
+    if (sym === 'XAUUSD' || sym === 'US100') {
+      const m5 = readCandles(sym, '5min'), lb = m5[m5.length - 1];
+      if (lb && lb.t + 5 * 60_000 <= now && now - (lb.t + 5 * 60_000) <= 10 * 60_000) return { price: lb.c, src: 'A–H 5m', live: true };
+    }
+    const b = starBudget(o.credits, reserve);
+    const slowOk = now - (mem.priceAt[sym] ?? 0) >= sc.credits.priceSlowMin * 60_000;
+    if (o.td && !o.credits.exhausted && (why === 'final' ? b.position > 0 : b.signal > 0 && slowOk)) {
+      const r = await o.td.price(`STAR:${sym}`, ins.td!);
+      mem.priceAt[sym] = now; mem.credit.used++;
+      if (r.price !== null) return { price: r.price, src: 'Twelve Data price', live: true };
+      o.warnings.push(`⭐ ${sym} anlık fiyat: ${r.error}`);
+    }
+    return { price: s.h1[s.h1.length - 1]?.c ?? null, src: 'son 1H kapanış', live: false };
+  };
+
+  // Kurulumlar
+  const msgs: StarMsg[] = [], charts: Record<string, unknown> = {};
+  const urgent = new Set<string>();
+  for (const id of TREND_IDS) {
+    const r = await runTrend(id, { sc, now, series, positions: mem.positions, pending: mem.pending, signals: mem.signals, livePrice, urgent, newsLabel });
+    setups[id].rows = r.rows; msgs.push(...r.msgs); Object.assign(charts, r.charts);
+  }
+  mem.urgent = [...urgent];
+  // M2.4 / §6: aynı enstrümanda aynı yönde başka ⭐ pozisyon → bilgi (engellemez)
+  for (const [id, x] of Object.entries(setups)) for (const [sym, row] of Object.entries(x.rows) as [string, { dir?: number | null; position?: StarPos | null; sameDir?: string[] }][]) {
+    const d = row.position?.dir ?? row.dir;
+    row.sameDir = mem.positions.filter((p) => p.open && p.sym === sym && p.setup !== id && p.dir === d).map((p) => sc.setups[p.setup].name);
+  }
+  // Temizlik
+  mem.positions = mem.positions.filter((p) => p.open || now - (p.closedT ?? now) <= 120 * DAY);
+  mem.signals = mem.signals.filter((x) => now - x.t <= 60 * DAY);
+  for (const [k, v] of Object.entries(mem.pending)) if (now - v.t > 3 * DAY) delete mem.pending[k];
+  const pf = portfolio(mem.positions, weekStart(now), sc.common.riskPct, now);
   const file = {
     version: 1, generatedAt: now, lastScan: now, locked: sc.locked,
     weekStart: weekStart(now),
     instruments, setups,
-    portfolio: { weekR: 0, openRiskPct: 0, openRiskWarn: false, open: [], closed: [], calendar: {} },
-    news: nr.risk ? { label: 'HABER RİSKİ', title: nr.event!.title, t: nr.event!.t, minutes: nr.minutes } : null,
+    portfolio: { ...pf, openRiskWarn: pf.openRiskPct > sc.common.openRiskWarnPct },
+    signals: mem.signals.slice(-50),
+    news: newsLabel ? { label: 'HABER RİSKİ', ...newsLabel } : null,
     credits: { date: o.credits.date, used: o.credits.used, hardStop: o.credits.hardStop, star: mem.credit.used },
     fetched, errors: o.errors, warnings: o.warnings,
   };
-  return { file, series, mem };
+  return { file, series, mem, msgs, charts };
 }

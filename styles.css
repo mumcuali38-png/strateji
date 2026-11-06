@@ -274,3 +274,4 @@ textarea.code { width: 100%; min-height: 140px; font-family: var(--mono); font-s
 .cal-c .d { color: var(--muted); }
 .cal-c.pos { background: var(--long-bg); } .cal-c.neg { background: var(--short-bg); }
 @media (max-width: 700px) { .star-grid { grid-template-columns: 1fr; } }
+.badge.sm { font-size: .72rem; padding: 1px 6px; }

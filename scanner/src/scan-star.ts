@@ -8,7 +8,9 @@ import { readJSON, writeJSON } from './store.ts';
 import { TwelveData, freshCredits, type Credits } from './twelvedata.ts';
 import { loadStar } from './star/config.ts';
 import { runStar } from './star/run.ts';
-import type { NewsFile } from './types.ts';
+import type { NewsFile, StrategyId } from './types.ts';
+import { sendAll, type Msg } from './push.ts';
+import { starMsgsToSend } from './star/notify.ts';
 
 const conf = loadConfig();
 const sc = loadStar();
@@ -23,6 +25,15 @@ const errors: string[] = [], warnings: string[] = [];
 if (credits.exhausted) warnings.push('⭐ Günlük kredi sınırı doldu — kayıtlı veriyle hesaplandı');
 
 const r = await runStar(conf, sc, now, { td, credits, news: news?.events ?? [], errors, warnings });
+// Bildirimler (tekrar yok: notified.json anahtarları; sessiz saatte TAM / ÇIKIŞ / STOP sesli)
+const notified = readJSON<Record<string, number>>('notified.json', {});
+const send = starMsgsToSend(r.msgs, notified, now);
+if (send.length) {
+  const out: Msg[] = send.map((m) => ({ kind: m.title.startsWith('🔵') ? 'tam' : 'info', title: m.title, body: m.body, url: m.url, tag: m.key, strategy: m.setup as unknown as StrategyId, symbol: m.symbol, signal: m.key.split('+')[0] }));
+  (await sendAll(conf, out, now)).log.forEach((l) => console.log(l));
+  writeJSON('notified.json', notified);
+}
+for (const [k, v] of Object.entries(r.charts)) writeJSON(`charts/star/${k}.json`, v);
 writeJSON('star.json', r.file);
 writeJSON('star-state.json', r.mem);
 writeJSON('credits.json', credits, true);

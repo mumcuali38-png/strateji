@@ -13,6 +13,7 @@ import { renderDirection } from './app/direction.js';
 import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
 import { renderStar } from './app/star.js';
+import { renderStarDetail } from './app/star-detail.js';
 
 const App = {
   settings: loadSettings(), conf: {}, data, dataBase: DATA_BASE, links: { actions: ACTIONS_URL, secrets: SECRETS_URL },
@@ -105,7 +106,7 @@ function nav(route) {
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
-  const starN = Object.values(App.data.star?.setups ?? {}).reduce((a, x) => a + Object.values(x.rows ?? {}).filter((r) => r.status === 'TAM').length, 0);
+  const starN = Object.values(App.data.star?.setups ?? {}).reduce((a, x) => a + Object.values(x.rows ?? {}).filter((r) => r.status === 'TAM' || (r.position?.open && !r.position.entryT)).length, 0);
   el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + item('#/star', '⭐', 'Portföy', starN ? `<span class="pill tam">${starN}</span>` : '') + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
   el.querySelector('[data-more]').onclick = (e) => { e.preventDefault(); el.classList.toggle('open'); };
   el.querySelectorAll('a:not([data-more])').forEach((a) => a.addEventListener('click', () => el.classList.remove('open')));
@@ -117,17 +118,18 @@ function parseRoute() {
   const p0 = parts[0] || 'ozet';
   if (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
   if (['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: p0 };
+  if (p0 === 'star') return { top: 'star', s: parts[1], sym: parts[2] };
   return { top: p0, sub: parts[1] };
 }
 async function render() {
   const route = parseRoute();
   topbar(); banners(); nav(route);
   const el = document.getElementById('main');
-  if (!['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(route.top)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
+  if (!['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(route.top) && !(route.top === 'star' && route.s)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
-    else if (route.top === 'star') renderStar(App, el);
+    else if (route.top === 'star') { if (route.s) renderStarDetail(App, el, route.s, route.sym); else renderStar(App, el); }
     else if (route.top === 'haber') renderNews(App, el, route.sub);
     else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'yon') renderDirection(App, el, route.sub);

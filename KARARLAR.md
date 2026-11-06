@@ -278,3 +278,14 @@ Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulum
 - **Bayram/yarım gün:** ABD tatillerinde ETF verisi "VERİ GECİKMESİ" görünebilir; yarım günde (13:00 kapanış) borsa günü 15:30 mumu gelmediği için ertesi veriyle kapanmış sayılır.
 - **Oran:** kullanıcı CFD fiyatını girer, o anki ETF fiyatıyla oran sabitlenir (cihazda). US100 varsayılanı 41,05.
 - **Ayarlar ekranı hatası düzeltildi:** bildirim matrisinde H satırı tanımsızdı, Ayarlar sayfası açılmıyordu.
+
+## ⭐M2 — 2. adım (06.11.2026)
+
+- **Ortak trend motoru** (`scanner/src/star/trend.ts`): M2, T4-S ve TD aynı motoru kullanır (parametreler `config/star.json`).
+- **Sanal pozisyon (testteki gibi):** TAM → giriş = sinyalden sonraki ilk 1H açılışı, stop = giriş − 2 × ATR14_1H (sinyal mumunun ATR'si). Pozisyon her taramada kapanmış mumlardan yeniden hesaplanır (repaint yok). Haftalık R / takvim bu sanal sonuçtan; kullanıcının gerçek işlemleri günlükte ("Girdim") ayrıca, kayma (R) ile.
+- **Çıkış:** 1H kapanış DA5/DU5 ötesi → bildirim hemen; sanal kapanış bir sonraki 1H açılışında (test). Stop: 1H mumunun iğnesi stopa değerse (açılış boşluğunda açılış fiyatı); anlık fiyat stopu geçerse beklemeden.
+- **Çift tarama teyidi:** 1. tarama TAM – BEKLE (bildirim yok) + enstrüman bir sonraki taramada Twelve Data'dan yeniden çekilir (1 kredi); 2. tarama aynı sonuç → son kontrol.
+- **Son kontrol fiyatı:** XAU/QQQ için A–H 5m akışı (≤ 10 dk, ücretsiz), yoksa Twelve Data `price` (1 kredi, sadece teyit anında).
+- **M2.3:** Sinyal mumu 1 saatten eskiyse (ör. ETF açılışında dünkü mum) sinyal üretilmez.
+- **Senaryo 2 (rejim −1 iken LONG kırılım):** LONG sinyal yok; durum §7'ye göre EKSİK (SHORT kırılım bekleniyor) ya da rejim 0'da YOK.
+- **Senaryo 6:** Twelve Data her istekte `timezone=UTC`; gelecekte görünen mum (saat kayması) gelirse veri yok sayılır ve hata yazılır.
