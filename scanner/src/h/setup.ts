@@ -91,7 +91,7 @@ export function evalH(conf: Config, inp: HInput | null, now: number, news: NewsE
   if (open && (age1 > P.maxDataAgeBars * HOUR || age15 > P.maxDataAgeBars * 15 * MIN)) {
     return { setup: none('veri', 'Trend devam · VERİ GECİKMESİ', [cond('data', 'Veri tamam ve taze', 'fail', `10.4 VERİ GECİKMESİ — son 1H mum ${fmtTR(lastH1.t)} TR (${durationText(age1)} önce), son 15m ${last15 ? fmtTR(last15.t) : '—'} TR · ${inp.source}`)], 'Veri gecikmesi — sinyal üretilmez', 'Güncel veri', { status: 'VERI_GECIKMESI' }), mem };
   }
-  const miss = missingBars(sym, h1R);
+  const miss = missingBars(sym, inp.h1); // ham seri: 10.5'in bilerek çıkardığı mumlar eksik veri sayılmaz
   const lastClose = last15?.c ?? lastH1.c;
   const jump = inp.price !== null && lastClose > 0 ? Math.abs(inp.price - lastClose) / lastClose * 100 : 0;
   const jumpLim = P.jumpPct[sym] ?? 0.3;

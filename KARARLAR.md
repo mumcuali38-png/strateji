@@ -264,3 +264,4 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Trend sonu / ters 4H BOS:** açık H işleminde (tarama takibi ACIK) "ÇIKIŞ — kalanı kapat" bildirimi gider.
 - **Teyit 1/2 (§10.3):** ilk taramada TAM–BEKLE olur, bildirim gitmez. En az 200 sn sonraki taramada aynı sinyal kimliği hâlâ geçerliyse TAM olur ve bildirim gider. 10.10 son kontrol aynı taramada yapılır: fiyat stopa ≤ 0,25R ya da T1 geçilmişse KAÇTI olur, 2×1H soğuma başlar.
 - **Durum tablosu 11 satır** (§11): YOK'taki "N şart sağlanmadı" sayısı için H'nin tablo uzunluğu 11.
+- **10.5 ile 10.7 ayrımı:** kötü tick filtresinin bilerek çıkardığı mumlar (örn. hafta açılışı sıçramaları) "eksik veri" sayılmaz. Eksik mum kontrolü ham seri üzerinde yapılır. (06.11 canlı taramada XAU'da 7 mum çıkarıldı ve 10.7 yanlışlıkla tetiklenmişti.)
