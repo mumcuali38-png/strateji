@@ -19,6 +19,16 @@
 - **Ayarlar:** bakiye, risk, kontrat/tampon, bildirim matrisi, parametre önerisi, tema.
 - Aşağı çekerek yenile (sadece JSON okur, API'ye gitmez).
 
+## ⭐ Portföy (M2, T4-S, N7, IB, TD)
+
+Backtestten geçmiş beş kurulum; şartnameler `docs/kurulum_*_spec.md`, parametreler kilitli (`config/star.json`, Ayarlar'da salt okunur).
+
+- **Tarama:** döngü 7/24 her 5 dk (`npm run scan-star`); sadece 1H çekilir, günlük/4H 1H'ten türetilir. Twelve Data ortak kredi sayacından, mevcut kurulumlara (A–H) günün kalanı ayrılarak; BTC/ETH Binance'ten (kredi yok).
+- **Menü → ⭐ Portföy:** haftalık R şeridi (limit yok, sadece bilgi), beş kurulum kartı, aylık takvim, haftalık rapor, test beklentisi. Satıra dokun → şart tablosu, emir kartı (MT5 pasif), mini grafik.
+- **İlk kurulum:** Ayarlar → ⭐ Kurulumlar → ETF oranları için CFD fiyatlarını gir (US500, US30, XAG, WTI; WTI haftalık zorunlu) ve yeni enstrüman değerlerini doğrula.
+- **Onaylar:** T4-S/TD'de T1 sonrası "stop girişe" onayı zorunlu (uygulama açıkken 5 dk'da bir hatırlatır). N7/IB'de "Doldu / Girdim" ile gerçek giriş → kayma (R) günlüğe.
+- **Komutlar:** Portföy'de "⧉ ⭐ durum", ayrıntı ekranında "⧉ M2 durum" vb. — sohbete yapıştırılabilir metin.
+
 ## Geliştirici
 ```bash
 cd scanner && npm ci

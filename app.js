@@ -12,6 +12,8 @@ import { renderLive, syncTrades } from './app/live.js';
 import { renderDirection } from './app/direction.js';
 import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
+import { renderStar, starReminder, bindStar } from './app/star.js';
+import { renderStarDetail } from './app/star-detail.js';
 
 const App = {
   settings: loadSettings(), conf: {}, data, dataBase: DATA_BASE, links: { actions: ACTIONS_URL, secrets: SECRETS_URL },
@@ -104,7 +106,8 @@ function nav(route) {
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
-  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
+  const starN = Object.values(App.data.star?.setups ?? {}).reduce((a, x) => a + Object.values(x.rows ?? {}).filter((r) => r.status === 'TAM' || (r.position?.open && !r.position.entryT)).length, 0);
+  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + item('#/star', '⭐', 'Portföy', starN ? `<span class="pill tam">${starN}</span>` : '') + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
   el.querySelector('[data-more]').onclick = (e) => { e.preventDefault(); el.classList.toggle('open'); };
   el.querySelectorAll('a:not([data-more])').forEach((a) => a.addEventListener('click', () => el.classList.remove('open')));
 }
@@ -115,16 +118,18 @@ function parseRoute() {
   const p0 = parts[0] || 'ozet';
   if (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: STRATS[p0].tab, s: p0, sym: parts[1], id: parts[2] };
   if (['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(p0)) return { top: p0 };
+  if (p0 === 'star') return { top: 'star', s: parts[1], sym: parts[2] };
   return { top: p0, sub: parts[1] };
 }
 async function render() {
   const route = parseRoute();
   topbar(); banners(); nav(route);
   const el = document.getElementById('main');
-  if (!['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(route.top)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
+  if (!['AB', 'C', 'D', 'E', 'F', 'G', 'H'].includes(route.top) && !(route.top === 'star' && route.s)) { App.chartCtl?.destroy?.(); App.chartCtl = null; }
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
+    else if (route.top === 'star') { if (route.s) renderStarDetail(App, el, route.s, route.sym); else { renderStar(App, el); bindStar(App, el); } }
     else if (route.top === 'haber') renderNews(App, el, route.sub);
     else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'yon') renderDirection(App, el, route.sub);
@@ -155,6 +160,9 @@ async function computeLimits() {
   const balUsd = (Number(s.balance) || 0) * (fxToUsd(s, App.data.state) ?? 0);
   App.limits = { reached: false, why: '', openF: allTrades.some((t) => t.strategy === 'F' && !t.result), openRiskPct: openRiskPct(allTrades, balUsd), openCount: allTrades.filter((t) => !t.result).length };
   App.skipped = skipped.map();
+  // §10 / N7.4: son 20 ⭐ işlemin kayma ortalaması (R) > 0,05 → N7 / IB kartlarında sarı uyarı
+  const sl = allTrades.filter((t) => t.star && Number.isFinite(t.slipR)).sort((a, b) => b.t - a.t).slice(0, 20);
+  App.starSlip = { n: sl.length, avg: sl.length ? sl.reduce((a, t) => a + t.slipR, 0) / sl.length : 0 };
   if (!(maxN > 0) && !(maxL > 0)) return;
   const today = trDayStart(Date.now());
   const list = allTrades.filter((t) => t.t >= today);
@@ -168,7 +176,7 @@ async function reload(manual = false, api = false) {
   const prevGen = data.state?.generatedAt;
   // state.json 15 sn'de bir; haber ve geçmiş dakikada bir (gereksiz istek yok)
   const full = manual || Date.now() - lastFull > 55000;
-  const ok = await refresh(full ? ['state', 'news', 'history', 'direction', 'traders'] : ['state'], api || manual);
+  const ok = await refresh(full ? ['state', 'news', 'history', 'direction', 'traders', 'star'] : ['state'], api || manual);
   if (full && ok) lastFull = Date.now();
   if (full) await syncTrades(App);
   await computeLimits();
@@ -206,7 +214,7 @@ function pullToRefresh() {
   window.addEventListener('hashchange', render);
   window.addEventListener('online', () => reload());
   window.addEventListener('offline', () => { data.offline = true; render(); });
-  setInterval(() => { topbar(); tickDeadlines(); }, 15000);
+  setInterval(() => { topbar(); tickDeadlines(); starReminder(App); }, 15000);
   // Tarama her 5 dakikanın ~20. saniyesinde yazar. O anda GitHub API'den (anında güncel) okunur;
   // diğer zamanlarda raw adres (sınırsız ama ~5 dk önbellekli). API: 5 dk'da en fazla 3 istek.
   let slot = 0, tries = 0, lastTry = 0;

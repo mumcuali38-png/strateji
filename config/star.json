@@ -1,0 +1,64 @@
+{
+  "_not": "⭐ kurulumlar — KİLİTLİ parametreler (docs/kurulum_*_spec.md). Değiştirilirse ⭐ kalkar, kurulum 'test edilmemiş' olur. Uygulamada salt okunur gösterilir.",
+  "locked": true,
+  "enabled": true,
+  "common": {
+    "riskPct": 0.5, "riskMinPct": 0.25, "riskMaxPct": 1,
+    "openRiskWarnPct": 3,
+    "minBars24h": 12, "minBarsEtf": 5, "minBars4h24": 3, "minBars4hEtf": 2,
+    "etfSessionNY": ["09:30", "16:00"], "etfBlockSplitNY": "12:30",
+    "sessionStartNY": "18:00", "sessionEndNY": "17:00",
+    "staleHours": 2,
+    "badTickAtr": 5, "badTickRetrace": 0.5,
+    "jumpPct": { "cfd24": 0.3, "fx": 0.3, "etf": 0.3, "crypto": 1 },
+    "newsWarnMin": 30, "newsBlock": false,
+    "ratioMaxAgeDays": 7,
+    "slipWarnR": 0.05, "slipWindow": 20,
+    "regime": { "emaFast": 50, "emaSlow": 200, "retDays": 60, "warmDays": 210 },
+    "atrPeriod": 14
+  },
+  "credits": {
+    "h1Output": 3, "fullOutput": 1500, "deepOutput": 5000, "deepPages24h": 2, "deepPagesEtf": 1,
+    "keep1h": 7000, "retryMin": 10, "priceMin": 5, "priceSlowMin": 15, "slowAtPct": 90,
+    "priority": ["XAUUSD", "US100", "USDJPY", "US500", "US30", "XAGUSD", "AUDUSD", "WTI"]
+  },
+  "instruments": {
+    "XAUUSD": { "source": "td", "td": "XAU/USD", "cls": "cfd24", "label": "XAU/USD", "decimals": 2, "tick": 0.01 },
+    "USDJPY": { "source": "td", "td": "USD/JPY", "cls": "fx", "label": "USD/JPY", "decimals": 3, "tick": 0.001 },
+    "AUDUSD": { "source": "td", "td": "AUD/USD", "cls": "fx", "label": "AUD/USD", "decimals": 5, "tick": 0.00001 },
+    "US100": { "source": "td", "td": "QQQ", "cls": "etf", "label": "US100 (QQQ)", "decimals": 2, "tick": 0.01, "ratioDefault": 41.05, "ratioWeekly": true },
+    "US500": { "source": "td", "td": "SPY", "cls": "etf", "label": "US500 (SPY)", "decimals": 2, "tick": 0.01 },
+    "US30": { "source": "td", "td": "DIA", "cls": "etf", "label": "US30 (DIA)", "decimals": 2, "tick": 0.01 },
+    "XAGUSD": { "source": "td", "td": "SLV", "cls": "etf", "label": "XAG (SLV)", "decimals": 2, "tick": 0.01 },
+    "WTI": { "source": "td", "td": "USO", "cls": "etf", "label": "WTI (USO)", "decimals": 2, "tick": 0.01, "ratioMandatoryWeekly": true },
+    "BTCUSD": { "source": "binance", "binance": "BTCUSDT", "coinbase": "BTC-USD", "cls": "crypto", "label": "BTC/USD", "decimals": 1, "tick": 0.01 },
+    "ETHUSD": { "source": "binance", "binance": "ETHUSDT", "coinbase": "ETH-USD", "cls": "crypto", "label": "ETH/USD", "decimals": 2, "tick": 0.01 }
+  },
+  "newSymbols": {
+    "USDJPY": { "td": "USD/JPY", "label": "USD/JPY", "name": "Dolar / Yen", "decimals": 3, "contract": 100000, "buffer": 0.015, "bufferType": "abs", "spread": 0.012, "spreadType": "abs", "currencies": ["USD", "JPY"], "strategies": [], "crypto": false, "brokerSymbol": "USDJPY", "unitSize": 0.01, "unitLabel": "1 pip (0,01 ¥)", "valuePerUnit": 6.5, "lotStep": 0.01, "minLot": 0.01 },
+    "AUDUSD": { "td": "AUD/USD", "label": "AUD/USD", "name": "Avustralya Doları / Dolar", "decimals": 5, "contract": 100000, "buffer": 0.00015, "bufferType": "abs", "spread": 0.0001, "spreadType": "abs", "currencies": ["USD", "AUD"], "strategies": [], "crypto": false, "brokerSymbol": "AUDUSD", "unitSize": 0.0001, "unitLabel": "1 pip", "valuePerUnit": 10, "lotStep": 0.01, "minLot": 0.01 },
+    "US500": { "td": "SPY", "label": "US500 (SPY)", "name": "S&P 500 — veri SPY", "decimals": 2, "contract": 1, "buffer": 0.5, "bufferType": "abs", "spread": 0.5, "spreadType": "abs", "currencies": ["USD"], "strategies": [], "crypto": false, "proxy": true, "brokerSymbol": "US500", "unitSize": 1, "unitLabel": "1 puan (US500)", "valuePerUnit": 1, "lotStep": 0.01, "minLot": 0.01 },
+    "US30": { "td": "DIA", "label": "US30 (DIA)", "name": "Dow Jones — veri DIA", "decimals": 2, "contract": 1, "buffer": 3, "bufferType": "abs", "spread": 2, "spreadType": "abs", "currencies": ["USD"], "strategies": [], "crypto": false, "proxy": true, "brokerSymbol": "US30", "unitSize": 1, "unitLabel": "1 puan (US30)", "valuePerUnit": 1, "lotStep": 0.01, "minLot": 0.01 },
+    "XAGUSD": { "td": "SLV", "label": "XAG (SLV)", "name": "Gümüş — veri SLV", "decimals": 3, "contract": 5000, "buffer": 0.02, "bufferType": "abs", "spread": 0.03, "spreadType": "abs", "currencies": ["USD"], "strategies": [], "crypto": false, "proxy": true, "brokerSymbol": "XAGUSD", "unitSize": 1, "unitLabel": "$1", "valuePerUnit": 5000, "lotStep": 0.01, "minLot": 0.01 },
+    "WTI": { "td": "USO", "label": "WTI (USO)", "name": "Ham petrol — veri USO", "decimals": 2, "contract": 1000, "buffer": 0.05, "bufferType": "abs", "spread": 0.04, "spreadType": "abs", "currencies": ["USD"], "strategies": [], "crypto": false, "proxy": true, "brokerSymbol": "USOIL", "unitSize": 1, "unitLabel": "$1 / varil", "valuePerUnit": 1000, "lotStep": 0.01, "minLot": 0.01 }
+  },
+  "setups": {
+    "M2": { "name": "⭐M2", "title": "1H Trend Kırılımı (Donchian 10/5)", "doc": "docs/kurulum_M2_Trend1H_spec.md", "tf": "1h", "regime": true, "symbols": ["XAUUSD", "US100", "USDJPY"],
+      "p": { "entryN": 10, "exitN": 5, "stopAtr": 2, "kactiAtr": 0.5, "warmBars": 260 } },
+    "T4S": { "name": "⭐T4-S", "title": "4H Trend Kırılımı + Yarı Kâr (Donchian 20/10)", "doc": "docs/kurulum_T4S_Trend4H_spec.md", "tf": "4h", "regime": true, "symbols": ["XAUUSD", "US100", "US30", "XAGUSD", "BTCUSD"],
+      "p": { "entryN": 20, "exitN": 10, "stopAtr": 2, "t1R": 1.5, "t1Fraction": 0.5, "kactiAtr": 0.5, "kactiT1Frac": 0.5, "warmBars": 260 } },
+    "N7": { "name": "⭐N7", "title": "NR7 Sıkışma Kırılımı", "doc": "docs/kurulum_N7_Sikisma_spec.md", "tf": "1d", "regime": false, "symbols": ["XAUUSD", "USDJPY", "US100", "US500", "XAGUSD", "WTI", "ETHUSD"],
+      "p": { "nr": 7, "targetR": 1.5, "kactiR": 0.25, "spreadMaxR": 0.05, "sessionEndWarnMin": 10 } },
+    "IB": { "name": "⭐IB", "title": "İç Mum (Inside Day) Kırılımı", "doc": "docs/kurulum_IB_IcMum_spec.md", "tf": "1d", "regime": false, "symbols": ["XAUUSD", "BTCUSD", "US30", "XAGUSD", "AUDUSD"],
+      "p": { "nr": 7, "targetR": 1.5, "kactiR": 0.25, "spreadMaxR": 0.05, "sessionEndWarnMin": 10 } },
+    "TD": { "name": "⭐TD", "title": "Günlük Turtle (Donchian 55/20) + Yarı Kâr", "doc": "docs/kurulum_TD_Turtle_spec.md", "tf": "1d", "regime": true, "symbols": ["XAUUSD", "US100", "US500", "US30", "XAGUSD", "BTCUSD", "ETHUSD"],
+      "p": { "entryN": 55, "exitN": 20, "stopAtr": 2, "t1R": 1.5, "t1Fraction": 0.5, "kactiAtr": 1, "warmDays": 260 } }
+  },
+  "expectation": {
+    "train": { "label": "Eğitim (Mar 2022 – Kas 2025)", "perWeek": 12.8, "totalR": 343, "monthlyR": 7.6, "posMonths": "34/45", "worstWeekR": -10.0, "maxDdR": -27.7 },
+    "last": { "label": "Son 1 yıl (Kas 2025 – Kas 2026)", "perWeek": 12.5, "totalR": 110, "monthlyR": 8.4, "posMonths": "11/13", "worstWeekR": -5.5, "maxDdR": -17.4 },
+    "targetMonthlyR": [5, 7],
+    "perSetupWeekly": { "M2": 3.6, "T4S": 1.1, "N7": 5.4, "IB": 1.9, "TD": 0.4 },
+    "perSetupLastYearR": { "M2": 47.0, "T4S": 6.1, "N7": 41.3, "IB": 9.4, "TD": 5.8 }
+  }
+}

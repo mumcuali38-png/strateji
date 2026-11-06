@@ -8,6 +8,7 @@
   "scripts": {
     "scan": "tsx src/scan.ts",
     "scan-f": "tsx src/scan-f.ts",
+    "scan-star": "tsx src/scan-star.ts",
     "news": "tsx src/news-main.ts",
     "backtest": "tsx src/backtest.ts",
     "demo": "tsx src/demo.ts",

@@ -1,10 +1,11 @@
 name: scan
-# Tarama penceresi 10:00–20:00 TR (07:00–16:55 UTC). GitHub zamanlanmış görevleri geciktirebildiği için
+# Tarama penceresi 10:00–20:00 TR (07:00–16:55 UTC); ⭐ kurulumlar için döngü 7/24 sürer (pencere dışında sadece ⭐ + F). GitHub zamanlanmış görevleri geciktirebildiği için
 # tetiklenen iş pencere boyunca kendi içinde 5 dk'da bir tarar (scripts/scan-loop.sh); tetikler döngüyü devam ettirir.
 on:
   schedule:
     - cron: '*/5 7-16 * * *'
     - cron: '*/5 5-6 * * 1-5' # ön pencere 08:00–10:00 TR (sadece XAU / Kurulum G)
+    - cron: '3,33 * * * *' # ⭐ kurulumlar 7/24 — döngü durursa yeniden başlatır (çalışırken bekleyen tetik yok sayılır)
     - cron: '17 6 1 * *' # aylık keepalive (60 gün hareketsizlikte durmasın)
   workflow_dispatch:
     inputs:

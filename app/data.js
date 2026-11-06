@@ -2,7 +2,7 @@ import { DATA_BASE, API_STATE } from './config.js';
 import { lsGet, lsSet } from './store.js';
 
 const mem = { charts: {} };
-export const data = { state: null, news: null, history: null, direction: null, traders: null, offline: false, lastOk: 0, error: '' };
+export const data = { state: null, news: null, history: null, direction: null, traders: null, star: null, offline: false, lastOk: 0, error: '' };
 
 let apiBlockedUntil = 0;
 /**
@@ -38,7 +38,7 @@ export async function refresh(which = ['state', 'news', 'history'], api = false)
     }
     catch (e) {
       out[w] = data[w] ?? lsGet(`cache.${w}`, null);
-      if (w === 'direction' || w === 'traders') return; // henüz üretilmemiş olabilir — çevrimdışı sayılmaz
+      if (w === 'direction' || w === 'traders' || w === 'star') return; // henüz üretilmemiş olabilir — çevrimdışı sayılmaz
       ok = false; data.error = e.message;
     }
   }));
@@ -48,7 +48,7 @@ export async function refresh(which = ['state', 'news', 'history'], api = false)
   return ok;
 }
 export function loadCached() {
-  for (const w of ['state', 'news', 'history', 'direction', 'traders']) data[w] = lsGet(`cache.${w}`, null);
+  for (const w of ['state', 'news', 'history', 'direction', 'traders', 'star']) data[w] = lsGet(`cache.${w}`, null);
 }
 export async function chart(sym, force = false) {
   const c = mem.charts[sym];

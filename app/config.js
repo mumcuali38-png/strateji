@@ -45,6 +45,6 @@ export const SHORT = { XAUUSD: 'XAU', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC
 
 export async function loadStaticConfig() {
   const get = async (n) => { try { const r = await fetch(`./config/${n}`, { cache: 'no-cache' }); return await r.json(); } catch { return null; } };
-  const [params, symbols, sessions] = await Promise.all([get('params.json'), get('symbols.json'), get('sessions.json')]);
-  return { params, symbols, sessions };
+  const [params, symbols, sessions, star] = await Promise.all([get('params.json'), get('symbols.json'), get('sessions.json'), get('star.json')]);
+  return { params, symbols, sessions, star };
 }

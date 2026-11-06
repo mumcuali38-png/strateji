@@ -540,3 +540,10 @@ Tam şartname: **[`docs/KURULUM_H.md`](docs/KURULUM_H.md)** (bu dosyanın parça
 - Enstrümanlar: XAUUSD, US100 (QQQ verisi), BTCUSD (Binance). Diğer kurulumlardan bağımsız.
 - **5 dakikalık tarama** ve **hatalı sinyal koruması (§10, 13 madde)** zorunludur: kapanmış mum, repaint yok, çift tarama teyidi, veri tazeliği, kötü tick, histerezis, eksik mum, açılış boşluğu, haber mumu, son kontrol (KAÇTI), tekrar/soğuma, çakışma, US100 oran kontrolü.
 - US100 için NY borsa saati **yaz saatiyle** uygulanır (diğer kurallardaki sabit UTC-5'ten farklı). QQQ verisi NY seansı boyunca (09:30–15:45 NY) çekilir; hafta içi tarama penceresi bu yüzden 20:00 TR sonrasında da US100 + BTC için açık kalır.
+
+## 26. ⭐ KURULUMLAR (M2, T4-S, N7, IB, TD) — backtestten geçmiş
+
+⭐ kurulum şartnameleri `docs/` içinde, **parametreler kilitli** (değiştirilirse ⭐ kalkar, "test edilmemiş" olur):
+[`docs/kurulum_P_Portfoy_ortak_spec.md`](docs/kurulum_P_Portfoy_ortak_spec.md) (ortak kurallar — portföy risk kuralları §6 her zaman en üstte) ·
+[`M2`](docs/kurulum_M2_Trend1H_spec.md) · [`T4-S`](docs/kurulum_T4S_Trend4H_spec.md) · [`N7`](docs/kurulum_N7_Sikisma_spec.md) · [`IB`](docs/kurulum_IB_IcMum_spec.md) · [`TD`](docs/kurulum_TD_Turtle_spec.md).
+Çelişkide kurulumun kendi şartnamesi geçerlidir. Mevcut kurulumlar (A–H) bu bölümden etkilenmez.

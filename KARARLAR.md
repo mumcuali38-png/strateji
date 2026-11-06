@@ -265,3 +265,62 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - **Teyit 1/2 (§10.3):** ilk taramada TAM–BEKLE olur, bildirim gitmez. En az 200 sn sonraki taramada aynı sinyal kimliği hâlâ geçerliyse TAM olur ve bildirim gider. 10.10 son kontrol aynı taramada yapılır: fiyat stopa ≤ 0,25R ya da T1 geçilmişse KAÇTI olur, 2×1H soğuma başlar.
 - **Durum tablosu 11 satır** (§11): YOK'taki "N şart sağlanmadı" sayısı için H'nin tablo uzunluğu 11.
 - **10.5 ile 10.7 ayrımı:** kötü tick filtresinin bilerek çıkardığı mumlar (örn. hafta açılışı sıçramaları) "eksik veri" sayılmaz. Eksik mum kontrolü ham seri üzerinde yapılır. (06.11 canlı taramada XAU'da 7 mum çıkarıldı ve 10.7 yanlışlıkla tetiklenmişti.)
+
+## ⭐ Kurulumlar — 1. adım: ortak altyapı (06.11.2026)
+
+Kullanıcı onayları: (1) kredi önceliği açık ⭐ pozisyon > mevcut kurulumlar (A–H) > ⭐ sinyal taraması; (2) tarama döngüsü 7/24; (3) mevcut risk kilitleri (günlük zarar %2, toplam risk %1,5, min RR 1:2, haberde YOK) ⭐'a uygulanmaz, ⭐ şartnameye uyar.
+
+- **Ayrı modül:** `scanner/src/star/*`, giriş `scan-star.ts`, çıktı `data/star.json`, 1H deposu `data/star/candles/`. A–H dosyalarına (scan.ts, engine, state.json) dokunulmadı. Kilitli parametreler `config/star.json`.
+- **ETF saatleri:** borsa günü 09:30–16:00 NY **yerel** (yaz saatli); 4H blok bölünmesi 12:30 NY yerel (şartnamedeki "TR kışın 17:30, yazın 16:30" ifadesine göre). 24 saat piyasalar sabit UTC-5.
+- **Kredi:** gerçek A–H kullanımı ~700/gün → ⭐'a ~45–60 kalıyor. Bu yüzden ⭐ sadece kurulumlarının ihtiyaç duyduğu kapanışta çekilir (M2: her 1H; T4-S ETF'leri: 4H blok; N7/IB/TD'ye özel enstrümanlar: seans sonu). XAU (07–17 UTC) ve QQQ (seans boyunca) A–H'nin 5m akışından ücretsiz türetilir. Simülasyon: ⭐ ≈ 42 kredi/gün. A–H'nin günün kalanı kendi planlayıcısı ileri simüle edilerek ayrılır.
+- **Geçmiş:** ilk açılışta tek seferlik derin yükleme (5000 mum; 24 saat piyasalarda 2 sayfa) — rejim için 210, TD için 260 seans günü. Günün ilk çekimi 1500 mumluk tam yükleme (aynı 1 kredi).
+- **Dakika sınırı süreçler arası:** `TwelveData` artık `credits.log`'daki son 60 sn isteklerini sayıyor (ana tarama + ⭐ aynı dakikada).
+- **Bayram/yarım gün:** ABD tatillerinde ETF verisi "VERİ GECİKMESİ" görünebilir; yarım günde (13:00 kapanış) borsa günü 15:30 mumu gelmediği için ertesi veriyle kapanmış sayılır.
+- **Oran:** kullanıcı CFD fiyatını girer, o anki ETF fiyatıyla oran sabitlenir (cihazda). US100 varsayılanı 41,05.
+- **Ayarlar ekranı hatası düzeltildi:** bildirim matrisinde H satırı tanımsızdı, Ayarlar sayfası açılmıyordu.
+
+## ⭐M2 — 2. adım (06.11.2026)
+
+- **Ortak trend motoru** (`scanner/src/star/trend.ts`): M2, T4-S ve TD aynı motoru kullanır (parametreler `config/star.json`).
+- **Sanal pozisyon (testteki gibi):** TAM → giriş = sinyalden sonraki ilk 1H açılışı, stop = giriş − 2 × ATR14_1H (sinyal mumunun ATR'si). Pozisyon her taramada kapanmış mumlardan yeniden hesaplanır (repaint yok). Haftalık R / takvim bu sanal sonuçtan; kullanıcının gerçek işlemleri günlükte ("Girdim") ayrıca, kayma (R) ile.
+- **Çıkış:** 1H kapanış DA5/DU5 ötesi → bildirim hemen; sanal kapanış bir sonraki 1H açılışında (test). Stop: 1H mumunun iğnesi stopa değerse (açılış boşluğunda açılış fiyatı); anlık fiyat stopu geçerse beklemeden.
+- **Çift tarama teyidi:** 1. tarama TAM – BEKLE (bildirim yok) + enstrüman bir sonraki taramada Twelve Data'dan yeniden çekilir (1 kredi); 2. tarama aynı sonuç → son kontrol.
+- **Son kontrol fiyatı:** XAU/QQQ için A–H 5m akışı (≤ 10 dk, ücretsiz), yoksa Twelve Data `price` (1 kredi, sadece teyit anında).
+- **M2.3:** Sinyal mumu 1 saatten eskiyse (ör. ETF açılışında dünkü mum) sinyal üretilmez.
+- **Senaryo 2 (rejim −1 iken LONG kırılım):** LONG sinyal yok; durum §7'ye göre EKSİK (SHORT kırılım bekleniyor) ya da rejim 0'da YOK.
+- **Senaryo 6:** Twelve Data her istekte `timezone=UTC`; gelecekte görünen mum (saat kayması) gelirse veri yok sayılır ve hata yazılır.
+
+## ⭐T4-S — 3. adım (06.11.2026)
+
+- **Pozisyon takibi kurulumun zaman diliminde:** T4-S (4H) ve TD (günlük) testleri "aynı mumda stop ve T1 → stop önceliği"ni TF mumunda uyguladığı için sanal takip artık TF mumlarıyla yapılır (M2'de 1H — değişiklik yok). Açık TF mumu 1H'lerden kısmi mum olarak izlenir (T1 / stop anlık bildirilir); mum kapanınca test kuralıyla yeniden hesaplanır. Ender durumda kısmi mumda T1 görülüp aynı 4H mum içinde sonradan stop gelirse sonuç testteki gibi −1R'ye döner.
+- **T4.2 KAÇTI:** fiyat > 0,5 × ATR14_4H ilerlediyse veya sinyal kapanışından hesaplanan T1'e (1,5R) mesafenin %50'sini geçtiyse.
+- **T4.3 / T4.4 onayları cihazda:** "T1 limit emri girildi mi?" ve "Stopu girişe çektim" onayları Ayarlar'da (localStorage) tutulur; tarayıcı (Actions) bu onayları göremez. T1 bildirimi push ile bir kez gider; onaylanmazsa uygulama açıkken her 5 dk hatırlatma + Portföy'de kırmızı şerit.
+- **Toplam R:** T1 alındıysa 0,5 × 1,5 + 0,5 × (çıkış − giriş)/R; T1 sonrası girişte stop → +0,75R.
+
+## ⭐TD — 4. adım (06.11.2026)
+
+- Günlük mum = ⭐ seans günü (24 saat 18:00 → 17:00 strateji saati, ETF borsa günü); 260 seans günü ısınma.
+- **Giriş:** teyit kapanıştan sonra, emir ertesi açılışta (24 saat: 18:00 strateji saati; ETF: borsa açılışı). Sanal giriş = ertesi seansın ilk 1H açılışı.
+- **TD.2:** açılış fiyatı sinyal kapanışından yön lehine > 1 × ATR14_D ise KAÇTI → işlem açılmaz, R sayılmaz, "⛔ KAÇTI" bildirimi (TAM bildirimi akşamdan gitmiş olabilir).
+- **Çıkış:** 24 saat piyasalarda günlük kapanış fiyatından ("teyitten sonra hemen"), ETF'lerde ertesi açılışta. Aynı gün stop ve T1 → stop önceliği (günlük mumda).
+- **TD.3:** açık pozisyonda her Cuma sessiz "hafta sonu taşınıyor" bilgisi; ayrıntı ekranında açık gün sayısı. Oran tazeliği ortak §7.10 ile (Ayarlar > ⭐).
+- **TD.4:** T1 / BE onayları T4-S ile aynı.
+
+## ⭐N7 — 5. adım (06.11.2026)
+
+- **OCO motoru** (`scanner/src/star/oco.ts`) N7 ve IB ortak; emir kayıtları `star-state.json` → `oco`, sanal sonuç her taramada kapanmış 1H mumlarından yeniden hesaplanır.
+- **Ertesi seans:** sinyal gününden sonraki ilk geçerli seans (24 saat: Cuma sinyali → Pazar 18:00 başlayan Pazartesi seansı; ETF: ertesi borsa günü). Emirler seans sonunda (expires) iptal / pozisyon kapanır.
+- **Çift kırılım yorumu:** "aynı 1H mumda iki seviye" = mum seviyelerin ARASINDA açılıp ikisini de geçtiyse → testte işlem yok ("test dışı (çift kırılım)"). Mum seviyenin ötesinde (boşlukla) açıldıysa o taraf açılışta dolmuş sayılır; aynı mumda karşı uç stoptur → −1R (senaryo 3 bu şekilde tutarlı: stop = karşı seviye).
+- **Giriş mumunda stop geçerli, hedef sayılmaz;** sonraki mumlarda aynı mumda stop ve hedef → stop önceliği (muhafazakâr).
+- **Seans sonu:** son 1H mumunun kapanışından çıkış; seans bitimine 10 dk kala "seans sonu — pozisyonu kapat" bildirimi (5 dk tarama).
+- **İzleme kredisi:** bekleyen emir / açık pozisyon varken o enstrüman seans boyunca saatlik 1H çekilir (yalnızca günlük kullanılan US500/WTI/AUDUSD için ek); anlık dolum tespiti XAU/QQQ/kripto'da ücretsiz, diğerlerinde bütçe izin verirse 15 dk'da bir fiyat.
+- **N7.3 KAÇTI (elle giriş):** fiyat seviyeyi > 0,25R geçtiyse kartta "KAÇTI — elle giriş yok".
+- **N7.5 spread:** uygulamada kullanıcının enstrüman tablosundaki spread'i ile (ETF'de oranla CFD'ye çevrilmiş R); tarayıcı JSON'da config spread'i ile `spread_ok`.
+- **N7.4 / §10 kayma:** "Doldu / Girdim" ile gerçek giriş girilir; kayma (R) = yön × (gerçek − planlanan) / R. Son 20 ⭐ işlemin ortalaması > 0,05R → N7 ve IB kartlarında sarı "avantaj ince" uyarısı.
+
+## ⭐IB — 6. adım (06.11.2026)
+
+- IB, N7 ile aynı OCO motorunu kullanır; fark sinyal tanımı: iç gün (kesin, fiyat adımına yuvarlanmış — XAU/ETF/BTC 0,01, AUDUSD 0,00001) ve NR7 değil; dün ve bugün geçerli seans günü, NR7 kontrolü için 7 geçerli gün.
+- IB.6: N7 ile aynı gün sinyal veremez (NR7 olan iç gün IB'den düşer); farklı günlerin sinyalleriyle aynı enstrümanda iki pozisyon izinli (engel yok, kartta "aynı yön" bilgisi).
+- §8 komutları uygulamada metin olarak: "⭐ durum" (Portföy) ve "M2/T4/N7/IB/TD durum" (ayrıntı ekranı) — Durum → şart tablosu → setup/eksik → haber, saatler TR.
+- §10 haftalık rapor: kurulum başına bu haftanın sanal R'si ve testteki haftalık ortalamayla (son 1 yıl R / 52) fark.

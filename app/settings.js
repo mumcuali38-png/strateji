@@ -3,6 +3,7 @@ import { esc, tr, dateTR, ago } from './fmt.js';
 import { copy, modal, toast } from './ui.js';
 import { DEFAULTS } from './store.js';
 import { instrOf, fxToUsd } from './calc.js';
+import { starSettingsHtml, bindStarSettings } from './star.js';
 
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const fromB64u = (s) => { const p = s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4); return Uint8Array.from(atob(p), (c) => c.charCodeAt(0)); };
@@ -48,13 +49,13 @@ export async function testNotification() {
 }
 
 export function renderSettings(App, el) {
-  const s = App.settings, st = App.data.state, P = App.conf.params, syms = App.conf.symbols ?? {};
+  const s = App.settings, st = App.data.state, P = App.conf.params, syms = { ...(App.conf.symbols ?? {}), ...(App.conf.star?.newSymbols ?? {}) };
   const field = (path, label, val, type = 'number', ph = '') => `<div class="field"><label>${label}</label><input data-path="${path}" type="${type}" step="any" value="${esc(val ?? '')}" placeholder="${esc(ph)}"></div>`;
   const sw = (path, label, val) => `<label class="switch"><span>${label}</span><input type="checkbox" data-path="${path}" ${val ? 'checked' : ''}></label>`;
   const now = new Date();
   const dstNote = now.getUTCMonth() >= 2 && now.getUTCMonth() <= 10;
   const credDays = st?.credits?.days ?? [];
-  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'], F: ['BTCUSD'], G: ['XAUUSD'] };
+  const stratSym = { A: ['XAUUSD'], B: ['XAUUSD'], C: ['US100'], D: ['US100', 'XAUUSD', 'GBPUSD', 'BTCUSD', 'ETHUSD'], E: ['EURUSD', 'XAUUSD', 'GBPUSD'], F: ['BTCUSD'], G: ['XAUUSD'], H: ['XAUUSD', 'US100', 'BTCUSD'] };
   const draft = s.paramsDraft ?? P ?? {};
   el.innerHTML = `<div class="h1">Ayarlar</div>
   <div class="card"><h2>Hesap</h2><div class="form">
@@ -125,6 +126,8 @@ export function renderSettings(App, el) {
     <div class="muted small">Veri adresi: <span class="mono">${esc(App.dataBase)}</span></div>
     <div class="btns"><a class="btn" href="#/gunluk">Günlük yedekle / yükle</a><button class="btn" data-onb>İlk kurulum adımlarını göster</button></div></div>
 
+  ${starSettingsHtml(App)}
+
   <div class="card"><h2>Hakkında</h2>
     <p><b>Uygulama sinyal verir, karar senindir.</b> Strateji Radar sinyal ve durum gösterir, işlem açmaz. Karar her zaman kullanıcınındır.</p>
     <div class="btns"><button class="btn" data-hardrefresh>↻ Uygulamayı güncelle (önbelleği yenile)</button></div>
@@ -133,6 +136,7 @@ export function renderSettings(App, el) {
     ${dstNote ? '<div class="warnline">⚠️ Mart–Kasım: New York yaz saatinde. Strateji saatleri bilinçli olarak sabit UTC-5\'tir; borsa saatleri 1 saat kaymış görünebilir.</div>' : ''}
   </div>`;
 
+  bindStarSettings(App, el);
   const setPath = (obj, path, v) => { const ks = path.split('.'); let o = obj; for (const k of ks.slice(0, -1)) { o[k] = o[k] && typeof o[k] === 'object' ? o[k] : {}; o = o[k]; } o[ks[ks.length - 1]] = v; };
   el.querySelectorAll('[data-path]').forEach((inp) => inp.addEventListener('change', () => {
     const path = inp.dataset.path;

@@ -2,7 +2,7 @@
 const VERSION = '__BUILD__';
 const SHELL = `shell-${VERSION}`;
 const DATA = 'data-v1';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './app/config.js', './app/data.js', './app/store.js', './app/fmt.js', './app/calc.js', './app/chart.js', './app/ui.js', './app/views.js', './app/views2.js', './app/settings.js', './app/order.js', './app/live.js', './app/direction.js', './app/traders.js', './app/broker.js', './config/params.json', './config/symbols.json', './config/sessions.json', './icons/icon-192.png', './icons/icon-512.png'];
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './app/config.js', './app/data.js', './app/store.js', './app/fmt.js', './app/calc.js', './app/chart.js', './app/ui.js', './app/views.js', './app/views2.js', './app/settings.js', './app/order.js', './app/live.js', './app/direction.js', './app/traders.js', './app/broker.js', './app/star.js', './app/star-detail.js', './config/params.json', './config/star.json', './config/symbols.json', './config/sessions.json', './icons/icon-192.png', './icons/icon-512.png'];
 const LIB = 'https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js';
 
 self.addEventListener('install', (e) => {
