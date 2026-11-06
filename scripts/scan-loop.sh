@@ -1,10 +1,37 @@
 #!/usr/bin/env bash
 # Tarama döngüsü: GitHub'ın zamanlanmış görevleri */5 ayarını saatte bire kadar geciktirebildiği için
 # tetiklenen iş, tarama penceresi boyunca kendi içinde 5 dakikada bir tarar (mum kapanışından ~20 sn sonra).
-# Pencere kapanınca (scan çıkış kodu 3) veya süre sınırına gelince biter; bir sonraki tetik devam ettirir.
+# - WAIT_MAX_MIN > 0 ise (scan-f'in pencereden önce tetiklediği iş) pencere açılana kadar bekler; beklerken
+#   15 dk'da bir F taraması yapar ve tam açılışta (08:00 / 10:00 TR) taramaya başlar.
+# - Süre sınırına gelince pencere hâlâ açıksa kendini yeniden tetikler (zamanlanmış tetiği beklemez).
 # Haber takvimi döngü içinde saatte bir çekilir (news iş akışı sadece pencere dışında çalışır).
 set -uo pipefail
+WAIT_MAX="${WAIT_MAX_MIN:-0}"
+waited=0
+news_if_stale() {
+  age=$(node -e "try{const j=require(process.env.DATA_DIR+'/news.json');console.log(Math.round((Date.now()-j.fetchedAt)/60000))}catch{console.log(9999)}")
+  if [ "$age" -ge 55 ]; then ( cd scanner && npm run --silent news ) || echo "::warning::Haber çekilemedi"; fi
+}
+if [ "$WAIT_MAX" -gt 0 ]; then
+  m=$(cd scanner && npx --no-install tsx src/next-window.ts)
+  if [ "$m" -gt 0 ] && [ "$m" -le "$WAIT_MAX" ]; then
+    echo "Pencere $m dk sonra açılıyor — bekleniyor (bu sırada 15 dk'da bir F taraması)"
+    start_at=$(( $(date +%s) + m * 60 + 20 ))
+    while [ "$(date +%s)" -lt "$start_at" ]; do
+      ( cd scanner && FORCE=1 npm run --silent scan-f ) || echo "::warning::F taraması hata verdi"
+      news_if_stale
+      bash scripts/data-branch.sh push "F taraması (bekleme)" || true
+      left=$(( start_at - $(date +%s) ))
+      [ "$left" -le 0 ] && break
+      sleep $(( left < 900 ? left : 900 ))
+    done
+    waited=$m
+  elif [ "$m" -gt "$WAIT_MAX" ]; then echo "Pencere $m dk sonra — beklenmeyecek kadar uzak, çıkılıyor"; exit 0; fi
+fi
+# İş süresi sınırı 360 dk: bekleme süresi döngüden düşülür
 MAX_MIN="${LOOP_MAX_MIN:-330}"
+MAX_MIN=$(( MAX_MIN - waited ))
+[ "$MAX_MIN" -lt 30 ] && MAX_MIN=30
 end=$(( $(date +%s) + MAX_MIN * 60 ))
 first=1
 PT="${PUSH_TEST:-0}"
@@ -15,13 +42,18 @@ while :; do
   first=0; PT=0
   if [ "$code" = 3 ]; then echo "Tarama penceresi kapandı — döngü bitti"; echo "::endgroup::"; break; fi
   [ "$code" != 0 ] && echo "::warning::Tarama hata kodu $code — sonraki turda tekrar denenecek"
-  # Haber: news.json 55 dk'dan eskiyse (Forex Factory saatte bir, daha sık değil)
-  age=$(node -e "try{const j=require(process.env.DATA_DIR+'/news.json');console.log(Math.round((Date.now()-j.fetchedAt)/60000))}catch{console.log(9999)}")
-  if [ "$age" -ge 55 ]; then ( cd scanner && npm run --silent news ) || echo "::warning::Haber çekilemedi"; fi
+  news_if_stale
   bash scripts/data-branch.sh push "tarama" || echo "::warning::data dalına yazılamadı"
   echo "::endgroup::"
   now=$(date +%s)
-  if [ "$now" -ge "$end" ]; then echo "Süre sınırı — sonraki tetik devam ettirecek"; break; fi
+  if [ "$now" -ge "$end" ]; then
+    m=$(cd scanner && npx --no-install tsx src/next-window.ts)
+    if [ "$m" = 0 ] && [ -n "${GH_TOKEN:-}" ]; then
+      # Zamanlanmış tetik saatlerce gecikebiliyor: pencere açıkken döngüyü kendimiz devam ettiriyoruz
+      gh workflow run scan.yml --ref "${GITHUB_REF_NAME:-main}" -f force=false && echo "Süre sınırı — döngü yeniden tetiklendi" || echo "::warning::Yeniden tetiklenemedi — zamanlanmış tetik devam ettirecek"
+    else echo "Süre sınırı — pencere dışında, döngü bitti"; fi
+    break
+  fi
   sleep $(( 300 - now % 300 + 20 ))
 done
 exit 0

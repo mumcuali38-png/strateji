@@ -16,6 +16,10 @@ on:
         description: 'Test bildirimi gönder'
         type: boolean
         default: false
+      wait:
+        description: 'Pencere açılana kadar bekle (scan-f önceden tetikler)'
+        type: boolean
+        default: false
       backtest:
         description: 'Son 10 iş günü geriye dönük kuru çalıştırma (backtest.md)'
         type: boolean
@@ -39,7 +43,7 @@ jobs:
   scan:
     if: github.event.schedule != '17 6 1 * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 360
     env:
       GH_TOKEN: ${{ github.token }}
       DATA_DIR: ${{ github.workspace }}/data-out
@@ -68,6 +72,7 @@ jobs:
           FORCE_FIRST: ${{ inputs.force && '1' || '0' }}
           PUSH_TEST: ${{ inputs.push_test && '1' || '0' }}
           LOOP_MAX_MIN: '330'
+          WAIT_MAX_MIN: ${{ inputs.wait && '160' || '0' }}
         run: bash scripts/scan-loop.sh
       - name: Geriye dönük kuru çalıştırma
         if: inputs.backtest
