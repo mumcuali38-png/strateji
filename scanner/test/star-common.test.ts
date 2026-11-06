@@ -173,7 +173,7 @@ test('§5 kredi planı: kapanışta 1 çağrı (M2 → 1h, T4-S ETF → 4h blok,
   assert.equal(needTf(sc, 'AUDUSD'), '1d');
   assert.equal(needTf(sc, 'WTI'), '1d');
   const now = S(2026, 11, 10, 11, 0) + 10_000;
-  const mem: Record<string, FetchMem> = Object.fromEntries(Object.keys(sc.instruments).map((s) => [s, { deepDone: true, fullDate: '2026-11-10' }]));
+  const mem: Record<string, FetchMem> = Object.fromEntries(Object.keys(sc.instruments).map((s) => [s, { deepDone: true, deepV: 2, fullDate: '2026-11-10' }]));
   // Hepsi 1 saat önce güncel
   const lastBar = (s: string) => ({ t: sc.instruments[s].cls === 'etf' ? Date.UTC(2026, 10, 9, 20, 30) : S(2026, 11, 10, 9), o: 1, h: 1, l: 1, c: 1 });
   const plan = planStar(sc, now, mem, lastBar, lastBar, 100);
@@ -228,7 +228,7 @@ test('§5 bekleyen kapanış: 4H blok / seans günü', () => {
 
 test('§5 kredi simülasyonu: ⭐ bir iş günü ≤ 50 kredi (XAU 07–17 UTC ve QQQ seans boyunca A–H 5m akışından ücretsiz)', () => {
   const day = Date.UTC(2026, 10, 11);
-  const mem: Record<string, FetchMem> = Object.fromEntries(Object.keys(sc.instruments).map((s) => [s, { deepDone: true, fullDate: '2026-11-10' }]));
+  const mem: Record<string, FetchMem> = Object.fromEntries(Object.keys(sc.instruments).map((s) => [s, { deepDone: true, deepV: 2, fullDate: '2026-11-10' }]));
   const last: Record<string, number> = {};
   const upd = (s: string, t: number) => { const cls = sc.instruments[s].cls; const e = lastDueClose(cls, '1h', t, sc.common); if (e) last[s] = e - HOUR; };
   for (const s of Object.keys(sc.instruments)) upd(s, day);
@@ -241,4 +241,15 @@ test('§5 kredi simülasyonu: ⭐ bir iş günü ≤ 50 kredi (XAU 07–17 UTC v
   }
   console.log(`  ⭐ simülasyon: ${n} kredi/gün`);
   assert.ok(n <= 50, `⭐ ${n} kredi/gün`);
+});
+
+test('§5 derin yükleme sürümü değişince 24 saat piyasalarda yeniden yapılır (depo sınırı 12000), ETF\'de değil', () => {
+  assert.ok(sc.credits.keep1h >= 12000);
+  const now = S(2026, 11, 10, 11, 0) + 10_000;
+  const mem: Record<string, FetchMem> = Object.fromEntries(Object.keys(sc.instruments).map((s) => [s, { deepDone: true, deepPages: 2, fullDate: '2026-11-10' }]));
+  const lastBar = (s: string) => ({ t: sc.instruments[s].cls === 'etf' ? Date.UTC(2026, 10, 9, 20, 30) : S(2026, 11, 10, 10), o: 1, h: 1, l: 1, c: 1 });
+  const plan = planStar(sc, now, mem, lastBar, lastBar, 100);
+  const deep = plan.filter((p) => p.kind === 'deep').map((p) => p.sym).sort();
+  assert.deepEqual(deep, ['AUDUSD', 'USDJPY', 'XAUUSD']);
+  assert.equal(mem.US500.deepDone, true);
 });

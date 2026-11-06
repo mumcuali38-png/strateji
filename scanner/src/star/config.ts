@@ -25,7 +25,7 @@ export interface StarCommon {
 }
 export interface StarCredits {
   h1Output: number; fullOutput: number; deepOutput: number; deepPages24h: number; deepPagesEtf: number;
-  keep1h: number; retryMin: number; priceMin: number; priceSlowMin: number; slowAtPct: number; priority: string[];
+  keep1h: number; deepVersion?: number; retryMin: number; priceMin: number; priceSlowMin: number; slowAtPct: number; priority: string[];
 }
 export interface StarSetupCfg { name: string; title: string; doc: string; tf: '1h' | '4h' | '1d'; regime: boolean; symbols: string[]; p: Record<string, number> }
 export interface StarConfig {
