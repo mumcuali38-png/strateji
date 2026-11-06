@@ -26,7 +26,8 @@ const pct = (x: number) => `%${(x * 100).toFixed(1)}`;
 export function marketOpen(sym: HSym, t: number): boolean {
   if (sym === 'BTCUSD') return true;
   if (sym === 'US100') return inNyLocal(t, '09:30', '16:00');
-  const d = nyDow(t), m = nyMinutes(t); // XAU: Pazar 18:00 → Cuma 17:00 (sabit UTC-5), günlük 17–18 arası
+  // XAU (CME/OTC altın): NY YEREL saatine bağlı (yaz saatli) — Pazar 18:00 → Cuma 17:00, her gün 17:00–18:00 ara
+  const { dow: d, min: m } = nyLocal(t);
   if (d === 6 || (d === 5 && m >= 17 * 60) || (d === 0 && m < 18 * 60)) return false;
   return !(m >= 17 * 60 && m < 18 * 60);
 }

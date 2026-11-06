@@ -184,3 +184,13 @@ test('H BTC Cumartesi (EK §14-19) → TAM–BEKLE; ters yönde başka TAM (EK �
   assert.ok(x.setup.tags?.includes('ÇAKIŞMA'));
   assert.match(x.setup.conditions.at(-1)!.detail, /10\.12 ÇAKIŞMA/);
 });
+
+test('H eksik mum (§10.7): yaz saatindeki günlük ara (21:00 UTC) ve hafta sonu boşluğu eksik sayılmaz; gerçek boşluk sayılır', async () => {
+  const { missingBars } = await import('../src/h/setup.ts');
+  const mkH = (ts: number[]) => ts.map((t) => ({ t, o: 1, h: 1, l: 1, c: 1, v: 0 }));
+  const ts: number[] = [];
+  for (let t = Date.UTC(2026, 9, 26, 0); t < Date.UTC(2026, 9, 30, 0); t += H) if (new Date(t).getUTCHours() !== 21) ts.push(t); // EDT: ara 21:00 UTC
+  assert.equal(missingBars('XAUUSD', mkH(ts)), 0);
+  const holed = ts.filter((t) => t !== Date.UTC(2026, 9, 27, 14));
+  assert.equal(missingBars('XAUUSD', mkH(holed)), 1);
+});
