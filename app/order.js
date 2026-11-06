@@ -17,6 +17,7 @@ const lotTxt = (x, step) => x.toFixed(Math.max(2, String(step).split('.')[1]?.le
 
 /** Strateji başına minimum RR şartları: [alan, min] (spread dahil yeniden kontrol edilir) */
 export function rrRules(strategy, P) {
+  if (strategy === 'H') return [['rr2', P?.H?.minRR2 ?? 2, 'T2']];
   if (strategy === 'G') return [['rr', P?.G?.minRR1 ?? 1, 'T1'], ['rr2', P?.G?.minRR2 ?? 2, 'T2']];
   if (strategy === 'F') return [['rr2', P?.F?.minRR2 ?? 1.5, 'T2'], ['rr3', P?.F?.minRR3 ?? 3, 'T3']];
   return [['rr', P?.risk?.minRR ?? 2, 'TP1']];

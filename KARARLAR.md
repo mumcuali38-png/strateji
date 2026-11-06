@@ -249,3 +249,18 @@ Twelve Data ücretsiz planında yok; `config/symbols.json`, öncelik ve 1m liste
 - N = stratejinin tam şart tablosu − sağlanan şartlar. Tablo uzunlukları: A 9, B 10, C 10, D1 7, D2 7, E 10, F 9, G 10.
 - B, D ve G YOK olunca değerlendirmeyi ilk başarısız şartta kesiyor; değerlendirilmeyen şartlar da sağlanmamış sayılır. Aksi halde B "1 şart" görünüp hedefe yakın sanılırdı.
 - "Yakın setuplar" listesinde YOK'lar bu sayıya göre sıralanır (en yakın üstte).
+
+## Kurulum H — Trend Devam (06.11.2026)
+
+- **Veri:**
+  - XAU ve US100 saatlik ek kredi harcamaz. 1H = günlük 1h×1200 yüklemesi + 5m akışından toplanan kapanmış saatler; 15m 5m'den üretilir. XAU 4H sınırları strateji saatiyle 02/06/10/14/18/22, US100 4H NY hizalı.
+  - Şartnamedeki "anlık fiyat" (price uç noktası, 1 kredi) yerine son 5m kapanışı kullanılır; ek kredi yok. BTC'de anlık fiyat Binance ticker'dan gelir.
+  - **Günlük EMA200 ısınması (3n = 600 mum):** 1h×1200 sadece ~50 günlük veri verdiği için XAU/QQQ günlüğü Twelve Data 1day'den gelir (UTC günü; şartnamedeki 18:00–17:00 gününden farklı). Günlük yükleme 300'den 700 muma çıkarıldı (aynı 1 kredi). BTC: Binance 1d×1000.
+- **US100 / NY seansı:** QQQ artık NY seansı boyunca (yaz saatli, 09:30–15:45 NY; kışın 17:30–23:45 TR) çekiliyor. Önceki sabit 16:30–20:00 TR kışın bir saat boşa çekiyor, akşamı kaçırıyordu. Hafta içi tarama 20:00 TR'den sonra sadece US100 + BTC için devam eder. Kredi simülasyonu 715/gün (< 760).
+- **BTC 7/24:** ana döngü açıkken (hafta içi 08:00–23:45, hafta sonu 10:00–20:00 TR) 5 dk'da bir taranır. Gece F taramasıyla değerlendirilir (zamanlama GitHub'a bağlı, ~15–60 dk).
+- **Geri çekilme sayacı:** tBOS'tan sonra 1H low EMA20'ye dokunduğunda ve bacak zirvesi (H0) öncekinden yüksekse k artar; kapanış H0'ı geçince itki yeniden başlar. H0 = son itkideki en yüksek 1H, L0 = önceki geri çekilmenin dibi (ilk itkide BOS'tan önceki 24 saatin en düşüğü). Kapanmış mumlardan her taramada aynı sonuç çıkar.
+- **Değer bölgesi:** son 1H mum EMA20'ye değdiyse veya kapanış EMA50–EMA20 arasındaysa; bölgeden çıkış ≤ 1H (4×15m) tolerans.
+- **Trailing (kalan %50):** tarama takibinde 5m mumlarla uygulanır: stop = max(giriş, HH − 3×ATR14_1H, ATR sinyal anındaki). Şartnamedeki "her 1H kapanışta"dan biraz daha sık güncellenir. Ekranda trailing seviyesi gösterilir. T2 kapanış sebebi değildir.
+- **Trend sonu / ters 4H BOS:** açık H işleminde (tarama takibi ACIK) "ÇIKIŞ — kalanı kapat" bildirimi gider.
+- **Teyit 1/2 (§10.3):** ilk taramada TAM–BEKLE olur, bildirim gitmez. En az 200 sn sonraki taramada aynı sinyal kimliği hâlâ geçerliyse TAM olur ve bildirim gider. 10.10 son kontrol aynı taramada yapılır: fiyat stopa ≤ 0,25R ya da T1 geçilmişse KAÇTI olur, 2×1H soğuma başlar.
+- **Durum tablosu 11 satır** (§11): YOK'taki "N şart sağlanmadı" sayısı için H'nin tablo uzunluğu 11.

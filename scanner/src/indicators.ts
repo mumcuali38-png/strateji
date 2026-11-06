@@ -133,3 +133,24 @@ export function squeeze(c: Candle[], bbLen = 20, bbMult = 2, kcLen = 20, kcMult 
   }
   return { val, sqzOn };
 }
+
+/** Wilder ADX14 (+DI/−DI ile). Çıktı: her mum için ADX (ısınma boyunca NaN). */
+export function adx(c: Candle[], p = 14): number[] {
+  const n = c.length, out = new Array(n).fill(NaN);
+  if (n < 2 * p + 1) return out;
+  const tr: number[] = [], pdm: number[] = [], mdm: number[] = [];
+  for (let i = 1; i < n; i++) {
+    const up = c[i].h - c[i - 1].h, dn = c[i - 1].l - c[i].l;
+    pdm.push(up > dn && up > 0 ? up : 0); mdm.push(dn > up && dn > 0 ? dn : 0);
+    tr.push(Math.max(c[i].h - c[i].l, Math.abs(c[i].h - c[i - 1].c), Math.abs(c[i].l - c[i - 1].c)));
+  }
+  let trS = tr.slice(0, p).reduce((a, b) => a + b, 0), pS = pdm.slice(0, p).reduce((a, b) => a + b, 0), mS = mdm.slice(0, p).reduce((a, b) => a + b, 0);
+  const dx: number[] = [];
+  const pushDx = () => { const pdi = trS ? (100 * pS) / trS : 0, mdi = trS ? (100 * mS) / trS : 0; dx.push(pdi + mdi ? (100 * Math.abs(pdi - mdi)) / (pdi + mdi) : 0); };
+  pushDx(); // dx[0] ↔ mum p
+  for (let i = p; i < tr.length; i++) { trS = trS - trS / p + tr[i]; pS = pS - pS / p + pdm[i]; mS = mS - mS / p + mdm[i]; pushDx(); }
+  let a = dx.slice(0, p).reduce((x, y) => x + y, 0) / p;
+  out[2 * p - 1] = a;
+  for (let k = p; k < dx.length; k++) { a = (a * (p - 1) + dx[k]) / p; out[k + p] = a; }
+  return out;
+}

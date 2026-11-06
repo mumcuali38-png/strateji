@@ -93,3 +93,32 @@ export function durationText(ms: number): string {
   if (h === 0) return `${m} dk`;
   return `${h}s ${m}dk`;
 }
+
+/** NY yerel saati (yaz saati UYGULANIR — borsa saatine bağlı kurallar için, örn. H/US100). Dakika cinsinden. */
+const NY_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour12: false, weekday: 'short', hour: '2-digit', minute: '2-digit' });
+export function nyLocal(t: number): { min: number; dow: number } {
+  const p = Object.fromEntries(NY_FMT.formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday);
+  return { min: (Number(p.hour) % 24) * 60 + Number(p.minute), dow };
+}
+/** NY borsa seansı içinde mi (hafta içi, yerel saat [from, to)) */
+export function inNyLocal(t: number, from: string, to: string): boolean {
+  const { min, dow } = nyLocal(t);
+  return dow >= 1 && dow <= 5 && min >= parseHM(from) && min < parseHM(to);
+}
+
+/** NY'nin UTC farkı (dakika; EST −300, EDT −240) */
+export function nyOffsetMin(t: number): number {
+  const { min } = nyLocal(t); const u = new Date(t);
+  let d = min - (u.getUTCHours() * 60 + u.getUTCMinutes());
+  if (d > 720) d -= 1440; if (d < -720) d += 1440;
+  return d;
+}
+/** Bugünkü (NY yerel günü) NY borsa seansı [from, to) — mutlak zaman. Yaz saati uygulanır. */
+export function nySession(t: number, from: string, to: string): { start: number; end: number; open: boolean } {
+  const off = nyOffsetMin(t) * MIN;
+  const day = Math.floor((t + off) / DAY) * DAY - off;
+  const start = day + parseHM(from) * MIN, end = day + parseHM(to) * MIN;
+  const { dow } = nyLocal(t);
+  return { start, end, open: dow >= 1 && dow <= 5 && t >= start && t < end };
+}

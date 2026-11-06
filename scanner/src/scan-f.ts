@@ -3,9 +3,11 @@
  * 15 dk'da bir çalışır (gece + hafta sonu); pencere içindeyse ana tarama F'yi zaten hesaplar.
  */
 import { loadConfig } from './config.ts';
+import { minutesToWindow } from './next-window.ts';
 import { readJSON, writeJSON } from './store.ts';
 import { runF } from './f/run.ts';
 import { computeMessages } from './notify.ts';
+import { runH } from './h/run.ts';
 import { runDirection, shouldRun, capDirection, type DirFile } from './direction/run.ts';
 import { runTraders, shouldRunTraders, type TradersFile } from './traders.ts';
 import { openSignalIds, trackMessages } from './track.ts';
@@ -19,7 +21,7 @@ const S = conf.params.scan;
 const now = process.env.SCAN_NOW ? Date.parse(process.env.SCAN_NOW) : Date.now();
 const force = process.env.FORCE === '1' || process.env.FORCE === 'true';
 const weekday = S.weekdays.includes(trDow(now));
-const mainActive = ((weekday || S.cryptoWeekend) && inTrRange(now, S.windowTR[0], S.windowTR[1])) || (weekday && inTrRange(now, S.preWindowTR[0], S.preWindowTR[1]));
+const mainActive = minutesToWindow(conf, now) === 0; // ana tarama (ön/ana/uzatılmış NY seansı) açıkken F orada hesaplanır
 if (mainActive && !force) { console.log('Ana tarama penceresi açık — F ana taramada hesaplanıyor.'); process.exit(0); }
 
 const news = readJSON<NewsFile | null>('news.json', null);
@@ -29,6 +31,11 @@ const prev = readJSON<State | null>('state.json', null);
 const state: State = prev ?? { strategies: {}, errors: [], warnings: [], generatedAt: now, lastScan: 0 };
 const prevF = { strategies: { F: state.strategies.F ?? {} } };
 state.strategies.F = { BTCUSD: f.setups.slice(0, 5) };
+// Kurulum H — BTC (pencere dışında; XAU/US100 ana taramada)
+const hRun = await runH(conf, now, { data: {}, news: news?.events ?? [], others: Object.values(state.strategies).flatMap((b) => Object.values(b).flat()), hist: readJSON<HistEvent[]>('history.json', []), symbols: ['BTCUSD'], btcM5: f.m5 });
+const prevH = { strategies: { H: { BTCUSD: state.strategies.H?.BTCUSD ?? [] } } };
+state.strategies.H = { ...(state.strategies.H ?? {}), BTCUSD: hRun.setups.BTCUSD };
+if (hRun.errors.length) state.errors = [...(state.errors ?? []).filter((e) => !e.startsWith('H Binance')), ...hRun.errors];
 state.fScan = now;
 state.generatedAt = now;
 state.errors = (state.errors ?? []).filter((e) => !e.startsWith('F veri:'));
@@ -38,10 +45,10 @@ state.summary = { tam: all.filter((x) => x.status === 'TAM' || x.status === 'BEK
 
 const notified = readJSON<Record<string, number>>('notified.json', {});
 const hist0 = readJSON<HistEvent[]>('history.json', []);
-const msgs = computeMessages(conf, f.setups, prevF, notified, [], now, openSignalIds(hist0));
+const msgs = computeMessages(conf, [...f.setups, ...hRun.setups.BTCUSD], { strategies: { ...prevF.strategies, ...prevH.strategies } }, notified, [], now, openSignalIds(hist0));
 // Sadece F olayları BTC mumlarıyla değerlendirilir (diğer semboller ana taramada; önceden yanlışlıkla BTC mumlarıyla değerlendiriliyordu)
-const hist = updateHistory(hist0, f.setups, now, conf.params.history.days, (_sym, strategy) => (strategy === 'F' ? f.m5 : []), conf.params.history.evalMaxBars5m).hist;
-msgs.push(...trackMessages(conf, hist.filter((x) => x.strategy === 'F'), notified, news?.events ?? [], now));
+const hist = updateHistory(hist0, [...f.setups, ...hRun.setups.BTCUSD], now, conf.params.history.days, (sym, strategy) => (strategy === 'F' || (strategy === 'H' && sym === 'BTCUSD') ? f.m5 : []), conf.params.history.evalMaxBars5m).hist;
+msgs.push(...trackMessages(conf, hist.filter((x) => x.strategy === 'F' || (x.strategy === 'H' && x.symbol === 'BTCUSD')), notified, news?.events ?? [], now));
 const pr = await sendAll(conf, msgs, now);
 pr.log.forEach((l) => console.log(l));
 // Piyasa Yönü (pencere dışı: kripto canlı, forex kayıtlı mumlarla)

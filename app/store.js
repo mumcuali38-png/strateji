@@ -4,7 +4,7 @@ export const DEFAULTS = {
   schema: 2,
   balance: '', riskPct: 0.5, currency: 'USD', maxTradesPerDay: '', maxDailyLossPct: 2, maxOpenRiskPct: 1.5,
   contracts: {}, buffers: {}, us100Price: '', instr: {}, instrConfirmed: 0, broker: 'off',
-  notify: { ready: true, news: true, cancel: true, quiet: { from: '00:00', to: '07:00' }, strategies: { A: true, B: true, C: true, D: true, E: true, F: true, G: true }, matrix: {} },
+  notify: { ready: true, news: true, cancel: true, quiet: { from: '00:00', to: '07:00' }, strategies: { A: true, B: true, C: true, D: true, E: true, F: true, G: true, H: true }, matrix: {} },
   theme: 'dark', fontSize: 'normal', chartTf: '', layers: { zones: true, liq: true, trade: true, kz: true, ema: true },
   onboarded: false, lastBackup: 0, paramsDraft: null,
 };

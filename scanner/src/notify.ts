@@ -21,6 +21,7 @@ export function computeMessages(conf: Config, all: Setup[], prev: { strategies?:
     if (s.lastEntry && s.conditions.some((c) => c.id === 'deadline') && (`${base}TAM` in notified || `${base}BEKLE` in notified) && !(`${s.id}+SURE` in notified)) {
       msgs.push(expiredMsg(s)); notified[`${s.id}+SURE`] = now;
     }
+    if ((s.status === 'TAM' || s.status === 'BEKLE') && s.info?.noNotify) continue; // H §10.3: teyit 1/2 bildirilmez
     if ((s.status === 'TAM' || s.status === 'BEKLE') && !(s.key in notified)) { if (!s.info?.mergedWithB) msgs.push(tamMsg(conf, s)); notified[s.key] = now; }
     else if (s.status === 'EKSIK' && s.remaining === 1 && !(s.key in notified)) { msgs.push(readyMsg(s)); notified[s.key] = now; }
   }

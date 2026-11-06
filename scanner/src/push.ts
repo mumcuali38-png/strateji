@@ -58,6 +58,13 @@ export function tamMsg(conf: Config, s: Setup, prefs?: Prefs): Msg {
     const q = (s.info?.g as { quality?: string } | undefined)?.quality ?? 'normal';
     return { kind: 'tam', strategy: s.strategy, symbol: s.symbol, setup: s, title: `🔵 G · XAU ${s.dir === 1 ? '▲' : '▼'} ${dir} TAM`, body: `G: XAU ${dir} TAM — limit ${f(m?.entry)}, stop ${f(m?.stop)}, T1 ${f(m?.tp1)}, T2 ${f(m?.tp2)}, RR ${m ? (m.rr2 ?? m.rr).toFixed(1) : '—'}, kalite ${q}${lot !== null ? ` · ${lot.toFixed(2)} lot` : ''}`, url: `./#/G/XAUUSD/${encodeURIComponent(s.id)}`, tag: s.key };
   }
+  if (s.strategy === 'H') {
+    const h = (s.info?.h ?? {}) as { qualityText?: string; order?: { rr2?: number } };
+    const S = SHORT[s.symbol] ?? s.symbol, bekle = s.status === 'BEKLE';
+    return { kind: 'tam', strategy: s.strategy, symbol: s.symbol, setup: s, title: `${bekle ? '🟠' : '🔵'} H · ${S} ${s.dir === 1 ? '▲' : '▼'} ${dir} ${bekle ? 'TAM – BEKLE' : 'TAM'}`,
+      body: `H: ${S} ${dir} ${bekle ? `TAM – BEKLE (${(s.missing ?? '').replace(/^BLOK: /, '')})` : 'TAM'} — limit ${f(m?.entry)}, stop ${f(m?.stop)}, T1 ${f(m?.tp1)}, RR(T2) ${(h.order?.rr2 ?? m?.rr2 ?? 0).toFixed(2)}, kalite ${h.qualityText ?? 'normal'}${lot !== null ? ` · ${lot.toFixed(2)} lot` : ''}`,
+      url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key };
+  }
   if (s.strategy === 'F') {
     const bekle = s.status === 'BEKLE';
     const tag = m?.tag ? ` · ${m.tag}` : '';
@@ -77,6 +84,7 @@ export function tamMsg(conf: Config, s: Setup, prefs?: Prefs): Msg {
 }
 export function readyMsg(s: Setup): Msg {
   const w = s.conditions.find((c) => c.status === 'wait');
+  if (s.strategy === 'H') return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: `🟡 H · ${SHORT[s.symbol]} 1 şart kaldı`, body: `H: ${SHORT[s.symbol]} 1 şart kaldı: ${w ? `${w.label} — ${w.detail}` : '—'}`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key };
   if (s.strategy === 'G') return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: '🟡 G · XAU 1 şart kaldı', body: `G: 1 şart kaldı: ${w ? `${w.label} — ${w.detail}` : '—'}`, url: `./#/G/XAUUSD/${encodeURIComponent(s.id)}`, tag: s.key };
   if (s.strategy === 'F') return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: '🟡 F · BTC 1 şart kaldı', body: `F: BTC 1 şart kaldı: ${w ? `${w.label} — ${w.detail}` : '—'}`, url: `./#/F/BTCUSD/${encodeURIComponent(s.id)}`, tag: s.key };
   return { kind: 'ready', strategy: s.strategy, symbol: s.symbol, setup: s, title: `🟡 Hazırlan · ${SHORT[s.symbol]} ${s.strategy}`, body: `${SHORT[s.symbol]} ${s.strategy}: sadece ${w ? `${w.label} — ${w.detail}` : 'son şart'} bekleniyor`, url: `./#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}`, tag: s.key };

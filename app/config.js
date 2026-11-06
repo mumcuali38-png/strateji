@@ -30,6 +30,7 @@ export const STRATS = {
   E: { name: 'E · Rejection Block', short: 'E', tab: 'E' },
   F: { name: 'F · BTC Wyckoff (Spring/UTAD)', short: 'F', tab: 'F' },
   G: { name: 'G · XAU Judas (Asya süpürmesi)', short: 'G', tab: 'G' },
+  H: { name: 'H · Trend devam (pullback)', short: 'H', tab: 'H' },
 };
 export const TABS = [
   { id: 'AB', label: 'A/B XAU', icon: '🥇', strategies: ['A', 'B'], symbols: ['XAUUSD'] },
@@ -38,6 +39,7 @@ export const TABS = [
   { id: 'E', label: 'E RB', icon: '🧱', strategies: ['E'], symbols: ['EURUSD', 'XAUUSD', 'GBPUSD'] },
   { id: 'F', label: 'F Wyckoff', icon: '🌀', strategies: ['F'], symbols: ['BTCUSD'] },
   { id: 'G', label: 'G Judas', icon: '🎯', strategies: ['G'], symbols: ['XAUUSD'] },
+  { id: 'H', label: 'H Trend', icon: '📈', strategies: ['H'], symbols: ['XAUUSD', 'US100', 'BTCUSD'] },
 ];
 export const SHORT = { XAUUSD: 'XAU', EURUSD: 'EUR', GBPUSD: 'GBP', BTCUSD: 'BTC', ETHUSD: 'ETH', US100: 'US100' };
 

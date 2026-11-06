@@ -8,7 +8,7 @@ import { esc, tr, dateTR, dur, price, dirTxt } from './fmt.js';
 import { trades, skipped } from './store.js';
 import { modal, toast } from './ui.js';
 
-const RES = { TP1: 'TP', TP2: 'TP', SL: 'SL', BE: 'BE' };
+const RES = { TP1: 'TP', TP2: 'TP', SL: 'SL', BE: 'BE', TRAIL: 'TP' };
 const trackOf = (App, id) => (id ? (App.data.history ?? []).find((h) => h.id === id && h.kind === 'TAM')?.track : undefined);
 const sigOf = (t) => t.signal_id || t.setupId;
 
@@ -66,6 +66,7 @@ function steps(t, tk) {
   const out = [[tp1, `TP1 ${price(t.tp1, t.dec)} → %50 kapat`], [be || ev.has('TP2'), 'SL\'yi girişe çek (BE)']];
   if (t.tp2) out.push([ev.has('TP2'), `TP2 ${price(t.tp2, t.dec)} → kalanı kapat`]);
   if (t.strategy === 'G') out.push([false, '20:00 TR zorunlu kapanış · haber öncesi T1 yoksa çık']);
+  if (t.strategy === 'H') out.push([ev.has('TRAIL'), 'Kalan %50 trailing (HH − 3×ATR1H) · 4H EMA50 kırılırsa / ters 4H BOS → kalanı kapat']);
   if (t.strategy === 'F') out.push([false, 'Başarısız spring/UTAD → ÇIKIŞ']);
   if (t.strategy === 'E') out.push([false, 'RB fitil ucunun ötesinde gövde kapanışı → ÇIKIŞ']);
   return out;
@@ -94,6 +95,7 @@ export async function renderLive(App, el, openSignal) {
         <span class="k" style="color:var(--short)">SL</span><span class="v">${price(t.stop, t.dec)}</span><span class="d">kalan ${to(t.stop)}</span>
         <span class="k" style="color:var(--info)">TP1</span><span class="v">${price(t.tp1, t.dec)}</span><span class="d">kalan ${to(t.tp1)}</span>
         ${t.tp2 ? `<span class="k" style="color:var(--info)">TP2</span><span class="v">${price(t.tp2, t.dec)}</span><span class="d">kalan ${to(t.tp2)}</span>` : ''}
+        ${tk?.trail !== undefined ? `<span class="k">Trailing</span><span class="v">${price(tk.trail, t.dec)}</span><span class="d">${tr(tk.updatedAt)} güncellendi</span>` : ''}
         <span class="k">MAE/MFE</span><span class="v small">${t.maeR !== undefined ? `−${t.maeR}R / +${t.mfeR}R` : '—'}</span><span class="d">tarama takibi</span>
       </div>
       <div class="steps">${steps(t, tk).map(([ok, l]) => `<div>${ok ? '✅' : '⬜'} ${esc(l)}</div>`).join('')}</div>

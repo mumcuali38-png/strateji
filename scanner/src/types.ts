@@ -4,7 +4,7 @@ export type Dir = 1 | -1;
 export type CondStatus = 'ok' | 'fail' | 'wait';
 /** BEKLE = TAM ama zaman/ortam bloğu var (sadece F: "TAM – BEKLE") */
 export type Status = 'TAM' | 'BEKLE' | 'EKSIK' | 'YOK';
-export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
 
 export interface Condition {
   id: string;
@@ -33,6 +33,8 @@ export interface EntryMethod {
   tag?: string;
   /** Stop yapıya göre kesin (F): uygulama tampon/spread eklemez */
   fixedStop?: boolean;
+  /** H: trailing stop için ATR14_1H (kalan %50: HH − 3×ATR) */
+  trailAtr?: number;
 }
 
 export interface Overlay {

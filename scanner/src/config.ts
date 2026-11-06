@@ -35,7 +35,7 @@ export interface Params {
   E: { tfs: TF[]; maxCandles: number; limitInsidePct: number; fib: number[]; lookbackBars: number; returnMaxBars: number };
   extra: { rsiPeriod: number; rsiHigh: number; rsiLow: number; emaLong: number; macd: number[]; bb: number[]; kc: number[] };
   scan: {
-    windowTR: [string, string]; oneMinuteTR: [string, string]; qqqTR: [string, string]; weekdays: number[];
+    windowTR: [string, string]; oneMinuteTR: [string, string]; qqqTR: [string, string]; qqqSessionNY?: [string, string]; weekdays: number[];
     cryptoWeekend: boolean; intervalMin: number; creditDailyLimit: number; creditHardStop: number; perMinute: number;
     incrementalOutput: number; maxIncrementalOutput: number; bootstrap5m: number; bootstrap1d: number; bootstrap1dSymbols: string[];
     keep5m: number; keep1m: number; preWindowTR: [string, string]; preWindowSymbols: string[]; bootstrap1h: number; bootstrap1hSymbols: string[]; fxPairs: string[]; directionDaily?: string[]; priority: string[]; oneMinuteSymbols: string[]; staleWarnMin: number; staleErrorMin: number;

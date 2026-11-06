@@ -119,7 +119,7 @@ test('16) NFP günü, 16:15 TR\'de T1 alınmamış → "pozisyonu kapat" bildiri
 test('17) Aynı gün B aynı yönde TAM → tek işlem, "B ile birleşik"', () => {
   const g = run();
   const b = { ...g, id: 'B-XAUUSD-x', strategy: 'B' as const, info: {} };
-  const res = { A: {}, B: { XAUUSD: [b] }, C: {}, D: {}, E: {}, F: {}, G: { XAUUSD: [g] } } as Parameters<typeof mergeGB>[0];
+  const res = { A: {}, B: { XAUUSD: [b] }, C: {}, D: {}, E: {}, F: {}, G: { XAUUSD: [g] }, H: {} } as Parameters<typeof mergeGB>[0];
   mergeGB(res);
   assert.ok(g.info?.mergedWithB);
   assert.ok(g.warnings?.some((w) => w.includes('B ile birleşik')));

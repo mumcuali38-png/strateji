@@ -11,7 +11,7 @@ test('Kredi simülasyonu: tam bir iş günü (08:00 ön pencere dahil) < 760', (
   let credits = freshCredits(null, day + 5 * 3600_000, cfg.params);
   const last: Record<string, number> = {};
   let total = 0, pre = 0;
-  for (let t = day + 5 * 3600_000; t < day + 17 * 3600_000; t += 5 * MIN) {
+  for (let t = day + 5 * 3600_000; t < day + 21 * 3600_000; t += 5 * MIN) { // 08:00 TR → 24:00 TR (NY seansı sonu dahil)
     const plan = planFetch(cfg, t, credits, (sym, iv) => last[`${sym}${iv}`]);
     for (const p of plan) { last[`${p.sym}${p.interval === '1day' || p.interval === '1h' ? '' : p.interval}`] = t; }
     if (t < day + 7 * 3600_000) { pre += plan.length; assert.ok(plan.every((p) => p.sym === 'XAUUSD' || p.bootstrap || p.sym.startsWith('FX:')), 'ön pencerede sadece XAU (+ günlük bootstrap)'); }

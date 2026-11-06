@@ -13,6 +13,7 @@ export function lastEntryOf(conf: Config, s: Setup, now: number): number | undef
   const ref = s.signalAt ?? s.evaluatedAt ?? now;
   const P = conf.params;
   switch (s.strategy) {
+    case 'H': { const v = (s.info as { h?: { validUntil?: number } } | undefined)?.h?.validUntil; if (v) return v; break; }
     case 'G': { const t = (s.info as { g?: { timeline?: { lastEntry?: number } } } | undefined)?.g?.timeline?.lastEntry; return t; }
     case 'C': return nyTimeOnDay(ref, conf.sessions.C?.end ?? '11:00');
     case 'F': { const m = /^S(\d+)$/.exec(s.zoneId); return m ? Number(m[1]) + (P.F?.chochMaxHours ?? 24) * HOUR : undefined; }
@@ -49,5 +50,6 @@ export function annotateDeadlines(conf: Config, setups: Setup[], now: number): v
 
 /** Dolmuş (G: limit doldu) setupta "limit iptal et" mesajı anlamsız */
 export function isFilled(s: Setup): boolean {
-  return !!(s.info as { g?: { filled?: boolean } } | undefined)?.g?.filled;
+  const i = s.info as { g?: { filled?: boolean }; h?: { filled?: boolean } } | undefined;
+  return !!(i?.g?.filled || i?.h?.filled);
 }

@@ -533,3 +533,10 @@ Tam şartname: **[`docs/EK_OZELLIKLER_v1.md`](docs/EK_OZELLIKLER_v1.md)** (bu do
 - **Ayarlar (§17.10'a ek):** bakiye zorunlu (girilmeden lot "AYAR GEREKLİ"), hesap para birimi (USD dışıysa günlük kur), günlük maks. zarar %2, aynı anda maks. toplam risk %1,5, broker sembol eşleme, sembol başına tipik spread, broker bağlantısı (şimdilik Kapalı), sessiz saatler 00:00–07:00 TR (bu aralıkta sadece TAM ve ÇIKIŞ sesli).
 - **Enstrüman tablosu:** kontrat, "1 birim hareketin 1 lottaki değeri", lot adımı, min lot, tipik spread; kullanıcı doğrulamadan lot hesaplanmaz.
 - XAG/USD §23 gereği yoktur (belgedeki XAG satırları "VERİ YOK").
+
+## 25. KURULUM H — Trend Devam (Pullback)
+
+Tam şartname: **[`docs/KURULUM_H.md`](docs/KURULUM_H.md)** (bu dosyanın parçası sayılır; H için tek doğruluk kaynağı odur).
+- Enstrümanlar: XAUUSD, US100 (QQQ verisi), BTCUSD (Binance). Diğer kurulumlardan bağımsız.
+- **5 dakikalık tarama** ve **hatalı sinyal koruması (§10, 13 madde)** zorunludur: kapanmış mum, repaint yok, çift tarama teyidi, veri tazeliği, kötü tick, histerezis, eksik mum, açılış boşluğu, haber mumu, son kontrol (KAÇTI), tekrar/soğuma, çakışma, US100 oran kontrolü.
+- US100 için NY borsa saati **yaz saatiyle** uygulanır (diğer kurallardaki sabit UTC-5'ten farklı). QQQ verisi NY seansı boyunca (09:30–15:45 NY) çekilir; hafta içi tarama penceresi bu yüzden 20:00 TR sonrasında da US100 + BTC için açık kalır.

@@ -10,11 +10,13 @@ import type { HistEvent } from './history.ts';
 import { MIN, fmtTR, durationText } from './time.ts';
 import { SHORT, type Msg } from './push.ts';
 
-export type TrackType = 'FILL' | 'TP1' | 'TP2' | 'SL' | 'BE';
+export type TrackType = 'FILL' | 'TP1' | 'TP2' | 'SL' | 'BE' | 'TRAIL';
 export interface Track {
   status: 'BEKLIYOR' | 'ACIK' | 'KAPANDI' | 'DOLMADI';
   events: { type: TrackType; t: number; price: number }[];
   resultR?: number; maeR: number; mfeR: number; lastPrice?: number; liveR?: number; updatedAt: number;
+  /** H: güncel trailing stop (sadece ekranda) */
+  trail?: number;
 }
 
 /** Varsayılan yönetim (kurulumun kendi kuralı yoksa): TP1'de %50 + stop girişe; aynı mumda stop ve hedef → stop (temkinli) */
@@ -30,7 +32,8 @@ export function trackEvent(h: HistEvent, candles: Candle[], now: number): Track 
   const rr1 = Math.abs(m.tp1 - m.entry) / risk, rr2 = m.tp2 !== undefined ? Math.abs(m.tp2 - m.entry) / risk : undefined;
   let filled = m.type === 'market';
   if (filled) ev.push({ type: 'FILL', t: h.signalAt ?? h.t, price: m.entry });
-  let phase = 0, mfe = 0, mae = 0;
+  const isH = h.strategy === 'H' && !!m.trailAtr;
+  let phase = 0, mfe = 0, mae = 0, hh = -Infinity, trail = m.entry;
   const done = (type: TrackType, t: number, price: number, r: number): Track => ({ status: 'KAPANDI', events: [...ev, { type, t, price }], resultR: +r.toFixed(2), maeR: +mae.toFixed(2), mfeR: +mfe.toFixed(2), updatedAt: now });
   for (const c of after) {
     if (!filled) {
@@ -42,9 +45,18 @@ export function trackEvent(h: HistEvent, candles: Candle[], now: number): Track 
     mfe = Math.max(mfe, fav); mae = Math.max(mae, adv);
     const sl = d === 1 ? c.l <= m.stop : c.h >= m.stop;
     const hit = (p: number) => (d === 1 ? c.h >= p : c.l <= p);
+    if (isH && phase === 1) { // H: kalan %50 trailing — stop = max(giriş, HH − 3×ATR14_1H); T2 kapanış sebebi değil
+      const stopNow = trail;
+      if (d === 1 ? c.l <= stopNow : c.h >= stopNow) return done(stopNow === m.entry ? 'BE' : 'TRAIL', c.t, stopNow, 0.5 * rr1 + 0.5 * (((stopNow - m.entry) * d) / risk));
+      hh = Math.max(hh, d === 1 ? c.h : -c.l);
+      const cand = d === 1 ? hh - 3 * m.trailAtr! : -(hh) + 3 * m.trailAtr!;
+      trail = d === 1 ? Math.max(trail, cand) : Math.min(trail, cand);
+      continue;
+    }
     if (phase === 0) {
       if (sl) return done('SL', c.t, m.stop, -1);
       if (hit(m.tp1)) {
+        if (isH) { ev.push({ type: 'TP1', t: c.t, price: m.tp1 }); phase = 1; hh = d === 1 ? c.h : -c.l; continue; }
         if (rr2 === undefined) return done('TP1', c.t, m.tp1, rr1);
         ev.push({ type: 'TP1', t: c.t, price: m.tp1 }); phase = 1;
         if (hit(m.tp2!)) return done('TP2', c.t, m.tp2!, 0.5 * rr1 + 0.5 * rr2);
@@ -57,7 +69,7 @@ export function trackEvent(h: HistEvent, candles: Candle[], now: number): Track 
   }
   const last = after[after.length - 1]?.c;
   const liveR = filled && last !== undefined ? +(((last - m.entry) * d) / risk).toFixed(2) : undefined;
-  return { status: filled ? 'ACIK' : 'BEKLIYOR', events: ev, maeR: +mae.toFixed(2), mfeR: +mfe.toFixed(2), lastPrice: last, liveR, updatedAt: now };
+  return { status: filled ? 'ACIK' : 'BEKLIYOR', events: ev, maeR: +mae.toFixed(2), mfeR: +mfe.toFixed(2), lastPrice: last, liveR, updatedAt: now, ...(isH && phase === 1 ? { trail } : {}) };
 }
 
 /** Kurulumun açık işlemde haber kuralı (G kendi bildirimini atar) */
@@ -84,7 +96,8 @@ export function trackMessages(conf: Config, hist: HistEvent[], notified: Record<
       if (key in notified || now - e.t > 20 * MIN || e.type === 'FILL' || OWN[h.strategy]?.includes(e.type)) continue;
       notified[key] = now;
       const text: Record<Exclude<TrackType, 'FILL'>, [string, string]> = {
-        TP1: [`🎯 ${S}: TP1`, `${h.strategy}: TP1 — %50 kapat, SL'yi girişe çek`],
+        TP1: [`🎯 ${S}: TP1`, h.strategy === 'H' ? 'H: T1 — %50 kapat, stop girişe; kalan trailing' : `${h.strategy}: TP1 — %50 kapat, SL'yi girişe çek`],
+        TRAIL: [`🎯 ${S}: trailing stop`, `${h.strategy}: trailing stop — kalan %50 kapandı (+${h.track.resultR?.toFixed(2)}R)`],
         TP2: [`🎯 ${S}: TP2`, `${h.strategy}: TP2 — kalanı kapat (+${h.track.resultR?.toFixed(2)}R)`],
         SL: [`🛑 ${S}: Stop`, `${h.strategy}: Stop — işlemi kapat, günlük kaydı tamamla (−1R)`],
         BE: [`➖ ${S}: Girişe döndü`, `${h.strategy}: TP1 sonrası stop girişte — kalan %50 BE (+${h.track.resultR?.toFixed(2)}R)`],
