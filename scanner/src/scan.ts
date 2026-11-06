@@ -45,6 +45,7 @@ const td = key ? new TwelveData(key, credits, P) : null;
 const errors: string[] = [], warnings: string[] = [], fetched: string[] = [];
 if (!key) warnings.push('TWELVE_DATA_KEY yok — veri çekilmedi, kayıtlı veriyle hesaplandı');
 
+let dirDataFresh = false;
 const data: Record<string, SymData> = {};
 for (const sym of Object.keys(conf.symbols)) data[sym] = { m5: readCandles(sym, '5min'), m1: readCandles(sym, '1min'), d1: readCandles(sym, '1day'), h1: readCandles(sym, '1h') };
 
@@ -65,7 +66,7 @@ if (td && !credits.exhausted) {
     if (p.sym.startsWith('DIR:')) { // Piyasa Yönü makro ETF'leri (UUP, IEF) günlük
       const s = p.sym.slice(4);
       const r = await td.series(p.sym, s, '1day', p.size);
-      if (r.candles.length) writeCandles(s, '1day', mergeCandles(readCandles(s, '1day'), r.candles, 400)); else if (r.error) warnings.push(`Piyasa Yönü ${s}: ${r.error}`);
+      if (r.candles.length) { writeCandles(s, '1day', mergeCandles(readCandles(s, '1day'), r.candles, 400)); dirDataFresh = true; } else if (r.error) warnings.push(`Piyasa Yönü ${s}: ${r.error}`);
       continue;
     }
     const cfg = conf.symbols[p.sym];
@@ -124,7 +125,8 @@ pr.log.forEach((l) => console.log(l));
 if (pr.failed) warnings.push(`${pr.failed} bildirim gönderilemedi`);
 
 // --- Piyasa Yönü (saatte bir; kredi ≥ %90 ise 4 saatte bir; saatlik ek kredi yok) ---
-if (shouldRun(readJSON<DirFile | null>('direction.json', null), now, credits.used / credits.hardStop)) {
+// Yeni günlük veri (UUP/IEF + sabah yüklemesi) indiyse saati beklemeden yeniden hesapla
+if (dirDataFresh || shouldRun(readJSON<DirFile | null>('direction.json', null), now, credits.used / credits.hardStop)) {
   try {
     const d = await runDirection(conf, now, { setups: all, news: news?.events ?? [], m5: Object.fromEntries(Object.entries(data).map(([s, v]) => [s, v.m5])) });
     const dm = capDirection(d.msgs, notified, now);
