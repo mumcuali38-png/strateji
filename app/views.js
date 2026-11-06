@@ -6,6 +6,7 @@ import { chart as loadChart } from './data.js';
 import { copy, modal, toast } from './ui.js';
 import { trades, skipped } from './store.js';
 import { buildOrder, orderCardHtml, SKIP_REASONS } from './order.js';
+import { starOverview } from './star.js';
 import { getAdapter, MT5_OFF_MSG } from './broker.js';
 
 const ORDER = { TAM: 0, BEKLE: 1, EKSIK: 2, YOK: 3 };
@@ -62,6 +63,7 @@ export function renderOverview(App, el) {
       <div class="tbl-wrap"><table class="matrix"><thead><tr><th></th>${symbols.map((s) => `<th>${SHORT[s]}${st.symbols?.[s]?.newsRisk?.active ? ' 🔴' : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
       <div class="muted small">🔵 TAM · 🟠 TAM–BEKLE · 🟡 N = kalan şart · ⚪ N = YOK, sağlanmayan şart · 🔴 haber riski · boş = uygulanmaz · yön: <span style="color:var(--long)">▲ LONG</span> / <span style="color:var(--short)">▼ SHORT</span></div>
     </div>
+    ${starOverview(App)}
     <div class="card"><h2>Yakın setuplar</h2><div class="list">${sorted.map((s) => `<div class="li" data-go="#/${s.strategy}/${s.symbol}/${encodeURIComponent(s.id)}">${badge(s)}<div class="grow"><b>${SHORT[s.symbol]} ${s.strategy}</b> · ${esc(s.sub)}<div class="muted small">${esc(s.status === 'YOK' ? s.none?.why ?? '' : s.missing ?? 'Tüm şartlar sağlandı')}</div></div></div>`).join('') || '<div class="empty">Setup yok</div>'}</div></div>
     <div class="grid2" style="margin-top:12px">
       <div class="card"><h2>Sıradaki kırmızı haberler</h2>${nextNews(App, 3)}</div>
