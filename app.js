@@ -12,6 +12,7 @@ import { renderLive, syncTrades } from './app/live.js';
 import { renderDirection } from './app/direction.js';
 import { renderTraders } from './app/traders.js';
 import { toast } from './app/ui.js';
+import { renderStar } from './app/star.js';
 
 const App = {
   settings: loadSettings(), conf: {}, data, dataBase: DATA_BASE, links: { actions: ACTIONS_URL, secrets: SECRETS_URL },
@@ -104,7 +105,8 @@ function nav(route) {
     return item(`#/${t.id}`, t.icon, t.label, `<span>${ic}${tam > 1 ? `<span class="pill tam">${tam}</span>` : tam === 1 ? '' : ''}</span>`);
   }).join('');
   const el = document.getElementById('nav');
-  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
+  const starN = Object.values(App.data.star?.setups ?? {}).reduce((a, x) => a + Object.values(x.rows ?? {}).filter((r) => r.status === 'TAM').length, 0);
+  el.innerHTML = item('#/ozet', '◉', 'Özet') + tabs + item('#/star', '⭐', 'Portföy', starN ? `<span class="pill tam">${starN}</span>` : '') + '<hr>' + item('#/yon', '🧭', 'Piyasa Yönü', App.data.direction?.forex?.general?.score !== undefined && App.data.direction?.forex?.general?.score !== null ? `<span class="pill">${App.data.direction.forex.general.score}</span>` : '', 'sec') + item('#/trader', '👥', 'Trader\'lar', '', 'sec') + item('#/islemler', '💼', 'İşlemler', App.limits?.openCount ? `<span class="pill">${App.limits.openCount}</span>` : '', 'sec') + item('#/haber', '📰', 'Haber', '', 'sec') + item('#/gunluk', '📒', 'Günlük', '', 'sec') + item('#/gecmis', '🕘', 'Geçmiş', '', 'sec') + item('#/ayarlar', '⚙', 'Ayarlar', '', 'sec') + '<a href="#" class="more" data-more><span class="ico">⋯</span><span class="lbl">Diğer</span></a>';
   el.querySelector('[data-more]').onclick = (e) => { e.preventDefault(); el.classList.toggle('open'); };
   el.querySelectorAll('a:not([data-more])').forEach((a) => a.addEventListener('click', () => el.classList.remove('open')));
 }
@@ -125,6 +127,7 @@ async function render() {
   try {
     if (route.top === 'ozet') renderOverview(App, el);
     else if (TABS.some((t) => t.id === route.top)) renderStrategy(App, el, route.top, route);
+    else if (route.top === 'star') renderStar(App, el);
     else if (route.top === 'haber') renderNews(App, el, route.sub);
     else if (route.top === 'islemler') await renderLive(App, el, route.sub);
     else if (route.top === 'yon') renderDirection(App, el, route.sub);
@@ -168,7 +171,7 @@ async function reload(manual = false, api = false) {
   const prevGen = data.state?.generatedAt;
   // state.json 15 sn'de bir; haber ve geçmiş dakikada bir (gereksiz istek yok)
   const full = manual || Date.now() - lastFull > 55000;
-  const ok = await refresh(full ? ['state', 'news', 'history', 'direction', 'traders'] : ['state'], api || manual);
+  const ok = await refresh(full ? ['state', 'news', 'history', 'direction', 'traders', 'star'] : ['state'], api || manual);
   if (full && ok) lastFull = Date.now();
   if (full) await syncTrades(App);
   await computeLimits();

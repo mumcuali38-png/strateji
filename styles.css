@@ -260,3 +260,17 @@ textarea.code { width: 100%; min-height: 140px; font-family: var(--mono); font-s
 .steps li::before { content: counter(s); position: absolute; left: 0; top: 6px; width: 28px; height: 28px; border-radius: 50%; background: var(--info); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .illus { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--card2); font-family: var(--mono); font-size: .8rem; white-space: pre; overflow-x: auto; }
 .tabs2 { display: flex; gap: 6px; margin-bottom: 10px; }
+
+/* ⭐ Portföy */
+.star-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: var(--gap); margin: var(--gap) 0; align-items: start; }
+.star-grid > .card { margin: 0; }
+.star-week .big { font-size: 1.6rem; font-weight: 800; }
+.star-week.warn { border-color: var(--eksik); }
+.pos { color: var(--long); } .neg { color: var(--short); }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+.cal-h { color: var(--muted); font-size: .75rem; text-align: center; }
+.cal-c { min-height: 52px; border: 1px solid var(--border); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; font-size: .8rem; }
+.cal-c.empty { border: 0; }
+.cal-c .d { color: var(--muted); }
+.cal-c.pos { background: var(--long-bg); } .cal-c.neg { background: var(--short-bg); }
+@media (max-width: 700px) { .star-grid { grid-template-columns: 1fr; } }

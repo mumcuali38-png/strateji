@@ -5,6 +5,8 @@ export type CondStatus = 'ok' | 'fail' | 'wait';
 /** BEKLE = TAM ama zaman/ortam bloğu var (sadece F: "TAM – BEKLE") */
 export type Status = 'TAM' | 'BEKLE' | 'EKSIK' | 'YOK';
 export type StrategyId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
+/** ⭐ kurulumlar (docs/kurulum_*_spec.md) — parametreler kilitli */
+export type StarId = 'M2' | 'T4S' | 'N7' | 'IB' | 'TD';
 
 export interface Condition {
   id: string;
