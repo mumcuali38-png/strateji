@@ -36,7 +36,7 @@ export function renderDirection(App, el, openSym) {
   const d = App.data.direction;
   if (!d) { el.innerHTML = '<div class="h1">Piyasa Yönü</div><div class="card empty">Henüz hesaplanmadı — tarama saatte bir günceller (ilk sonuç bir sonraki taramada)</div>'; return; }
   const src = Object.entries(d.sources ?? {});
-  el.innerHTML = `<div class="row" style="justify-content:space-between"><div class="h1">Piyasa Yönü</div><div class="muted small">Güncelleme ${dateTR(d.updatedAt)} ${tr(d.updatedAt)} TR (${ago(d.updatedAt)})</div></div>
+  el.innerHTML = `<div class="row" style="justify-content:space-between"><div class="h1">Piyasa Yönü</div><div class="muted small">Güncelleme ${dateTR(d.updatedAt)} ${tr(d.updatedAt)} TR (${ago(d.updatedAt)}) · saatlik · sonraki ≈ ${tr(Math.max(d.updatedAt + 3600000, Date.now()))}</div></div>
     <div class="grid2">${gauge('Forex Genel', d.forex.general, 'Yüksek = dolar genel olarak zayıf')}${gauge('Kripto Genel', d.crypto.general, '0,65 × BTC + 0,35 × ETH')}</div>
     <h2>Forex</h2><div class="dirgrid">${d.forex.items.map((it) => itemCard(it, openSym === it.symbol)).join('')}</div>
     <h2>Kripto</h2><div class="dirgrid">${d.crypto.items.map((it) => itemCard(it, openSym === it.symbol)).join('')}</div>
