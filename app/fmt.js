@@ -30,10 +30,20 @@ export const STATUS = {
   YOK: { icon: '⚪', text: 'YOK', cls: 'yok' },
 };
 export const COND_ICON = { ok: '✅', fail: '❌', wait: '⏳' };
+/** Stratejinin tam şart tablosu uzunluğu (YOK'ta bazı stratejiler ilk başarısız şartta değerlendirmeyi keser) */
+const TOTAL_COND = { A: 9, B: 10, C: 10, D1: 7, D2: 7, E: 10, F: 9, G: 10 };
+/** YOK'ta sağlanmayan şart sayısı = tam tablo − sağlanan şartlar (değerlendirilmeyenler de sağlanmamış sayılır) */
+export function unmet(s) {
+  const c = s?.conditions ?? [];
+  const key = s?.strategy === 'D' ? (String(s.sub).startsWith('D1') ? 'D1' : 'D2') : s?.strategy;
+  const ok = c.filter((x) => x.status === 'ok').length;
+  const size = Math.max(c.length, TOTAL_COND[key] ?? c.length);
+  return { ok, size, total: c.length ? size - ok : s?.remaining ?? 0 };
+}
 export function badge(s, extra = '') {
   if (!s) return '<span class="badge yok">⚪ —</span>';
   const st = STATUS[s.status];
-  const rem = s.status === 'EKSIK' ? ` · ${s.remaining === 1 ? '1 şart kaldı' : s.remaining + ' şart'}` : s.status === 'BEKLE' && s.missing ? ` (${String(s.missing).replace(/^BLOK: /, '').split(' · ')[0]})` : '';
+  const rem = s.status === 'EKSIK' ? ` · ${s.remaining === 1 ? '1 şart kaldı' : s.remaining + ' şart'}` : s.status === 'BEKLE' && s.missing ? ` (${String(s.missing).replace(/^BLOK: /, '').split(' · ')[0]})` : s.status === 'YOK' && unmet(s).total ? ` · ${unmet(s).total} şart sağlanmadı` : '';
   return `<span class="badge ${st.cls}" ${extra}>${st.icon} ${st.text}${rem}</span>`;
 }
 /** Yön: renk + ▲/▼ + yazı birlikte (EK §2.1) */
