@@ -1,0 +1,178 @@
+{
+ "fetchedAt": 1794080604217,
+ "fmp": "yok",
+ "events": [
+  {
+   "id": "ff-USD-1793631600000-ISMManufacturingPMI",
+   "t": 1793631600000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "ISM Manufacturing PMI",
+   "forecast": "54.5",
+   "previous": "54.5",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793718000000-JOLTSJobOpenings",
+   "t": 1793718000000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "JOLTS Job Openings",
+   "forecast": "7.15M",
+   "previous": "7.08M",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793718960000-CongressionalElections",
+   "t": 1793718960000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Congressional Elections",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1793786400000-CoreCPIFlashEstimateyy",
+   "t": 1793786400000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "Core CPI Flash Estimate y/y",
+   "forecast": "2.5%",
+   "previous": "2.5%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1793786400000-CPIFlashEstimateyy",
+   "t": 1793786400000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "CPI Flash Estimate y/y",
+   "forecast": "4.0%",
+   "previous": "3.8%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793804400000-ISMServicesPMI",
+   "t": 1793804400000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "ISM Services PMI",
+   "forecast": "54.8",
+   "previous": "54.9",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1793880000000-BOEMonetaryPolicyReport",
+   "t": 1793880000000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "BOE Monetary Policy Report",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1793880000000-MonetaryPolicySummary",
+   "t": 1793880000000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "Monetary Policy Summary",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1793880000000-MPCOfficialBankRateVotes",
+   "t": 1793880000000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "MPC Official Bank Rate Votes",
+   "forecast": "7-0-2",
+   "previous": "3-0-6",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1793880000000-OfficialBankRate",
+   "t": 1793880000000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "Official Bank Rate",
+   "forecast": "4.00%",
+   "previous": "3.75%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1793881800000-BOEGovBaileySpeaks",
+   "t": 1793881800000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "BOE Gov Bailey Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793885400000-UnemploymentClaims",
+   "t": 1793885400000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Unemployment Claims",
+   "forecast": "197K",
+   "previous": "194K",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1793901600000-ECBPresidentLagardeSpeak",
+   "t": 1793901600000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793971800000-AverageHourlyEarningsmm",
+   "t": 1793971800000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Average Hourly Earnings m/m",
+   "forecast": "0.3%",
+   "previous": "0.1%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793971800000-NonFarmEmploymentChange",
+   "t": 1793971800000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Non-Farm Employment Change",
+   "forecast": "65K",
+   "previous": "29K",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793971800000-UnemploymentRate",
+   "t": 1793971800000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Unemployment Rate",
+   "forecast": "4.2%",
+   "previous": "4.2%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793977200000-PrelimUoMConsumerSentime",
+   "t": 1793977200000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Prelim UoM Consumer Sentiment",
+   "forecast": "48.1",
+   "previous": "46.3",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1793977200000-PrelimUoMInflationExpect",
+   "t": 1793977200000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Prelim UoM Inflation Expectations",
+   "previous": "4.7%",
+   "source": "Forex Factory"
+  }
+ ],
+ "headlines": [],
+ "ffFetchedAt": 1794080604217,
+ "stale": false
+}
