@@ -1,0 +1,111 @@
+{
+ "fetchedAt": 1794677975104,
+ "fmp": "yok",
+ "events": [
+  {
+   "id": "ff-GBP-1794245100000-BOEGovBaileySpeaks",
+   "t": 1794245100000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "BOE Gov Bailey Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794301200000-FOMCMemberWallerSpeaks",
+   "t": 1794301200000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "FOMC Member Waller Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794317400000-CoreCPImm",
+   "t": 1794317400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Core CPI m/m",
+   "forecast": "0.2%",
+   "previous": "0.3%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794317400000-CPImm",
+   "t": 1794317400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "CPI m/m",
+   "forecast": "0.3%",
+   "previous": "0.6%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1794390300000-ECBPresidentLagardeSpeak",
+   "t": 1794390300000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1794466800000-GDPmm",
+   "t": 1794466800000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "GDP m/m",
+   "forecast": "0.0%",
+   "previous": "0.1%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1794466800000-PrelimGDPqq",
+   "t": 1794466800000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Prelim GDP q/q",
+   "forecast": "0.7%",
+   "previous": "0.5%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794490200000-UnemploymentClaims",
+   "t": 1794490200000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Unemployment Claims",
+   "forecast": "194K",
+   "previous": "189K",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1794511800000-ECBPresidentLagardeSpeak",
+   "t": 1794511800000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794576600000-CorePPImm",
+   "t": 1794576600000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Core PPI m/m",
+   "forecast": "0.3%",
+   "previous": "0.7%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794576600000-PPImm",
+   "t": 1794576600000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "PPI m/m",
+   "forecast": "0.4%",
+   "previous": "1.3%",
+   "source": "Forex Factory"
+  }
+ ],
+ "headlines": [],
+ "ffFetchedAt": 1794677975104,
+ "stale": false
+}
