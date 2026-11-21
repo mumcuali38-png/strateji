@@ -1,0 +1,170 @@
+{
+ "fetchedAt": 1795245006482,
+ "fmp": "yok",
+ "events": [
+  {
+   "id": "ff-USD-1794848400000-FedChairmanWarshSpeaks",
+   "t": 1794848400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Fed Chairman Warsh Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1794898800000-AverageEarningsIndex3my",
+   "t": 1794898800000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Average Earnings Index 3m/y",
+   "forecast": "3.5%",
+   "previous": "3.7%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794922200000-CoreRetailSalesmm",
+   "t": 1794922200000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Core Retail Sales m/m",
+   "forecast": "0.4%",
+   "previous": "0.9%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1794922200000-RetailSalesmm",
+   "t": 1794922200000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Retail Sales m/m",
+   "forecast": "0.1%",
+   "previous": "0.8%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1794985200000-CPIyy",
+   "t": 1794985200000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "CPI y/y",
+   "forecast": "3.6%",
+   "previous": "3.5%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1794987000000-BOEGovBaileySpeaks",
+   "t": 1794987000000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "BOE Gov Bailey Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1794992400000-ECBFinancialStabilityRev",
+   "t": 1794992400000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB Financial Stability Review",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795011900000-ECBPresidentLagardeSpeak",
+   "t": 1795011900000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1795014000000-BOEGovBaileySpeaks",
+   "t": 1795014000000,
+   "currency": "GBP",
+   "impact": "High",
+   "title": "BOE Gov Bailey Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795028400000-FOMCMeetingMinutes",
+   "t": 1795028400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "FOMC Meeting Minutes",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795095000000-ECBPresidentLagardeSpeak",
+   "t": 1795095000000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795095000000-PhillyFedManufacturingIn",
+   "t": 1795095000000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Philly Fed Manufacturing Index",
+   "forecast": "20.6",
+   "previous": "20.9",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795095000000-UnemploymentClaims",
+   "t": 1795095000000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Unemployment Claims",
+   "forecast": "198K",
+   "previous": "200K",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1795158000000-RetailSalesmm",
+   "t": 1795158000000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Retail Sales m/m",
+   "forecast": "0.0%",
+   "previous": "-0.4%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795162500000-ECBPresidentLagardeSpeak",
+   "t": 1795162500000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "ECB President Lagarde Speaks",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795186800000-RevisedUoMConsumerSentim",
+   "t": 1795186800000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Revised UoM Consumer Sentiment",
+   "forecast": "51.7",
+   "previous": "51.0",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795186800000-RevisedUoMInflationExpec",
+   "t": 1795186800000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Revised UoM Inflation Expectations",
+   "previous": "4.3%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795194000000-PresidentTrumpSpeaks",
+   "t": 1795194000000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "President Trump Speaks",
+   "source": "Forex Factory"
+  }
+ ],
+ "headlines": [],
+ "ffFetchedAt": 1795245006482,
+ "stale": false
+}

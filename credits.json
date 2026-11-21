@@ -1,0 +1,236 @@
+{
+ "date": "2026-11-07",
+ "used": 30,
+ "hardStop": 760,
+ "bootstrapDate": "2026-11-07",
+ "log": [
+  {
+   "t": 1794009623637,
+   "sym": "STAR:XAUUSD",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009623822,
+   "sym": "STAR:US100",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009623926,
+   "sym": "STAR:USDJPY",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009624026,
+   "sym": "STAR:US500",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009624130,
+   "sym": "STAR:US30",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009624255,
+   "sym": "STAR:XAGUSD",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009624350,
+   "sym": "STAR:AUDUSD",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794009685142,
+   "sym": "STAR:WTI",
+   "interval": "1h",
+   "size": 1500,
+   "ok": true
+  },
+  {
+   "t": 1794034821062,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 2500,
+   "ok": true
+  },
+  {
+   "t": 1794034821497,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 2500,
+   "ok": true
+  },
+  {
+   "t": 1794035120413,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794035120582,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794035421369,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794035421602,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794035721250,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794035721424,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036020762,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036020931,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036320660,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036320848,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036620689,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036620919,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036921010,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794036921269,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037220970,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037221136,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037588293,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037588478,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037821280,
+   "sym": "BTCUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  },
+  {
+   "t": 1794037821397,
+   "sym": "ETHUSD",
+   "interval": "5min",
+   "size": 6,
+   "ok": true
+  }
+ ],
+ "days": [
+  {
+   "date": "2026-11-05",
+   "used": 444
+  },
+  {
+   "date": "2026-11-06",
+   "used": 760
+  }
+ ],
+ "unavailable": {
+  "XAGUSD": "2026-11-05"
+ },
+ "lastHeaders": {
+  "used": "2",
+  "left": "6",
+  "at": 1794037821450
+ }
+}
