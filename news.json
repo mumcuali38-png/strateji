@@ -1,0 +1,137 @@
+{
+ "fetchedAt": 1795850117323,
+ "fmp": "yok",
+ "events": [
+  {
+   "id": "ff-EUR-1795421700000-FrenchFlashManufacturing",
+   "t": 1795421700000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "French Flash Manufacturing PMI",
+   "forecast": "49.8",
+   "previous": "49.3",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795421700000-FrenchFlashServicesPMI",
+   "t": 1795421700000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "French Flash Services PMI",
+   "forecast": "47.4",
+   "previous": "48.4",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795422600000-GermanFlashManufacturing",
+   "t": 1795422600000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "German Flash Manufacturing PMI",
+   "forecast": "54.1",
+   "previous": "54.2",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-EUR-1795422600000-GermanFlashServicesPMI",
+   "t": 1795422600000,
+   "currency": "EUR",
+   "impact": "Medium",
+   "title": "German Flash Services PMI",
+   "forecast": "52.4",
+   "previous": "51.7",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1795426200000-FlashManufacturingPMI",
+   "t": 1795426200000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Flash Manufacturing PMI",
+   "forecast": "53.0",
+   "previous": "52.8",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1795426200000-FlashServicesPMI",
+   "t": 1795426200000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Flash Services PMI",
+   "forecast": "53.0",
+   "previous": "53.1",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795445100000-FlashManufacturingPMI",
+   "t": 1795445100000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Flash Manufacturing PMI",
+   "forecast": "54.5",
+   "previous": "56.0",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795445100000-FlashServicesPMI",
+   "t": 1795445100000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Flash Services PMI",
+   "forecast": "55.6",
+   "previous": "57.9",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795532400000-CBConsumerConfidence",
+   "t": 1795532400000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "CB Consumer Confidence",
+   "forecast": "92.4",
+   "previous": "91.7",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795613400000-CorePCEPriceIndexmm",
+   "t": 1795613400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Core PCE Price Index m/m",
+   "forecast": "0.3%",
+   "previous": "0.3%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795613400000-PrelimGDPqq",
+   "t": 1795613400000,
+   "currency": "USD",
+   "impact": "High",
+   "title": "Prelim GDP q/q",
+   "forecast": "3.5%",
+   "previous": "3.4%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-USD-1795613400000-PrelimGDPPriceIndexqq",
+   "t": 1795613400000,
+   "currency": "USD",
+   "impact": "Medium",
+   "title": "Prelim GDP Price Index q/q",
+   "forecast": "2.3%",
+   "previous": "2.3%",
+   "source": "Forex Factory"
+  },
+  {
+   "id": "ff-GBP-1795616100000-MonetaryPolicyReportHear",
+   "t": 1795616100000,
+   "currency": "GBP",
+   "impact": "Medium",
+   "title": "Monetary Policy Report Hearings",
+   "source": "Forex Factory"
+  }
+ ],
+ "headlines": [],
+ "ffFetchedAt": 1795850117323,
+ "stale": false
+}
